@@ -224,6 +224,7 @@
     init: init,
     onChange: function (fn) { listeners.push(fn); return function () { listeners = listeners.filter(function (f) { return f !== fn; }); }; },
     getState: function () { return snapshot(''); },
+    getClient: function () { return state.client; }, /* usado só por profile.js; o client nasce apenas com a publishable key */
     clearNotices: function () { state.expired = false; state.urlError = ''; },
     validateEmail: validateEmail, validatePassword: validatePassword,
     signUp: signUp, signIn: signIn, signInWithGoogle: signInWithGoogle,
