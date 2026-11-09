@@ -169,7 +169,7 @@
     ensureRoot(); root.hidden = false; doc.documentElement.classList.add('cf-auth-open'); setAppInert(true);
     var f = doc.activeElement; if (f && f !== doc.body && !root.contains(f) && f.blur) f.blur();
   }
-  function close() { if (root) root.hidden = true; doc.documentElement.classList.remove('cf-auth-open'); setAppInert(false); }
+  function close() { if (root) { root.hidden = true; root.innerHTML = ''; view = 'closed'; } doc.documentElement.classList.remove('cf-auth-open'); setAppInert(false); }
 
   function toast(text) {
     if (!toastEl) { toastEl = el('div', 'cf-toast'); toastEl.setAttribute('role', 'status'); doc.body.appendChild(toastEl); }

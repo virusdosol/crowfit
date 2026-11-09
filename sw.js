@@ -2,15 +2,17 @@
    Versionamento: aumente CACHE_VERSION a cada publicação que mude arquivos.
    Só mexemos em caches que começam com o prefixo "crowfit-cache-"; caches de outros apps da mesma origem são preservados. */
 var PREFIX = "crowfit-cache-";
-var CACHE_VERSION = 4;
+var CACHE_VERSION = 5;
 var CACHE = PREFIX + "v" + CACHE_VERSION;
-var CORE = ["./", "./index.html", "./core.js", "./manifest.json", "./icon-192.png", "./icon-512.png", "./icon-180.png", "./icon-maskable-512.png", "./mascot.png", "./logo.png",
-  "./auth/supabase-config.js", "./auth/auth.js", "./auth/auth-ui.js", "./auth/auth.css"];
-/* SDK do Supabase (mesma versão do index.html). Fica fora do CORE: se falhar offline, não derruba a instalação do SW. */
-var SDK = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js";
+var CORE = ["./", "./index.html", "./core.js", "./manifest.json", "./icon-192.png", "./icon-512.png", "./icon-180.png", "./icon-maskable-512.png", "./mascot.png", "./logo.png"];
+/* Autenticação: fora do CORE para que um arquivo ausente ou falha de rede não impeça a instalação do SW. */
+var EXTRA = ["./supabase-config.js", "./auth.js", "./auth-ui.js", "./auth.css",
+  "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"];
 
 self.addEventListener("install", function (e) {
-  e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(CORE).then(function () { return c.add(SDK).catch(function () {}); }); }));
+  e.waitUntil(caches.open(CACHE).then(function (c) {
+    return c.addAll(CORE).then(function () { return Promise.all(EXTRA.map(function (u) { return c.add(u).catch(function () {}); })); });
+  }));
   self.skipWaiting();
 });
 

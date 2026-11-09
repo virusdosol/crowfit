@@ -59,7 +59,7 @@
 
   function snapshot(event) {
     return {
-      event: event || '', ready: state.ready, user: publicUser(state.session), recovery: state.recovery,
+      event: event || '', ready: state.ready, user: publicUser(state.session), recovery: state.recovery && !!state.session,
       offline: state.offline, expired: state.expired, urlError: state.urlError
     };
   }
@@ -122,6 +122,7 @@
         state.offline = hasStoredSession();
         state.ready = true; emit('READY'); return snapshot('READY');
       }
+      if (/(^|[#&])type=recovery(&|$)/.test(global.location.hash || '')) state.recovery = true; /* link de nova senha: evita mostrar o app antes */
       state.client = global.supabase.createClient(CFG.url, CFG.publishableKey, {
         auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'implicit' }
       });
@@ -132,6 +133,9 @@
         var res = await state.client.auth.getSession();
         state.session = (res && res.data && res.data.session) || null;
         hadSession = !!state.session;
+        /* Sem rede e com login anterior neste aparelho: libera o app em vez de mostrar a tela de entrada. */
+        if (!state.session && hasStoredSession() && (global.navigator.onLine === false || (res && res.error && res.error.name === 'AuthRetryableFetchError'))) state.offline = true;
+        if (!state.session) state.recovery = false;
       } catch (e) {
         state.session = null;
         state.offline = hasStoredSession();
