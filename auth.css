@@ -1,0 +1,69 @@
+/* Crowfit — estilo das telas de autenticação.
+   Para combinar com o app, defina no :root do seu CSS: --crowfit-accent, --crowfit-bg, --crowfit-ink etc. */
+.cf-auth {
+  --cf-a: var(--crowfit-accent, var(--brand, #4F5BFF));
+  --cf-a-d: var(--crowfit-accent-d, var(--brand-d, #3340D9));
+  --cf-a-ink: var(--crowfit-accent-ink, var(--onbrand, #ffffff));
+  --cf-bg: var(--crowfit-bg, var(--bg, #EEF1FF));
+  --cf-card: var(--crowfit-card, var(--card, #ffffff));
+  --cf-ink: var(--crowfit-ink, var(--ink, #1B1F3B));
+  --cf-muted: var(--crowfit-muted, var(--mute, #6A6F8F));
+  --cf-line: var(--crowfit-line, var(--line, #D9DEF5));
+  --cf-err: #b3261e;
+  --cf-ok: #17703a;
+  position: fixed; inset: 0; z-index: 99999; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  background: var(--cf-bg); color: var(--cf-ink);
+  font-family: Nunito, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-weight: 700;
+  padding: max(24px, env(safe-area-inset-top)) 22px max(24px, env(safe-area-inset-bottom));
+}
+.cf-auth[hidden] { display: none; }
+html.cf-auth-open, html.cf-auth-open body { overflow: hidden; }
+.cf-wrap { max-width: 380px; margin: 0 auto; min-height: 100%; display: flex; flex-direction: column; justify-content: center; padding: 12px 0; }
+.cf-mascot { display: block; height: 76px; width: auto; margin: 0 0 6px; }
+.cf-brand { font-family: Fredoka, Nunito, sans-serif; font-size: 2.1rem; font-weight: 600; letter-spacing: -0.03em; margin-bottom: 28px; }
+.cf-title { font-family: Fredoka, Nunito, sans-serif; font-size: 1.6rem; line-height: 1.15; margin: 0 0 6px; font-weight: 600; letter-spacing: -0.01em; }
+.cf-sub { margin: 0 0 20px; color: var(--cf-muted); line-height: 1.45; max-width: 60ch; }
+.cf-form { display: flex; flex-direction: column; gap: 14px; margin-bottom: 4px; }
+.cf-field label { display: block; font-size: .9rem; font-weight: 600; margin-bottom: 6px; }
+.cf-field input {
+  width: 100%; box-sizing: border-box; font: inherit; font-size: 16px; /* 16px evita zoom no iOS */
+  padding: 13px 14px; border: 2px solid var(--cf-line); border-radius: 14px; background: var(--cf-card); color: var(--cf-ink);
+}
+.cf-field input:disabled { opacity: .6; }
+.cf-hint { margin: 6px 0 0; font-size: .82rem; color: var(--cf-muted); }
+.cf-btn {
+  width: 100%; box-sizing: border-box; font: inherit; font-weight: 800; font-size: 1rem; cursor: pointer;
+  padding: 14px 16px; border-radius: 16px; border: 1.5px solid transparent; display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+.cf-btn-main { background: var(--cf-a); color: var(--cf-a-ink); margin-top: 4px; box-shadow: 0 4px 0 var(--cf-a-d); }
+.cf-btn-main:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--cf-a-d); }
+.cf-btn-google { background: var(--cf-card); color: var(--cf-ink); border-color: var(--cf-line); box-shadow: 0 4px 0 var(--cf-line); }
+.cf-btn:disabled { opacity: .65; cursor: default; }
+.cf-or { display: flex; align-items: center; gap: 12px; color: var(--cf-muted); font-size: .85rem; margin: 18px 0; }
+.cf-or::before, .cf-or::after { content: ""; flex: 1; height: 1px; background: var(--cf-line); }
+.cf-links { display: flex; justify-content: space-between; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
+.cf-link { background: none; border: 0; padding: 8px 0; font: inherit; font-weight: 650; color: var(--cf-a); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.cf-msg { margin: 0 0 16px; padding: 11px 13px; border-radius: 10px; font-size: .92rem; line-height: 1.4; border-left: 4px solid; }
+.cf-msg.error { color: var(--cf-err); background: #fdecea; border-color: var(--cf-err); }
+.cf-msg.ok { color: var(--cf-ok); background: #e6f4ea; border-color: var(--cf-ok); }
+.cf-msg[hidden] { display: none; }
+.cf-spin { width: 34px; height: 34px; border-radius: 50%; border: 4px solid var(--cf-line); border-top-color: var(--cf-a); animation: cf-rot .8s linear infinite; margin: 8px 0; }
+@keyframes cf-rot { to { transform: rotate(360deg); } }
+.cf-auth button:focus-visible, .cf-auth input:focus-visible, .cf-chip:focus-visible { outline: 3px solid var(--cf-a); outline-offset: 2px; }
+.cf-field input:focus-visible { border-color: var(--cf-a); }
+
+.cf-chip {
+  position: fixed; z-index: 9000; font: 700 .85rem system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  padding: 8px 14px; border-radius: 999px; border: 1.5px solid #c3cddc; background: rgba(255,255,255,.94); color: #121826; cursor: pointer;
+}
+.cf-chip[hidden] { display: none; }
+.cf-pos-top-right { top: calc(10px + env(safe-area-inset-top)); right: 10px; }
+.cf-pos-top-left { top: calc(10px + env(safe-area-inset-top)); left: 10px; }
+.cf-pos-bottom-right { bottom: calc(10px + env(safe-area-inset-bottom)); right: 10px; }
+.cf-pos-bottom-left { bottom: calc(10px + env(safe-area-inset-bottom)); left: 10px; }
+.cf-toast {
+  position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translate(-50%, 12px); opacity: 0; pointer-events: none;
+  z-index: 100000; background: #121826; color: #fff; padding: 11px 16px; border-radius: 12px; font: 600 .92rem system-ui, sans-serif; transition: opacity .2s, transform .2s;
+}
+.cf-toast.is-on { opacity: 1; transform: translate(-50%, 0); }
+@media (prefers-reduced-motion: reduce) { .cf-spin { animation-duration: 2.4s; } .cf-toast { transition: none; } }

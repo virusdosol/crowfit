@@ -2,12 +2,15 @@
    Versionamento: aumente CACHE_VERSION a cada publicação que mude arquivos.
    Só mexemos em caches que começam com o prefixo "crowfit-cache-"; caches de outros apps da mesma origem são preservados. */
 var PREFIX = "crowfit-cache-";
-var CACHE_VERSION = 3;
+var CACHE_VERSION = 4;
 var CACHE = PREFIX + "v" + CACHE_VERSION;
-var CORE = ["./", "./index.html", "./core.js", "./manifest.json", "./icon-192.png", "./icon-512.png", "./icon-180.png", "./icon-maskable-512.png", "./mascot.png", "./logo.png"];
+var CORE = ["./", "./index.html", "./core.js", "./manifest.json", "./icon-192.png", "./icon-512.png", "./icon-180.png", "./icon-maskable-512.png", "./mascot.png", "./logo.png",
+  "./auth/supabase-config.js", "./auth/auth.js", "./auth/auth-ui.js", "./auth/auth.css"];
+/* SDK do Supabase (mesma versão do index.html). Fica fora do CORE: se falhar offline, não derruba a instalação do SW. */
+var SDK = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js";
 
 self.addEventListener("install", function (e) {
-  e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(CORE); }));
+  e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(CORE).then(function () { return c.add(SDK).catch(function () {}); }); }));
   self.skipWaiting();
 });
 
@@ -28,6 +31,8 @@ self.addEventListener("fetch", function (e) {
   var req = e.request;
   if (req.method !== "GET") return;
   var url = new URL(req.url), same = url.origin === self.location.origin;
+  /* Supabase (login, sessão, tokens): nunca interceptar nem guardar em cache. */
+  if (/\.supabase\.(co|in)$/.test(url.hostname)) return;
   var isCode = same && (req.mode === "navigate" || /\.(html|js|json)$/.test(url.pathname) || url.pathname.slice(-1) === "/");
   if (isCode) {
     /* rede primeiro: o app novo chega assim que houver conexão; offline usa o cache */
