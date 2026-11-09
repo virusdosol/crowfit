@@ -30,7 +30,7 @@ Foi pensado para o celular, para treinar em casa, no quarto ou no parque.
 
 No primeiro acesso, o app pergunta nome, idade, peso, altura, experiência com exercícios e quantos dias por semana você quer treinar (de 3 a 6).
 
-O **nível** (iniciante, intermediário ou avançado) vem da experiência e é reduzido em um grau para quem tem 55 anos ou mais, ou IMC a partir de 30. Ele define as repetições, os segundos e o número de séries.
+O **nível** (iniciante, intermediário ou avançado) parte da experiência declarada e define repetições, segundos e séries. Depois ele se ajusta pelo seu retorno ao fim de cada treino: "Foi difícil" reduz o nível na hora; "Foi fácil" só aumenta depois de 3 treinos fáceis seguidos. Idade e IMC não decidem o seu nível.
 
 | Dias por semana | Seg | Ter | Qua | Qui | Sex | Sáb | Dom |
 |---|---|---|---|---|---|---|---|
@@ -42,20 +42,23 @@ O **nível** (iniciante, intermediário ou avançado) vem da experiência e é r
 ## Funcionalidades
 
 **Treino guiado**
-- Um exercício por tela, com meta (repetições ou segundos) e dica de execução.
-- Cronômetro nos exercícios por tempo, como prancha e agachamento na parede.
-- Marcar como concluído ou pular o exercício.
-- Aquecimento no início e alongamento no fim de cada sessão.
+- Um exercício por tela, com séries individuais ("Série 2 de 3") e dica de execução.
+- Exercícios por tempo (prancha, agachamento na parede) com cronômetro que pausa e retoma; a série só conclui quando o tempo acaba.
+- Descanso entre séries, que pode ser iniciado, pausado ou pulado.
+- Treino interrompido fica salvo e pode ser retomado depois (cronômetros voltam pausados).
+- Aquecimento e alongamento são opcionais; todos os outros exercícios são obrigatórios para o bônus.
 
 **Ofensiva**
-- Sobe a cada dia de treino concluído.
-- Os dias de descanso previstos no seu plano **não quebram** a ofensiva.
-- Perder um dia de treino previsto zera a contagem.
+- Sobe a cada dia com treino completo.
+- Os descansos previstos no plano **não quebram** a ofensiva, usando o plano que valia em cada data. Trocar a frequência não reescreve o passado.
+- Perder um dia de treino previsto zera a contagem. A **melhor ofensiva** fica sempre visível.
 
 **Pontos e níveis**
-- 10 pontos por exercício concluído.
-- 20 pontos de bônus por completar o treino do dia.
+- 10 pontos por exercício concluído (todas as séries feitas). Pular ou só iniciar não rende pontos.
+- 20 pontos de bônus quando todos os exercícios obrigatórios são concluídos.
+- Repetir o treino no mesmo dia é permitido (sessão extra), mas não repete pontos nem bônus. Cada recompensa só é concedida uma vez.
 - Um nível novo a cada 200 pontos, com barra de progresso.
+- Como tudo fica no aparelho, a pontuação garante consistência, não é um sistema antifraude.
 
 **Semana**
 - Visão dos sete dias: concluído, hoje, não realizado, em breve e descanso.
@@ -80,17 +83,20 @@ O **nível** (iniciante, intermediário ou avançado) vem da experiência e é r
 ## 💾 Seus dados
 
 - Tudo fica **salvo no próprio aparelho**, no armazenamento do navegador. Nada é enviado para servidores.
-- Limpar os dados do navegador ou desinstalar o app **apaga o seu progresso** (pontos, ofensiva e treinos feitos).
-- Ainda não há backup nem sincronização entre aparelhos.
-- Para refazer o plano, use **Refazer perfil e plano** no fim da tela inicial. Pontos e ofensiva são mantidos.
+- Se a gravação falhar (por exemplo, armazenamento cheio), o app mostra um aviso fixo "Alterações NÃO salvas".
+- Se os dados salvos estiverem corrompidos, o app **não os apaga**: mostra uma tela de recuperação e guarda uma cópia.
+- Limpar os dados do navegador ou desinstalar o app **apaga o seu progresso**.
+- Faça backup em **Exportar backup** (arquivo `.json`) na tela inicial e restaure em **Importar backup**, inclusive em outro aparelho. A importação valida o arquivo antes de trocar os dados.
+- Para refazer o plano, use **Refazer perfil e plano**. Pontos, histórico e ofensiva são mantidos.
 
 ## 🛠 Para quem quer mexer no código
 
-É um app de **um único arquivo** (`index.html`), em HTML, CSS e JavaScript puro, sem build e sem dependências. Os arquivos ficam todos na mesma pasta, sem subpastas.
+É um app em HTML, CSS e JavaScript puro, sem build e sem dependências. Os arquivos do app ficam todos na mesma pasta; só os testes ficam em `tests/`.
 
 ```
 crowfit/
-├── index.html              # o app inteiro
+├── index.html              # telas e estilo
+├── core.js                 # regras (validação, pontos, séries, ofensiva)
 ├── manifest.json           # nome, cores e ícones do PWA
 ├── sw.js                   # service worker (cache offline)
 ├── mascot.png              # o corvo mascote
@@ -98,24 +104,28 @@ crowfit/
 ├── icon-180.png            # ícone do iPhone
 ├── icon-192.png
 ├── icon-512.png
-└── icon-maskable-512.png   # ícone adaptável do Android
+├── icon-maskable-512.png   # ícone adaptável do Android
+└── tests/
+    └── core.test.js        # testes automatizados
 ```
 
 Para rodar localmente, sirva a pasta com qualquer servidor estático (por exemplo `python3 -m http.server`) e abra `http://localhost:8000`. O service worker só funciona em `localhost` ou `https`.
 
 Para publicar a sua cópia: faça um fork, vá em **Settings > Pages**, escolha a branch `main` e a pasta `/ (root)`.
 
-**Atualizando o app:** depois de mudar um arquivo, troque `crowfit-v1` por `crowfit-v2` no `sw.js`. Assim os celulares baixam a versão nova.
+**Testes:** com o Node.js 18 ou mais novo, rode `node --test tests/core.test.js`. Não há nada para instalar.
 
-Os exercícios, as sessões e os padrões semanais ficam nos objetos `EX`, `SES` e `PAT` dentro do `index.html`.
+**Atualizando o app:** depois de mudar um arquivo, aumente `CACHE_VERSION` no `sw.js`. O service worker usa a rede primeiro para HTML, JS e JSON, então a versão nova chega assim que houver conexão. Ele só apaga caches que começam com `crowfit-cache-`.
+
+Os exercícios e as sessões ficam nos objetos `EX` e `SES` dentro do `index.html`. Os padrões semanais (`PAT`) ficam no `core.js`.
 
 ## Ainda não tem
 
 - Ilustrações ou vídeos dos exercícios.
-- Descanso entre as séries.
 - Conquistas, ligas e amigos.
 - Lembretes diários.
-- Backup e sincronização entre aparelhos.
+- Sincronização entre aparelhos.
+- Tela de histórico de sessões (os dados já são gravados).
 - Contas de usuário.
 
 Sugestões e contribuições são bem-vindas: abra uma *issue* ou um *pull request*.

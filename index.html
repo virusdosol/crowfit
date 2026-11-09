@@ -60,15 +60,22 @@ input{width:100%;border:2px solid var(--line);border-radius:14px;padding:12px;fo
 .week .d{background:var(--ok);color:#fff}.week .t{outline:3px solid var(--brand)}
 .link{background:none;border:0;color:var(--mute);font:700 14px Nunito;text-decoration:underline;cursor:pointer;margin-top:24px;width:100%}
 @media (prefers-reduced-motion:no-preference){.pop{animation:pop .5s}@keyframes pop{0%{transform:scale(.7);opacity:0}70%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}}
+.sets{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:8px 0}
+.sp{border:2px solid var(--line);border-radius:12px;padding:4px 10px;font-size:13px;color:var(--mute)}
+.sp.cur{border-color:var(--brand);color:var(--ink)}.sp.ok{background:var(--ok);border-color:var(--ok);color:#fff}
+.btn:disabled{opacity:.5;box-shadow:none;cursor:not-allowed}
+#bn{position:fixed;left:0;right:0;top:0;z-index:20;background:#E5484D;color:#fff;padding:calc(8px + env(safe-area-inset-top,0px)) 14px 8px;text-align:center;font-size:14px}
+#bn[hidden]{display:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 </style>
 </head>
 <body>
+<div id="bn" role="alert" hidden></div>
+<div id="live" class="sr" aria-live="polite"></div>
 <div id="app"></div>
+<script src="core.js"></script>
 <script>
 function raven(sz){sz=sz||96;return '<img class="mascot" src="mascot.png" height="'+sz+'" alt="Crowfit, o corvo mascote" style="height:'+sz+'px;width:auto">'}
-
-/* Dados: exercícios, tipos de sessão e padrões semanais */
-/* Exercícios: v = [iniciante, intermediário, avançado]; t = "r" repetições, "s" segundos */
 var EX={
 fl_j:{n:"Flexão com joelhos no chão",t:"r",v:[8,12,16],tip:"Corpo reto dos joelhos à cabeça. Desça até o peito quase tocar o chão."},
 fl:{n:"Flexão de braço",t:"r",v:[6,12,20],tip:"Mãos na largura dos ombros, cotovelos a 45° do corpo."},
@@ -93,20 +100,39 @@ P:{n:"Peito e braços",ex:["po","fl_j|fl","fl|fl_d","mg","pk","al"]},
 L:{n:"Pernas e glúteos",ex:["po","ag","af","pg","ag_s","pa","al"]},
 C:{n:"Abdômen e core",ex:["po","ab","pr","bi","pe","mc","al"]},
 F:{n:"Corpo todo",ex:["po","ag","fl_j|fl","mc","pg","pr","bu|bi","al"]}};
-var PAT={3:["F","R","L","R","P","R","R"],4:["P","L","R","C","F","R","R"],5:["P","L","C","R","F","P","R"],6:["P","L","C","F","P","L","R"]};
 var DIAS=["Segunda","Terça","Quarta","Quinta","Sexta","Sábado","Domingo"];
+var KEY="corvofit-v1",S=null,loadErr=null,blocked=false,rawBad=null,tm=null,lastAct=0,ob={step:0,d:{}};
+var $=function(id){return document.getElementById(id)},app=$("app"),esc=CF.escText,today=function(){return CF.dateKey(new Date())};
+function say(t){var l=$("live");if(l)l.textContent=t}
+function banner(m){var b=$("bn");if(b){b.textContent=m||"";b.hidden=!m}}
+function act(){var n=Date.now();if(n-lastAct<350)return false;lastAct=n;return true}
+function view(h){clearInterval(tm);app.innerHTML=h;var t=app.querySelector("h1,h2,.logo");if(t){t.setAttribute("tabindex","-1");try{t.focus({preventScroll:true})}catch(e){}}}
 
-/* Lógica do app: estado, onboarding, home, treino, ofensiva e pontos */
-var KEY="corvofit-v1",S={profile:null,points:0,streak:0,best:0,last:"",done:{}},ob={step:0,d:{}},sess=null,tm=null;
-try{var raw=localStorage.getItem(KEY);if(raw)S=Object.assign(S,JSON.parse(raw))}catch(e){}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
-var $=function(id){return document.getElementById(id)},app=$("app");
+/* ---------- Persistência ---------- */
+function load(){var raw=null;
+ try{raw=localStorage.getItem(KEY)}catch(e){loadErr=["Armazenamento indisponível neste navegador."];S=CF.emptyState();banner("Armazenamento indisponível: seu progresso NÃO será salvo.");return}
+ if(!raw){S=CF.emptyState();return}
+ var o,r;try{o=JSON.parse(raw);r=CF.validateState(o)}catch(e){r={ok:false,errors:["O arquivo salvo está corrompido (JSON inválido)."]}}
+ if(!r.ok){rawBad=raw;loadErr=r.errors.slice(0,6);blocked=true;S=CF.emptyState();try{localStorage.setItem(KEY+":corrompido",raw)}catch(e){console.error("Crowfit: não foi possível copiar os dados antigos",e)}console.error("Crowfit: dados locais inválidos",r.errors);return}
+ S=r.state;if(S.active)pauseActive()}
+function save(){
+ if(blocked){banner("Dados não carregados: nada será salvo até você restaurar um backup ou começar do zero.");return false}
+ try{var js=JSON.stringify(S);localStorage.setItem(KEY,js);if(localStorage.getItem(KEY)!==js)throw new Error("a verificação da gravação falhou");banner("");return true}
+ catch(e){console.error("Crowfit: falha ao salvar",e);banner("Alterações NÃO salvas ("+(e&&e.name==="QuotaExceededError"?"armazenamento cheio":"erro de gravação")+"). Exporte um backup.");return false}}
+function persist(){var a=S.active,ex=a&&a.exercises[a.exIdx];if(ex&&ex.timer)CF.timerTick(ex.timer,Date.now());return save()}
+function pauseActive(){S.active.exercises.forEach(function(e){if(e.timer&&e.timer.state==="running"){e.timer.state="paused";e.timer.endAt=null;if(e.status==="running")e.status="paused"}})}
+window.addEventListener("error",function(e){console.error("Crowfit:",e.error||e.message);banner("Ocorreu um erro inesperado. Recarregue a página; seus dados salvos não foram apagados.")});
 
-function level(p){var l=({"Nunca treinei":0,"Treino às vezes":1,"Treino sempre":2})[p.exp];var imc=p.peso/Math.pow(p.altura/100,2);if(p.idade>=55||imc>=30)l=Math.max(0,l-1);return l}
-function buildSession(type,lv){return SES[type].ex.map(function(k){var parts=k.split("|"),id=parts[Math.min(lv,parts.length-1)];if(parts.length>1&&lv===0)id=parts[0];if(parts.length>1&&lv>0)id=parts[1]&&lv>=1?parts[1]:parts[0];var e=EX[id],sets=(e.t==="s"||id==="al"||id==="po")?1:(lv===0?2:3);return{id:id,n:e.n,t:e.t,tip:e.tip,val:e.v[lv],sets:sets}})}
-function dk(d){return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2)}
-function weekDates(){var n=new Date(),i=(n.getDay()+6)%7,m=new Date(n.getFullYear(),n.getMonth(),n.getDate()-i),a=[];for(var j=0;j<7;j++)a.push(new Date(m.getFullYear(),m.getMonth(),m.getDate()+j));return{dates:a,today:i}}
-function checkStreak(){var y=new Date();y.setDate(y.getDate()-1);if(S.last&&S.last!==dk(new Date())&&S.last!==dk(y)){/* só zera se perdeu um dia de treino previsto */var w=weekDates(),plan=PAT[S.profile.dias],miss=false,d=new Date(S.last);d.setDate(d.getDate()+1);var t=dk(new Date());while(dk(d)<t){var wd=(d.getDay()+6)%7;if(plan[wd]!=="R"){miss=true;break}d.setDate(d.getDate()+1)}if(miss){S.streak=0;save()}}}
+/* ---------- Backup ---------- */
+function exportText(t,name){var b=new Blob([t],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1000)}
+function pickImport(){var i=document.createElement("input");i.type="file";i.accept="application/json,.json";i.onchange=function(){var f=i.files[0];if(!f)return;if(f.size>1000000){alert("Arquivo grande demais (máximo 1 MB).");return}
+ var rd=new FileReader();rd.onerror=function(){alert("Não foi possível ler o arquivo.")};rd.onload=function(){var r=CF.parseBackup(String(rd.result));if(!r.ok){alert("Backup recusado:\n- "+r.errors.slice(0,5).join("\n- ")+"\n\nNenhum dado foi alterado.");return}
+  if(!confirm("Substituir os dados atuais pelo backup? Uma cópia dos dados atuais será guardada neste aparelho."))return;
+  try{localStorage.setItem(KEY+":antes-importar",JSON.stringify(S))}catch(e){}
+  S=r.state;blocked=false;loadErr=null;if(S.active)pauseActive();save();S.profile?renderHome():renderOb()};rd.readAsText(f)};i.click()}
+function renderRecovery(){view('<div class="hero"><h1>Não consegui carregar seus dados</h1><p>Seus dados originais foram preservados e não foram apagados.</p></div><div class="card"><b>O que foi encontrado:</b><ul>'+loadErr.map(function(x){return"<li>"+esc(x)+"</li>"}).join("")+'</ul></div><div class="row"><button class="btn" id="im">Restaurar de um backup</button></div><div class="row"><button class="btn sec" id="ex">Baixar cópia dos dados antigos</button></div><button class="link" id="fr">Começar do zero (a cópia antiga fica guardada)</button>');
+ $("im").onclick=pickImport;$("ex").onclick=function(){exportText(rawBad||"","crowfit-dados-antigos.json")};
+ $("fr").onclick=function(){if(confirm("Começar do zero? Os dados antigos continuam guardados em uma cópia neste aparelho.")){blocked=false;loadErr=null;S=CF.emptyState();save();renderOb()}}}
 
 /* ---------- Onboarding ---------- */
 var QS=[
@@ -114,67 +140,106 @@ var QS=[
 {k:"idade",q:"Quantos anos você tem?",type:"number",ph:"Idade",min:12,max:90},
 {k:"peso",q:"Quanto você pesa (kg)?",type:"number",ph:"Peso em kg",min:30,max:250},
 {k:"altura",q:"Qual é a sua altura (cm)?",type:"number",ph:"Altura em cm",min:120,max:230},
-{k:"exp",q:"Qual é a sua experiência com exercícios?",type:"chips",o:["Nunca treinei","Treino às vezes","Treino sempre"]},
+{k:"exp",q:"Qual é a sua experiência com exercícios?",type:"chips",o:CF.EXP},
 {k:"dias",q:"Quantos dias por semana quer treinar?",type:"chips",o:["3","4","5","6"]}];
-function renderOb(){var s=ob.step;if(s===0&&!ob.started){app.innerHTML='<div class="hero pop">'+raven(150,"happy")+'<img class="logo" src="logo.png" alt="Crowfit"><p>Treinos sem equipamento. Um dia de cada vez, com ofensiva e pontos.</p></div><button class="btn" id="go">Começar</button>';$("go").onclick=function(){ob.started=1;renderOb()};return}
-var q=QS[s],pct=Math.round(s/QS.length*100),h='<div class="bar" aria-hidden="true"><i style="width:'+pct+'%"></i></div><div class="center" style="margin:18px 0">'+raven(80)+'</div><h2 class="center">'+q.q+'</h2><div style="margin-top:18px">';
-if(q.type==="chips"){h+='<div class="chips" style="justify-content:center">'+q.o.map(function(o){return'<button class="chip'+(ob.d[q.k]===o?" on":"")+'" data-v="'+o+'">'+o+'</button>'}).join("")+'</div>'}
-else h+='<input id="in" type="'+q.type+'" inputmode="'+(q.type==="number"?"numeric":"text")+'" placeholder="'+q.ph+'" value="'+(ob.d[q.k]||"")+'" '+(q.min?'min="'+q.min+'" max="'+q.max+'"':"")+' aria-label="'+q.q+'">';
-h+='</div><p id="err" class="center" style="color:#E5484D;min-height:24px"></p><div class="row">'+(s>0?'<button class="btn sec" id="bk" style="width:40%">Voltar</button>':"")+'<button class="btn" id="nx">'+(s===QS.length-1?"Montar meu plano":"Continuar")+'</button></div>';
-app.innerHTML=h;
-document.querySelectorAll(".chip").forEach(function(c){c.onclick=function(){ob.d[q.k]=c.dataset.v;renderOb()}});
-if($("bk"))$("bk").onclick=function(){ob.step--;renderOb()};
-if($("in"))$("in").focus();
-$("nx").onclick=function(){var v;if(q.type==="chips"){v=ob.d[q.k];if(!v){$("err").textContent="Escolha uma opção.";return}}else{v=$("in").value.trim();if(!v){$("err").textContent="Preencha para continuar.";return}if(q.type==="number"){v=+v;if(v<q.min||v>q.max){$("err").textContent="Digite um valor entre "+q.min+" e "+q.max+".";return}}}
-ob.d[q.k]=v;if(s<QS.length-1){ob.step++;renderOb()}else{S.profile={nome:ob.d.nome,idade:+ob.d.idade,peso:+ob.d.peso,altura:+ob.d.altura,exp:ob.d.exp,dias:+ob.d.dias};save();renderHome()}}}
+function renderOb(){var s=ob.step;
+ if(s===0&&!ob.started){view('<div class="hero pop">'+raven(150,"happy")+'<img class="logo" src="logo.png" alt="Crowfit"><p>Treinos sem equipamento. Um dia de cada vez, com ofensiva e pontos.</p><p class="tip">O Crowfit não substitui avaliação profissional. Se sentir dor ou tontura, pare.</p></div><button class="btn" id="go">Começar</button>');$("go").onclick=function(){ob.started=1;renderOb()};return}
+ var q=QS[s],pct=Math.round(s/QS.length*100),h='<div class="bar" aria-hidden="true"><i style="width:'+pct+'%"></i></div><div class="center" style="margin:18px 0">'+raven(80)+'</div><h2 class="center">'+q.q+'</h2><div style="margin-top:18px">';
+ if(q.type==="chips")h+='<div class="chips" style="justify-content:center">'+q.o.map(function(o){return'<button class="chip'+(String(ob.d[q.k])===o?" on":"")+'" data-v="'+CF.escAttr(o)+'">'+esc(o)+'</button>'}).join("")+'</div>';
+ else h+='<input id="in" type="'+q.type+'" inputmode="'+(q.type==="number"?"numeric":"text")+'" placeholder="'+CF.escAttr(q.ph)+'" '+(q.min?'min="'+q.min+'" max="'+q.max+'"':'maxlength="40"')+' aria-label="'+CF.escAttr(q.q)+'">';
+ h+='</div><p id="err" class="center" role="alert" style="color:#E5484D;min-height:24px"></p><div class="row">'+(s>0?'<button class="btn sec" id="bk" style="width:40%">Voltar</button>':"")+'<button class="btn" id="nx">'+(s===QS.length-1?"Montar meu plano":"Continuar")+'</button></div>';
+ view(h);
+ if($("in")){$("in").value=ob.d[q.k]==null?"":String(ob.d[q.k]);$("in").focus()}
+ document.querySelectorAll(".chip").forEach(function(c){c.onclick=function(){ob.d[q.k]=c.getAttribute("data-v");renderOb()}});
+ if($("bk"))$("bk").onclick=function(){ob.step--;renderOb()};
+ $("nx").onclick=function(){var v,E=$("err");
+  if(q.type==="chips"){v=ob.d[q.k];if(v==null||v===""){E.textContent="Escolha uma opção.";return}}
+  else{v=$("in").value.trim();if(!v){E.textContent="Preencha para continuar.";return}
+   if(q.type==="number"){v=Number(v);if(!isFinite(v)||v<q.min||v>q.max||(q.k==="idade"&&!Number.isInteger(v))){E.textContent="Digite um valor entre "+q.min+" e "+q.max+".";return}}
+   else if(v.length>40){E.textContent="Use no máximo 40 caracteres.";return}}
+  ob.d[q.k]=v;
+  if(s<QS.length-1){ob.step++;renderOb();return}
+  var r=CF.validateProfile({nome:ob.d.nome,idade:ob.d.idade,peso:ob.d.peso,altura:ob.d.altura,exp:ob.d.exp,dias:Number(ob.d.dias)});
+  if(!r.ok){E.textContent=r.errors[0];return}
+  S.profile=r.profile;CF.setPlan(S,r.profile.dias,today());save();renderHome()}}
 
 /* ---------- Home ---------- */
-function lvlInfo(){var l=Math.floor(S.points/200)+1;return{l:l,pct:(S.points%200)/200*100}}
-function renderHome(){checkStreak();var p=S.profile,lv=level(p),w=weekDates(),plan=PAT[p.dias],li=lvlInfo(),todayKey=dk(new Date()),doneToday=!!S.done[todayKey];
-var nDone=0,nPlan=0;w.dates.forEach(function(d,i){if(plan[i]!=="R"){nPlan++;if(S.done[dk(d)])nDone++}});
-var h='<div class="top"><div class="stat" title="Ofensiva">🔥 '+S.streak+'</div><div class="stat" title="Nível">'+raven(36)+' Nv '+li.l+'</div><div class="stat" title="Pontos">⭐ '+S.points+'</div></div>';
-h+='<div class="bar" aria-label="Progresso do nível" style="margin-bottom:6px"><i style="width:'+li.pct+'%;background:var(--gold)"></i></div><small style="color:var(--mute)">'+(200-S.points%200)+' pontos para o nível '+(li.l+1)+'</small>';
-h+='<div class="hero">'+raven(110,doneToday?"happy":"")+'<h1>Olá, '+esc(p.nome)+'!</h1><p>'+(doneToday?"Treino de hoje concluído. Ofensiva garantida!":plan[w.today]==="R"?"Hoje é dia de descanso. Seu corpo agradece.":"Seu treino de hoje está pronto.")+'</p></div>';
-h+='<div class="card"><b>Semana: '+nDone+' de '+nPlan+' treinos</b><div class="bar" style="margin-top:8px"><i style="width:'+(nDone/nPlan*100)+'%"></i></div></div><div class="path">';
-w.dates.forEach(function(d,i){var t=plan[i],k=dk(d),isT=i===w.today,done=!!S.done[k],cls,ico,sub;
-if(t==="R"){cls="rest";ico="🌙";sub="Descanso e recuperação"}
-else if(done){cls="done";ico="✓";sub="Concluído"}
-else if(isT){cls="today";ico="▶";sub="Toque para começar"}
-else if(i<w.today){cls="locked";ico="–";sub="Não realizado"}
-else{cls="locked";ico="🔒";sub="Em breve"}
-var title=t==="R"?"Descanso":SES[t].n;
-h+='<button class="node '+cls+'" '+(cls==="today"?'data-go="1"':"disabled")+'><span class="dot">'+ico+'</span><span><small>'+DIAS[i]+(isT?" · hoje":"")+'</small><b>'+title+'</b><small>'+sub+'</small></span></button>'});
-h+='</div><button class="link" id="reset">Refazer perfil e plano</button>';
-app.innerHTML=h;
-var g=document.querySelector("[data-go]");if(g)g.onclick=function(){startSession(plan[w.today],lv)};
-$("reset").onclick=function(){if(confirm("Refazer o perfil? Seus pontos e sua ofensiva são mantidos.")){S.profile=null;save();ob={step:0,d:{}};renderOb()}}}
-function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function lvlInfo(){return{l:Math.floor(S.points/200)+1,pct:(S.points%200)/200*100}}
+function weekDates(){var n=new Date(),i=(n.getDay()+6)%7,m=new Date(n.getFullYear(),n.getMonth(),n.getDate()-i),a=[];for(var j=0;j<7;j++)a.push(new Date(m.getFullYear(),m.getMonth(),m.getDate()+j));return{dates:a,today:i}}
+function renderHome(){var p=S.profile,w=weekDates(),plan=CF.PAT[p.dias],li=lvlInfo(),t=today(),b4=S.streak+"/"+S.best;CF.refreshStreak(S,t);if(b4!==S.streak+"/"+S.best)save();
+ var doneToday=!!S.done[t],a=S.active,nDone=0,nPlan=0;
+ w.dates.forEach(function(d,i){if(plan[i]!=="R"){nPlan++;if(S.done[CF.dateKey(d)])nDone++}});
+ var h='<div class="top"><div class="stat" title="Ofensiva atual">🔥 '+S.streak+'</div><div class="stat" title="Nível">'+raven(36)+' Nv '+li.l+'</div><div class="stat" title="Pontos">⭐ '+S.points+'</div></div>';
+ h+='<div class="bar" role="img" aria-label="Progresso do nível" style="margin-bottom:6px"><i style="width:'+li.pct+'%;background:var(--gold)"></i></div><small style="color:var(--mute)">'+(200-S.points%200)+' pontos para o nível '+(li.l+1)+' · Melhor ofensiva: '+S.best+(S.best===1?" dia":" dias")+'</small>';
+ h+='<div class="hero">'+raven(110,doneToday?"happy":"")+'<h1>Olá, '+esc(p.nome)+'!</h1><p>'+(doneToday?"Treino de hoje concluído. Ofensiva garantida!":plan[w.today]==="R"?"Hoje é dia de descanso. Seu corpo agradece.":"Seu treino de hoje está pronto.")+'</p></div>';
+ if(a)h+='<div class="card" style="margin-bottom:14px"><b>Treino em andamento</b><div>'+esc(SES[a.type].n)+' · exercício '+Math.min(a.exIdx+1,a.exercises.length)+' de '+a.exercises.length+'</div><div class="row"><button class="btn" id="rs">Retomar</button><button class="btn sec" id="ab">Abandonar</button></div></div>';
+ h+='<div class="card"><b>Semana: '+nDone+' de '+nPlan+' treinos</b><div class="bar" style="margin-top:8px"><i style="width:'+(nPlan?nDone/nPlan*100:0)+'%"></i></div></div><div class="path">';
+ w.dates.forEach(function(d,i){var ty=plan[i],k=CF.dateKey(d),isT=i===w.today,done=!!S.done[k],cls,ico,sub,go=false;
+  if(ty==="R"){cls="rest";ico="🌙";sub="Descanso e recuperação"}
+  else if(done){cls="done";ico="✓";sub=isT?"Concluído · toque para sessão extra (sem bônus)":"Concluído";go=isT}
+  else if(isT){cls="today";ico="▶";sub="Toque para começar";go=true}
+  else if(i<w.today){cls="locked";ico="–";sub="Não realizado"}
+  else{cls="locked";ico="🔒";sub="Em breve"}
+  h+='<button class="node '+cls+'" '+(go?'data-go="1"':"disabled")+'><span class="dot" aria-hidden="true">'+ico+'</span><span><small>'+DIAS[i]+(isT?" · hoje":"")+'</small><b>'+(ty==="R"?"Descanso":esc(SES[ty].n))+'</b><small>'+sub+'</small></span></button>'});
+ h+='</div><div class="row" style="margin-top:22px"><button class="btn sec" id="xb">Exportar backup</button><button class="btn sec" id="ib">Importar backup</button></div><button class="link" id="reset">Refazer perfil e plano</button>';
+ view(h);
+ var g=document.querySelector("[data-go]");if(g)g.onclick=function(){if(S.active){renderHome();return}startSession(plan[w.today])};
+ if($("rs"))$("rs").onclick=function(){S.active.status="in_progress";renderEx()};
+ if($("ab"))$("ab").onclick=function(){if(confirm("Abandonar este treino? As séries feitas ficam no histórico, mas sem bônus de conclusão.")){CF.abandonSession(S,S.active,Date.now());S.active=null;save();renderHome()}};
+ $("xb").onclick=function(){exportText(CF.makeBackup(S),"crowfit-backup-"+t+".json")};$("ib").onclick=pickImport;
+ $("reset").onclick=function(){if(S.active){alert("Termine ou abandone o treino em andamento antes de refazer o plano.");return}if(confirm("Refazer o perfil? Seus pontos, histórico e ofensiva são mantidos.")){S.profile=null;save();ob={step:0,d:{}};renderOb()}}}
 
 /* ---------- Treino ---------- */
-function startSession(type,lv){sess={type:type,list:buildSession(type,lv),i:0,pts:0,did:0};renderEx()}
-function renderEx(){clearInterval(tm);var e=sess.list[sess.i],pct=Math.round(sess.i/sess.list.length*100);
-var tgt=e.t==="s"?e.val+" segundos":(e.sets>1?e.sets+" × "+e.val:e.val)+" repetições";if(e.t==="s"&&e.sets>1)tgt=e.sets+" × "+e.val+" segundos";
-var h='<div class="row" style="align-items:center;margin:0 0 20px"><button class="chip" id="x" aria-label="Sair do treino">✕</button><div class="bar" style="flex:1"><i style="width:'+pct+'%"></i></div></div>';
-h+='<div class="card center pop"><div>'+raven(70)+'</div><h2 style="margin-top:10px">'+e.n+'</h2><div class="big" id="tg">'+tgt+'</div><p class="tip">'+e.tip+'</p>';
-if(e.t==="s")h+='<button class="btn sec" id="tmr" style="margin-bottom:14px">Iniciar cronômetro de '+e.val+'s</button>';
-h+='<button class="btn" id="ok">Concluí (+10)</button><button class="link" id="sk" style="margin-top:14px">Pular exercício</button></div><p class="center" style="color:var(--mute)">Exercício '+(sess.i+1)+' de '+sess.list.length+'</p>';
-app.innerHTML=h;
-$("x").onclick=function(){if(confirm("Sair do treino? O progresso desta sessão será perdido.")){clearInterval(tm);renderHome()}};
-$("ok").onclick=function(){sess.pts+=10;sess.did++;next()};$("sk").onclick=next;
-if($("tmr"))$("tmr").onclick=function(){var t=e.val,b=$("tmr");b.disabled=true;$("tg").textContent=t+"s";tm=setInterval(function(){t--;$("tg").textContent=t+"s";if(t<=0){clearInterval(tm);$("tg").textContent="Tempo!";b.textContent="Feito!"}},1000)}}
-function next(){sess.i++;if(sess.i<sess.list.length)renderEx();else finish()}
-function finish(){clearInterval(tm);var k=dk(new Date()),bonus=0,first=!S.done[k];
-if(sess.did>0&&first){bonus=20;var y=new Date();y.setDate(y.getDate()-1);S.streak=(S.last===dk(y)||S.streak>0&&S.last&&prevWasRest(S.last))?S.streak+1:1;if(S.last===k)S.streak=Math.max(S.streak,1);S.best=Math.max(S.best||0,S.streak);S.last=k;S.done[k]=true}
-var gain=sess.pts+bonus;S.points+=gain;save();
-app.innerHTML='<div class="hero pop">'+raven(150,"happy")+'<h1>'+(sess.did?"Treino concluído!":"Treino encerrado")+'</h1><p>'+sess.did+' de '+sess.list.length+' exercícios feitos</p></div><div class="card center"><div class="big" style="color:var(--gold)">+'+gain+'</div><div>pontos'+(bonus?" (bônus de treino completo incluído)":"")+'</div><div style="margin-top:14px;font-family:Fredoka;font-size:22px">🔥 Ofensiva: '+S.streak+(S.streak===1?" dia":" dias")+'</div></div><div style="margin-top:18px"><button class="btn" id="hm">Voltar ao plano</button></div>';
-$("hm").onclick=renderHome}
-/* ofensiva continua se os dias entre o último treino e hoje eram descanso */
-function prevWasRest(last){var plan=PAT[S.profile.dias],d=new Date(last);d.setDate(d.getDate()+1);var t=dk(new Date());while(dk(d)<t){if(plan[(d.getDay()+6)%7]!=="R")return false;d.setDate(d.getDate()+1)}return true}
+function buildSession(type,lv){return SES[type].ex.map(function(k){var parts=k.split("|"),id=parts.length>1&&lv>=1?parts[1]:parts[0],e=EX[id],opt=(id==="po"||id==="al");
+ return{id:id,n:e.n,t:e.t,val:e.v[lv],optional:opt,sets:opt?1:(lv===0?2:3),rest:lv===0?30:45}})}
+function startSession(type){var lv=CF.levelFor(S.profile,S.adjust),t=today();S.active=CF.newSession(type,buildSession(type,lv),t,Date.now(),S.profile.dias,!!S.done[t]);save();renderEx()}
+function cur(){var a=S.active;return a&&a.exercises[a.exIdx]}
+function renderEx(){var a=S.active,ex=cur();if(!ex){finish();return}CF.syncStatus(ex);
+ var pct=Math.round(a.exIdx/a.exercises.length*100),tip=EX[ex.exerciseId]?EX[ex.exerciseId].tip:"",T=ex.timer,n=ex.setIdx+1;
+ var chips=ex.sets.map(function(s,i){var c=s.completed?" ok":(i===ex.setIdx&&!ex.restPending?" cur":"");return'<span class="sp'+c+'">'+(s.completed?"✓ ":"")+'Série '+(i+1)+'</span>'}).join("");
+ var h='<div class="row" style="align-items:center;margin:0 0 20px"><button class="chip" id="x" aria-label="Sair do treino">✕</button><div class="bar" style="flex:1" role="img" aria-label="Progresso do treino"><i style="width:'+pct+'%"></i></div></div>';
+ h+='<div class="card center pop"><div>'+raven(70)+'</div><h2 style="margin-top:10px">'+esc(ex.name)+'</h2><p class="tip" style="margin:6px 0">Exercício '+(a.exIdx+1)+' de '+a.exercises.length+(ex.optional?" · opcional":"")+(a.extra?" · sessão extra":"")+'</p><div class="sets">'+chips+'</div>';
+ if(ex.restPending){var rt=T&&T.kind==="rest";
+  h+='<p><b>Descanso</b> antes da série '+n+' de '+ex.sets.length+'</p><div class="big" id="tg">'+(rt?CF.timerSecs(T):ex.rest)+'s</div>';
+  if(!rt)h+='<button class="btn" id="rst">Iniciar descanso</button>';
+  else h+='<button class="btn sec" id="'+(T.state==="paused"?"rsm":"pse")+'">'+(T.state==="paused"?"Retomar":"Pausar")+'</button>';
+  h+='<button class="link" id="rsk" style="margin-top:14px">Pular descanso</button>'}
+ else{h+='<p><b>Série '+n+' de '+ex.sets.length+'</b></p>';
+  if(ex.kind==="s"){var st=T?T.state:"idle";h+='<div class="big" id="tg">'+(T?CF.timerSecs(T):ex.target)+'s</div>';
+   if(st==="idle")h+='<button class="btn" id="ts">Iniciar série ('+ex.target+'s)</button>';
+   else if(st==="running")h+='<button class="btn sec" id="pse">Pausar</button>';
+   else if(st==="paused")h+='<button class="btn sec" id="rsm">Retomar</button>';
+   h+='<button class="btn" id="ok" style="margin-top:12px" '+(st==="time_completed"?"":"disabled")+'>Concluir série '+n+' (+10 ao fim)</button>'}
+  else h+='<div class="big">'+ex.target+' repetições</div><p class="tip">'+esc(tip)+'</p><button class="btn" id="ok">Concluí a série '+n+'</button>';
+  if(ex.kind==="s")h+='<p class="tip">'+esc(tip)+'</p>';
+  h+='<button class="link" id="sk" style="margin-top:14px">Pular exercício</button>'}
+ h+='<p class="tip" style="font-size:13px">Sentiu dor ou tontura? Pare e procure orientação profissional.</p></div>';
+ view(h);
+ var B=function(id,f){var e=$(id);if(e)e.onclick=function(){if(act())f()}};
+ B("x",function(){if(confirm("Sair e continuar depois? Seu progresso fica salvo.")){a.status="interrupted";persist();renderHome()}});
+ B("ts",function(){ex.timer=CF.timerStart(ex.target,"work",Date.now());CF.syncStatus(ex);persist();renderEx()});
+ B("pse",function(){CF.timerPause(ex.timer,Date.now());CF.syncStatus(ex);persist();renderEx()});
+ B("rsm",function(){CF.timerResume(ex.timer,Date.now());CF.syncStatus(ex);persist();renderEx()});
+ B("rst",function(){ex.timer=CF.timerStart(ex.rest,"rest",Date.now());persist();renderEx()});
+ B("rsk",function(){ex.restPending=false;ex.timer=null;CF.syncStatus(ex);persist();say("Descanso pulado");renderEx()});
+ B("ok",function(){var r=CF.completeSet(a,Date.now());if(!r.ok){say("Não foi possível concluir a série: "+({timer:"termine o tempo primeiro",rest:"faça o descanso ou pule-o"}[r.reason]||"ação inválida"));renderEx();return}
+  if(r.exerciseDone){var p=CF.grantExercise(S,a,ex);say("Exercício concluído"+(p?". +"+p+" pontos":". Sem novos pontos"));next()}else{persist();say("Série concluída");renderEx()}});
+ B("sk",function(){CF.skipExercise(a);say("Exercício pulado");next()});
+ if(T&&T.state==="running")loop()}
+function next(){var fin=CF.advance(S.active);persist();fin?finish():renderEx()}
+function loop(){clearInterval(tm);tm=setInterval(function(){var ex=cur();if(!ex||!ex.timer||ex.timer.state!=="running")return;CF.timerTick(ex.timer,Date.now());
+ if(ex.timer.state==="time_completed"){clearInterval(tm);if(ex.timer.kind==="rest"){ex.restPending=false;ex.timer=null;say("Descanso terminado")}else say("Tempo concluído. Conclua a série.");CF.syncStatus(ex);persist();renderEx()}
+ else{var g=$("tg");if(g)g.textContent=CF.timerSecs(ex.timer)+"s"}},250)}
+function finish(){var a=S.active,st=CF.finishSession(S,a,Date.now(),today());S.active=null;save();var ok=st==="completed";
+ view('<div class="hero pop">'+raven(150,ok?"happy":"")+'<h1>'+(ok?"Treino concluído!":"Treino encerrado")+'</h1><p>'+(ok?"Você completou todos os exercícios obrigatórios.":"Há exercícios obrigatórios pendentes: sem bônus de treino completo e o dia não conta para a ofensiva.")+'</p></div><div class="card center"><div class="big" style="color:var(--gold)">+'+a.points+'</div><div>pontos nesta sessão'+(a.extra?" (sessão extra)":"")+'</div><div style="margin-top:14px;font-family:Fredoka;font-size:22px">🔥 Ofensiva: '+S.streak+(S.streak===1?" dia":" dias")+'</div></div>'+
+ (ok?'<div class="card center" style="margin-top:14px"><b>Como foi o treino?</b><div class="chips" style="justify-content:center;margin-top:10px"><button class="chip" data-f="hard">Foi difícil</button><button class="chip" data-f="ok">No ponto</button><button class="chip" data-f="easy">Foi fácil</button></div><p class="tip" id="fm"></p></div>':"")+'<div style="margin-top:18px"><button class="btn" id="hm">Voltar ao plano</button></div>');
+ document.querySelectorAll("[data-f]").forEach(function(c){c.onclick=function(){if(a.feedback)return;a.feedback=c.getAttribute("data-f");CF.applyFeedback(S,a.feedback);save();document.querySelectorAll("[data-f]").forEach(function(x){x.classList.toggle("on",x===c);x.disabled=true});$("fm").textContent=a.feedback==="hard"?"Anotado. O próximo treino fica mais leve.":a.feedback==="easy"?"Anotado. Subimos a dificuldade depois de 3 treinos fáceis seguidos.":"Anotado."}});
+ $("hm").onclick=renderHome}
 
-if(S.profile)renderHome();else renderOb();
-
-
-if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}
+/* ---------- Início ---------- */
+load();
+if(loadErr&&blocked)renderRecovery();else S.profile?renderHome():renderOb();
+if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(e){console.warn("Crowfit: service worker não registrado",e)})})}
 </script>
 </body>
 </html>
