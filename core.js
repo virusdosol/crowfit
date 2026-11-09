@@ -37,6 +37,21 @@ function validateProfile(p) {
   if (DIAS_OK.indexOf(p.dias) < 0) e.push("Dias por semana deve ser 3, 4, 5 ou 6");
   return e.length ? { ok: false, errors: e } : { ok: true, errors: [], profile: { nome: nome, idade: p.idade, peso: p.peso, altura: p.altura, exp: p.exp, dias: p.dias } };
 }
+/* Estados v1 (app antigo) aceitavam idade decimal e nome longo. Normaliza só isso, sem inventar dados:
+   o restante do perfil continua passando pela validação normal. */
+function normalizeProfileV1(p) {
+  if (!p || typeof p !== "object" || Array.isArray(p)) return p;
+  var q = {}; Object.keys(p).forEach(function (k) { q[k] = p[k]; });
+  if (typeof q.nome === "string") q.nome = q.nome.replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, 40).trim();
+  if (typeof q.idade === "number" && isFinite(q.idade)) q.idade = Math.round(q.idade);
+  return q;
+}
+function validTimer(t) {
+  if (t === null) return true;
+  return !!t && typeof t === "object" && (t.kind === "work" || t.kind === "rest") && ["running", "paused", "time_completed"].indexOf(t.state) >= 0 &&
+    isInt(t.total, 1, 600) && typeof t.remaining === "number" && isFinite(t.remaining) && t.remaining >= 0 && t.remaining <= 600000 &&
+    (t.endAt === null || (typeof t.endAt === "number" && isFinite(t.endAt)));
+}
 function validSession(s) {
   if (!s || typeof s !== "object" || typeof s.id !== "string" || s.id.length > 64) return false;
   if (!DATE_RE.test(s.date) || STATUS.indexOf(s.status) < 0 || "PLCF".indexOf(s.type) < 0 || s.type.length !== 1) return false;
@@ -45,6 +60,7 @@ function validSession(s) {
   return s.exercises.every(function (x) {
     return x && typeof x.exerciseId === "string" && x.exerciseId.length <= 20 && typeof x.name === "string" && x.name.length <= 80 &&
       (x.kind === "r" || x.kind === "s") && isInt(x.target, 1, 600) && EXST.indexOf(x.status) >= 0 && isInt(x.rest, 0, 600) &&
+      typeof x.restPending === "boolean" && validTimer(x.timer === undefined ? null : x.timer) &&
       Array.isArray(x.sets) && x.sets.length >= 1 && x.sets.length <= 10 && isInt(x.setIdx, 0, x.sets.length) &&
       x.sets.every(function (t) { return t && isInt(t.index, 1, 10) && isInt(t.target, 1, 600) && isInt(t.completedReps, 0, 600) && isInt(t.seconds, 0, 600) && typeof t.completed === "boolean"; });
   });
@@ -54,7 +70,7 @@ function validateState(raw) {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return { ok: false, errors: ["Formato inválido"], warnings: [], state: null };
   var v = raw.version === undefined ? 1 : raw.version;
   if (v !== 1 && v !== 2) er.push("Versão do formato não suportada");
-  if (raw.profile !== null && raw.profile !== undefined) { var r = validateProfile(raw.profile); if (r.ok) st.profile = r.profile; else er = er.concat(r.errors); }
+  if (raw.profile !== null && raw.profile !== undefined) { var r = validateProfile(v === 1 ? normalizeProfileV1(raw.profile) : raw.profile); if (r.ok) st.profile = r.profile; else er = er.concat(r.errors); }
   ["points", "streak", "best"].forEach(function (k) { var x = raw[k] === undefined ? 0 : raw[k]; if (isInt(x, 0, 1e7)) st[k] = x; else er.push("Campo inválido: " + k); });
   if (raw.last === undefined || raw.last === "" || DATE_RE.test(raw.last)) st.last = raw.last || ""; else er.push("Campo inválido: last");
   function obj(k, maxKeys, keyOk) {

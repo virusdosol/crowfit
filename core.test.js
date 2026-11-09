@@ -101,3 +101,23 @@ test("sessão ativa: aceita retomada e rejeita estrutura corrompida", () => {
   const r = CF.validateState(JSON.parse(JSON.stringify(S))); assert.ok(r.ok); assert.equal(r.state.active.exIdx, 0);
   const bad = JSON.parse(JSON.stringify(S)); bad.active.exercises[0].sets = "x"; const r2 = CF.validateState(bad); assert.ok(r2.ok); assert.equal(r2.state.active, null); assert.ok(r2.warnings.length);
 });
+
+test("migração v1: idade decimal e nome longo do app antigo são normalizados, não rejeitados", () => {
+  const base = { points: 50, streak: 2, best: 3, last: "2026-11-01", done: { "2026-11-01": true } };
+  const a = CF.validateState({ ...base, profile: { ...prof, idade: 30.5 } });
+  assert.ok(a.ok); assert.equal(a.state.profile.idade, 31); assert.equal(a.state.points, 50); assert.equal(a.state.best, 3);
+  const b = CF.validateState({ ...base, profile: { ...prof, nome: "x".repeat(60) } });
+  assert.ok(b.ok); assert.equal(b.state.profile.nome.length, 40);
+  /* a normalização vale só para v1: v2 continua estrito; v1 com dado realmente inválido continua rejeitado */
+  assert.ok(!CF.validateState({ ...base, version: 2, profile: { ...prof, idade: 30.5 } }).ok);
+  assert.ok(!CF.validateState({ ...base, profile: { ...prof, peso: 5 } }).ok);
+  assert.ok(!CF.validateState({ ...base, profile: { ...prof, nome: "   " } }).ok);
+});
+test("sessão ativa: timer corrompido é descartado com aviso, sem derrubar o estado", () => {
+  const mkState = (timer) => { const S = CF.emptyState(); S.profile = prof; S.planHistory = [{ from: "1970-01-01", dias: 4 }]; const s = mk(); s.exercises[0].timer = timer; S.active = s; return JSON.parse(JSON.stringify(S)); };
+  const good = CF.validateState(mkState(CF.timerStart(30, "work", 1000))); assert.ok(good.ok); assert.ok(good.state.active);
+  for (const bad of [{ kind: "work", state: "running", total: "abc", remaining: "x", endAt: {} }, { kind: "x", state: "running", total: 5, remaining: 1, endAt: 1 },
+    { kind: "work", state: "running", total: 5, remaining: -1, endAt: 1 }, { kind: "work", state: "zzz", total: 5, remaining: 1, endAt: 1 }, "texto", 7]) {
+    const r = CF.validateState(mkState(bad)); assert.ok(r.ok, JSON.stringify(bad)); assert.equal(r.state.active, null); assert.equal(r.warnings.length, 1);
+  }
+});

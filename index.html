@@ -101,7 +101,7 @@ L:{n:"Pernas e glúteos",ex:["po","ag","af","pg","ag_s","pa","al"]},
 C:{n:"Abdômen e core",ex:["po","ab","pr","bi","pe","mc","al"]},
 F:{n:"Corpo todo",ex:["po","ag","fl_j|fl","mc","pg","pr","bu|bi","al"]}};
 var DIAS=["Segunda","Terça","Quarta","Quinta","Sexta","Sábado","Domingo"];
-var KEY="corvofit-v1",S=null,loadErr=null,blocked=false,rawBad=null,tm=null,lastAct=0,ob={step:0,d:{}};
+var KEY="corvofit-v1",S=null,loadErr=null,blocked=false,rawBad=null,bakOk=false,tm=null,lastAct=0,ob={step:0,d:{}};
 var $=function(id){return document.getElementById(id)},app=$("app"),esc=CF.escText,today=function(){return CF.dateKey(new Date())};
 function say(t){var l=$("live");if(l)l.textContent=t}
 function banner(m){var b=$("bn");if(b){b.textContent=m||"";b.hidden=!m}}
@@ -113,7 +113,7 @@ function load(){var raw=null;
  try{raw=localStorage.getItem(KEY)}catch(e){loadErr=["Armazenamento indisponível neste navegador."];S=CF.emptyState();banner("Armazenamento indisponível: seu progresso NÃO será salvo.");return}
  if(!raw){S=CF.emptyState();return}
  var o,r;try{o=JSON.parse(raw);r=CF.validateState(o)}catch(e){r={ok:false,errors:["O arquivo salvo está corrompido (JSON inválido)."]}}
- if(!r.ok){rawBad=raw;loadErr=r.errors.slice(0,6);blocked=true;S=CF.emptyState();try{localStorage.setItem(KEY+":corrompido",raw)}catch(e){console.error("Crowfit: não foi possível copiar os dados antigos",e)}console.error("Crowfit: dados locais inválidos",r.errors);return}
+ if(!r.ok){rawBad=raw;loadErr=r.errors.slice(0,6);blocked=true;S=CF.emptyState();try{localStorage.setItem(KEY+":corrompido",raw);bakOk=true}catch(e){console.error("Crowfit: não foi possível copiar os dados antigos",e)}console.error("Crowfit: dados locais inválidos",r.errors);return}
  S=r.state;if(S.active)pauseActive()}
 function save(){
  if(blocked){banner("Dados não carregados: nada será salvo até você restaurar um backup ou começar do zero.");return false}
@@ -130,9 +130,9 @@ function pickImport(){var i=document.createElement("input");i.type="file";i.acce
   if(!confirm("Substituir os dados atuais pelo backup? Uma cópia dos dados atuais será guardada neste aparelho."))return;
   try{localStorage.setItem(KEY+":antes-importar",JSON.stringify(S))}catch(e){}
   S=r.state;blocked=false;loadErr=null;if(S.active)pauseActive();save();S.profile?renderHome():renderOb()};rd.readAsText(f)};i.click()}
-function renderRecovery(){view('<div class="hero"><h1>Não consegui carregar seus dados</h1><p>Seus dados originais foram preservados e não foram apagados.</p></div><div class="card"><b>O que foi encontrado:</b><ul>'+loadErr.map(function(x){return"<li>"+esc(x)+"</li>"}).join("")+'</ul></div><div class="row"><button class="btn" id="im">Restaurar de um backup</button></div><div class="row"><button class="btn sec" id="ex">Baixar cópia dos dados antigos</button></div><button class="link" id="fr">Começar do zero (a cópia antiga fica guardada)</button>');
+function renderRecovery(){view('<div class="hero"><h1>Não consegui carregar seus dados</h1><p>'+(bakOk?"Seus dados originais foram preservados e não foram apagados.":"Seus dados originais ainda não foram apagados, mas não coube uma cópia de segurança neste aparelho. Baixe a cópia abaixo antes de qualquer outra ação.")+'</p></div><div class="card"><b>O que foi encontrado:</b><ul>'+loadErr.map(function(x){return"<li>"+esc(x)+"</li>"}).join("")+'</ul></div><div class="row"><button class="btn" id="im">Restaurar de um backup</button></div><div class="row"><button class="btn sec" id="ex">Baixar cópia dos dados antigos</button></div><button class="link" id="fr">Começar do zero (a cópia antiga fica guardada)</button>');
  $("im").onclick=pickImport;$("ex").onclick=function(){exportText(rawBad||"","crowfit-dados-antigos.json")};
- $("fr").onclick=function(){if(confirm("Começar do zero? Os dados antigos continuam guardados em uma cópia neste aparelho.")){blocked=false;loadErr=null;S=CF.emptyState();save();renderOb()}}}
+ $("fr").onclick=function(){if(confirm(bakOk?"Começar do zero? Os dados antigos continuam guardados em uma cópia neste aparelho.":"ATENÇÃO: não foi possível guardar uma cópia dos dados antigos neste aparelho. Se continuar, eles serão apagados. Use antes \"Baixar cópia dos dados antigos\". Começar do zero mesmo assim?")){blocked=false;loadErr=null;S=CF.emptyState();save();renderOb()}}}
 
 /* ---------- Onboarding ---------- */
 var QS=[

@@ -2,7 +2,7 @@
    Versionamento: aumente CACHE_VERSION a cada publicação que mude arquivos.
    Só mexemos em caches que começam com o prefixo "crowfit-cache-"; caches de outros apps da mesma origem são preservados. */
 var PREFIX = "crowfit-cache-";
-var CACHE_VERSION = 2;
+var CACHE_VERSION = 3;
 var CACHE = PREFIX + "v" + CACHE_VERSION;
 var CORE = ["./", "./index.html", "./core.js", "./manifest.json", "./icon-192.png", "./icon-512.png", "./icon-180.png", "./icon-maskable-512.png", "./mascot.png", "./logo.png"];
 
