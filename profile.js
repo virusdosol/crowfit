@@ -1,37 +1,64 @@
 /* Crowfit — perfil remoto do usuário (Supabase, tabela public.profiles).
    Expõe window.CrowfitProfile. Não lê nem escreve nenhuma chave de localStorage (o progresso "corvofit-v1" não é tocado).
    O perfil fica só em memória: é descartado no logout / troca de conta e nunca é guardado no aparelho.
-   O app só LÊ e ATUALIZA display_name; a criação do perfil é feita pelo banco (trigger). Tudo passa por RLS. */
+   O app LÊ e ATUALIZA display_name. A criação normal é feita pelo banco (trigger). Se o perfil não existir,
+   o app pede ao banco a recuperação via RPC ensure_my_profile(), que usa auth.uid() (nunca um id vindo daqui).
+   Tudo passa por RLS. */
 (function (global, doc) {
   'use strict';
   var Auth = global.CrowfitAuth;
   if (!Auth) return;
 
-  var NAME_MIN = 2, NAME_MAX = 40;
+  var NAME_MIN = 2, NAME_MAX = 40, TIMEOUT_MS = 15000;
   var COLS = 'id, display_name, created_at, updated_at';
   var MSG = {
     network: 'Sem conexão com a internet. Seu treino continua funcionando; tente o perfil de novo quando a rede voltar.',
+    unavailable: 'O servidor não respondeu agora. Tente novamente em instantes.',
     session: 'Sua sessão expirou. Entre novamente.',
-    missing: 'Seu perfil ainda não foi criado. Tente de novo em instantes.',
+    forbidden: 'Você não tem permissão para acessar este perfil.',
+    internal: 'Algo deu errado no servidor. Tente novamente em instantes.',
+    createFail: 'Não foi possível preparar o seu perfil agora. Tente novamente em instantes.',
     generic: 'Algo deu errado. Tente novamente.',
     badData: 'Os dados do perfil estão em um formato inesperado. Tente novamente mais tarde.',
     notSaved: 'Não foi possível salvar. Tente novamente.',
-    switched: 'A conta mudou durante o salvamento. Nada foi alterado.'
+    switched: 'A conta mudou durante o salvamento. Nada foi alterado.',
+    busy: 'Aguarde o salvamento em andamento.'
   };
 
-  var state = { status: 'idle', userId: '', profile: null, error: '' }; /* status: idle | loading | ready | missing | error */
+  /* status: idle | loading | ready | error.
+     errorKind (só em status "error"): network | unavailable | session | forbidden | internal | data */
+  var state = { status: 'idle', userId: '', profile: null, error: '', errorKind: '' };
   var listeners = [];
-  var seq = 0;          /* invalida respostas de consultas antigas (troca de conta / logout) */
-  var saving = false;
+  var acct = 0;      /* época da conta: muda só quando o usuário muda (troca de conta / logout) */
+  var loadSeq = 0;   /* invalida respostas de carregamentos antigos da mesma conta */
+  var saving = false;   /* trava da interface */
+  var inflight = false; /* trava da API pública */
 
   /* ---------- utilitários ---------- */
-  function mapError(err) {
+
+  /* Classifica uma falha. Só "network"/"unavailable" são temporárias; nenhuma delas significa "perfil inexistente". */
+  function classify(err, status) {
     var msg = String((err && err.message) || '').toLowerCase();
     var code = String((err && err.code) || '');
-    if ((global.navigator && global.navigator.onLine === false) || msg.indexOf('failed to fetch') !== -1 ||
-        msg.indexOf('network') !== -1 || msg.indexOf('load failed') !== -1) return MSG.network;
-    if (code === 'PGRST301' || msg.indexOf('jwt') !== -1) return MSG.session;
-    return MSG.generic;
+    var name = String((err && err.name) || '');
+    var st = Number(status || (err && err.status) || 0);
+    if ((global.navigator && global.navigator.onLine === false) || name === 'TimeoutError' || name === 'AbortError' ||
+        msg.indexOf('failed to fetch') !== -1 || msg.indexOf('network') !== -1 || msg.indexOf('load failed') !== -1) return 'network';
+    if (code === 'PGRST301' || code === 'PGRST302' || code === '28000' || st === 401 || msg.indexOf('jwt') !== -1) return 'session';
+    if (code === '42501' || st === 403) return 'forbidden';
+    if (st === 408 || st === 429 || st === 502 || st === 503 || st === 504) return 'unavailable';
+    return 'internal';
+  }
+
+  function withTimeout(p) {
+    var t;
+    var timer = new Promise(function (_, reject) {
+      t = setTimeout(function () { reject({ name: 'TimeoutError', message: 'network timeout' }); }, TIMEOUT_MS);
+    });
+    return Promise.race([Promise.resolve(p), timer]).then(
+      function (v) { clearTimeout(t); return v; },
+      function (e) { clearTimeout(t); throw e; }
+    );
   }
 
   /* Valida a linha recebida: precisa ser do usuário atual e ter display_name textual. */
@@ -43,7 +70,7 @@
   function validateName(raw) {
     var v = String(raw == null ? '' : raw).replace(/\s+/g, ' ').trim();
     if (!v) return { ok: false, message: 'Digite um nome.' };
-    if (/[\u0000-\u001F\u007F]/.test(v)) return { ok: false, message: 'O nome tem caracteres inválidos.' };
+    if (/[\u0000-\u001F\u007F-\u009F\u2028\u2029]/.test(v)) return { ok: false, message: 'O nome tem caracteres inválidos.' };
     var n = Array.from(v).length;
     if (n < NAME_MIN) return { ok: false, message: 'Use ao menos ' + NAME_MIN + ' caracteres.' };
     if (n > NAME_MAX) return { ok: false, message: 'Use no máximo ' + NAME_MAX + ' caracteres.' };
@@ -52,7 +79,7 @@
 
   function snapshot() {
     return {
-      status: state.status, userId: state.userId, error: state.error,
+      status: state.status, userId: state.userId, error: state.error, errorKind: state.errorKind,
       profile: state.profile ? { id: state.profile.id, displayName: state.profile.displayName, createdAt: state.profile.createdAt, updatedAt: state.profile.updatedAt } : null
     };
   }
@@ -61,24 +88,52 @@
     listeners.slice().forEach(function (fn) { try { fn(snap); } catch (e) { /* ignora erro de listener */ } });
   }
   function setState(next) { state = next; emit(); }
+  function setError(uid, kind, message) {
+    setState({ status: 'error', userId: uid, profile: null, error: message, errorKind: kind });
+  }
+  function failFrom(uid, err, status, creating) {
+    var kind = classify(err, status);
+    /* Só o código vai para o console (nunca tokens nem dados do usuário). */
+    try { if (global.console && console.warn) console.warn('[Crowfit] perfil:', kind, (err && err.code) || ''); } catch (e) {}
+    setError(uid, kind, (creating && kind === 'internal') ? MSG.createFail : MSG[kind]);
+  }
 
   /* ---------- acesso aos dados ---------- */
   async function load(uid) {
-    var my = ++seq;
-    setState({ status: 'loading', userId: uid, profile: null, error: '' });
+    var my = ++loadSeq, ep = acct;
+    function stale() { return my !== loadSeq || ep !== acct || state.userId !== uid; }
+    setState({ status: 'loading', userId: uid, profile: null, error: '', errorKind: '' });
     var client = Auth.getClient && Auth.getClient();
-    if (!client) { setState({ status: 'error', userId: uid, profile: null, error: MSG.network }); return; }
+    if (!client) { setError(uid, 'network', MSG.network); return; }
+    if (global.navigator && global.navigator.onLine === false) { setError(uid, 'network', MSG.network); return; }
     try {
-      var r = await client.from('profiles').select(COLS).eq('id', uid).maybeSingle();
-      if (my !== seq) return; /* sessão trocou/encerrou enquanto esperava: descarta */
-      if (r.error) { setState({ status: 'error', userId: uid, profile: null, error: mapError(r.error) }); return; }
-      if (!r.data) { setState({ status: 'missing', userId: uid, profile: null, error: MSG.missing }); return; }
+      var r = await withTimeout(client.from('profiles').select(COLS).eq('id', uid).maybeSingle());
+      if (stale()) return; /* conta trocou/encerrou, ou há um carregamento mais novo: descarta */
+      if (r.error) { failFrom(uid, r.error, r.status, false); return; }
+      if (!r.data) { await recover(uid, client, stale); return; } /* consulta OK e sem linha: perfil realmente ausente */
       var p = toProfile(r.data, uid);
-      if (!p) { setState({ status: 'error', userId: uid, profile: null, error: MSG.badData }); return; }
-      setState({ status: 'ready', userId: uid, profile: p, error: '' });
+      if (!p) { setError(uid, 'data', MSG.badData); return; }
+      setState({ status: 'ready', userId: uid, profile: p, error: '', errorKind: '' });
     } catch (e) {
-      if (my !== seq) return;
-      setState({ status: 'error', userId: uid, profile: null, error: mapError(e) });
+      if (stale()) return;
+      failFrom(uid, e, 0, false);
+    }
+  }
+
+  /* Recuperação do perfil ausente. O banco decide o id com auth.uid(); aqui não se envia id algum.
+     A função é idempotente: se o perfil já existir, devolve o existente sem alterar nada. */
+  async function recover(uid, client, stale) {
+    try {
+      var r = await withTimeout(client.rpc('ensure_my_profile'));
+      if (stale()) return;
+      if (r.error) { failFrom(uid, r.error, r.status, true); return; }
+      var row = Array.isArray(r.data) ? r.data[0] : r.data;
+      var p = toProfile(row, uid); /* rejeita qualquer linha que não seja do usuário atual */
+      if (!p) { setError(uid, 'internal', MSG.createFail); return; }
+      setState({ status: 'ready', userId: uid, profile: p, error: '', errorKind: '' });
+    } catch (e) {
+      if (stale()) return;
+      failFrom(uid, e, 0, true);
     }
   }
 
@@ -93,21 +148,27 @@
     if (!v.ok) return { ok: false, message: v.message };
     var uid = state.userId;
     if (!uid || state.status !== 'ready') return { ok: false, message: MSG.generic };
+    if (inflight) return { ok: false, message: MSG.busy };
     var client = Auth.getClient && Auth.getClient();
     if (!client) return { ok: false, message: MSG.network };
-    var my = seq;
+    if (global.navigator && global.navigator.onLine === false) return { ok: false, message: MSG.network };
+    var ep = acct;
+    inflight = true;
     try {
       /* O filtro .eq('id', uid) é só conveniência: quem garante o isolamento é a RLS no banco. */
-      var r = await client.from('profiles').update({ display_name: v.value }).eq('id', uid).select(COLS).maybeSingle();
-      if (my !== seq || state.userId !== uid) return { ok: false, message: MSG.switched };
-      if (r.error) return { ok: false, message: mapError(r.error) };
+      var r = await withTimeout(client.from('profiles').update({ display_name: v.value }).eq('id', uid).select(COLS).maybeSingle());
+      if (ep !== acct || state.userId !== uid) return { ok: false, message: MSG.switched };
+      if (r.error) return { ok: false, message: MSG[classify(r.error, r.status)] };
       var p = r.data && toProfile(r.data, uid);
-      if (!p) return { ok: false, message: MSG.notSaved }; /* 0 linhas atualizadas: RLS bloqueou ou perfil sumiu */
-      setState({ status: 'ready', userId: uid, profile: p, error: '' });
+      /* 0 linhas: o perfil sumiu (ou a RLS bloqueou). Sinaliza para recarregar/recuperar. */
+      if (!p) return { ok: false, message: MSG.notSaved, missing: true };
+      setState({ status: 'ready', userId: uid, profile: p, error: '', errorKind: '' });
       return { ok: true };
     } catch (e) {
-      if (my !== seq || state.userId !== uid) return { ok: false, message: MSG.switched };
-      return { ok: false, message: mapError(e) };
+      if (ep !== acct || state.userId !== uid) return { ok: false, message: MSG.switched };
+      return { ok: false, message: MSG[classify(e, 0)] };
+    } finally {
+      inflight = false;
     }
   }
 
@@ -116,9 +177,11 @@
     if (!snap.ready) return;
     var uid = (snap.user && snap.user.id) || '';
     if (uid !== state.userId) {
-      seq++;                       /* descarta qualquer consulta em andamento da conta anterior */
-      if (!uid) { setState({ status: 'idle', userId: '', profile: null, error: '' }); }
-      else { load(uid); }          /* troca de conta: estado antigo é apagado em load() antes de qualquer render */
+      acct++; loadSeq++;           /* descarta qualquer consulta/salvamento em andamento da conta anterior */
+      draft = null; uiMsg = null;  /* rascunho e mensagens da conta anterior nunca passam para a próxima */
+      if (panelOpen) closePanel(false); /* o painel nunca atravessa uma troca de conta */
+      if (!uid) setState({ status: 'idle', userId: '', profile: null, error: '', errorKind: '' });
+      else load(uid);              /* o estado antigo é apagado em load() antes de qualquer render */
     }
     updateChip(snap);
     if (panelOpen && (!uid || snap.recovery)) closePanel(false);
@@ -176,7 +239,7 @@
     reapplyInert();
     var f = doc.activeElement; if (f && f !== doc.body && !panel.contains(f) && f.blur) f.blur();
     renderPanel(true);
-    if (state.status === 'error' || state.status === 'missing') refresh(); /* reabrir tenta de novo */
+    if (state.status === 'error') refresh(); /* reabrir tenta de novo */
   }
 
   function closePanel(restoreFocus) {
@@ -208,10 +271,15 @@
   var CLOSE = '<button class="cf-btn cf-btn-ghost" type="button" data-prof-close>Fechar</button>';
   var LOGOUT = '<div class="cf-links"><button class="cf-link" type="button" data-crowfit-logout>Sair da conta</button></div>';
 
-  function renderPanel(focus) {
+  /* keepTyped: re-render disparado por mudança de estado (não pelo usuário): preserva o que está sendo digitado. */
+  function renderPanel(focus, keepTyped) {
     if (!panel || !panelOpen || saving) return;
     var snap = Auth.getState();
     var st = state.status, h;
+    if (keepTyped && st === 'ready') {
+      var cur = panel.querySelector('#cf-prof-name');
+      if (cur) draft = cur.value;
+    }
     if (st === 'ready') {
       h = HEAD + '<p class="cf-sub">Como você aparece no Crowfit. <span class="cf-acct" data-acct></span></p>' +
         '<p class="cf-msg" role="status" aria-live="polite" data-msg hidden></p>' +
@@ -220,9 +288,9 @@
         '<input id="cf-prof-name" name="name" type="text" autocomplete="name" maxlength="' + (NAME_MAX * 2) + '" required>' +
         '<p class="cf-hint">De ' + NAME_MIN + ' a ' + NAME_MAX + ' caracteres.</p></div>' +
         '<button class="cf-btn cf-btn-main" type="submit" data-label="Salvar">Salvar</button></form>' + CLOSE + LOGOUT + '</div>';
-    } else if (st === 'missing' || st === 'error') {
-      h = HEAD + '<p class="cf-msg error" role="alert" data-err></p>' +
-        '<button class="cf-btn cf-btn-main" type="button" data-prof-retry>Tentar de novo</button>' + CLOSE + LOGOUT + '</div>';
+    } else if (st === 'error') {
+      var retry = state.errorKind === 'session' ? '' : '<button class="cf-btn cf-btn-main" type="button" data-prof-retry>Tentar de novo</button>';
+      h = HEAD + '<p class="cf-msg error" role="alert" data-err></p>' + retry + CLOSE + LOGOUT + '</div>';
     } else {
       h = HEAD + '<div class="cf-spin" role="status" aria-label="Carregando"></div>' + CLOSE + '</div>';
     }
@@ -238,7 +306,7 @@
       if (uiMsg) setMsg(uiMsg.text, uiMsg.kind);
       panel.querySelector('[data-prof-form]').addEventListener('submit', onSubmit);
       if (focus) { try { input.focus(); input.select(); } catch (e) {} }
-    } else if (st === 'missing' || st === 'error') {
+    } else if (st === 'error') {
       var er = panel.querySelector('[data-err]');
       if (er) er.textContent = state.error || MSG.generic;
       if (focus) { var t = panel.querySelector('.cf-title'); if (t) t.focus(); }
@@ -255,22 +323,25 @@
     var v = validateName(raw);
     if (!v.ok) { setMsg(v.message, 'error'); return; }
     if (state.profile && v.value === state.profile.displayName) { draft = null; uiMsg = { text: 'Seu nome já está assim.', kind: 'ok' }; setMsg(uiMsg.text, 'ok'); return; }
+    var uid = state.userId;
     saving = true; setBusy(true); setMsg('');
     var r = await updateDisplayName(raw);
     saving = false;
+    if (state.userId !== uid) return; /* a conta mudou: o painel já foi fechado e nada da conta antiga é reaproveitado */
     if (r.ok) { draft = null; uiMsg = { text: 'Nome atualizado.', kind: 'ok' }; }
     else { draft = raw; uiMsg = { text: r.message, kind: 'error' }; }
     renderPanel(false);
     var inp = panel && panel.querySelector('#cf-prof-name');
     if (inp && !r.ok) { try { inp.focus(); } catch (x) {} }
+    if (!r.ok && r.missing) refresh(); /* perfil sumiu: recarrega e tenta a recuperação segura */
   }
 
   /* Mantém o painel em dia quando o estado do perfil muda (carregando -> pronto, erro, etc.). */
-  listeners.push(function () { renderPanel(false); });
+  listeners.push(function () { renderPanel(false, true); });
 
-  /* Quando a rede volta, tenta de novo sem o usuário precisar fazer nada. */
+  /* Quando a rede volta, tenta de novo só se o erro foi temporário (rede/servidor). */
   global.addEventListener('online', function () {
-    if (state.userId && (state.status === 'error' || state.status === 'missing') && !saving) refresh();
+    if (state.userId && state.status === 'error' && (state.errorKind === 'network' || state.errorKind === 'unavailable') && !saving) refresh();
   });
 
   global.CrowfitProfile = {
