@@ -81,7 +81,7 @@ input{width:100%;border:2px solid var(--line);border-radius:14px;padding:12px;fo
 <script src="auth-ui.js"></script>
 <script src="core.js"></script>
 <script>
-function raven(sz){sz=sz||96;return '<img class="mascot" src="mascot.png" height="'+sz+'" alt="Crowfit, o corvo mascote" style="height:'+sz+'px;width:auto">'}
+function mascote(sz){sz=sz||96;return '<img class="mascot" src="mascot.png" height="'+sz+'" alt="Crowfit, o urso polar mascote" style="height:'+sz+'px;width:auto">'}
 var EX={
 fl_j:{n:"Flexão com joelhos no chão",t:"r",v:[8,12,16],tip:"Corpo reto dos joelhos à cabeça. Desça até o peito quase tocar o chão."},
 fl:{n:"Flexão de braço",t:"r",v:[6,12,20],tip:"Mãos na largura dos ombros, cotovelos a 45° do corpo."},
@@ -107,6 +107,7 @@ L:{n:"Pernas e glúteos",ex:["po","ag","af","pg","ag_s","pa","al"]},
 C:{n:"Abdômen e core",ex:["po","ab","pr","bi","pe","mc","al"]},
 F:{n:"Corpo todo",ex:["po","ag","fl_j|fl","mc","pg","pr","bu|bi","al"]}};
 var DIAS=["Segunda","Terça","Quarta","Quinta","Sexta","Sábado","Domingo"];
+/* "corvofit-v1" é o nome histórico da chave: NÃO renomear (preserva o progresso já salvo). */
 var KEY="corvofit-v1",S=null,loadErr=null,blocked=false,rawBad=null,bakOk=false,tm=null,lastAct=0,ob={step:0,d:{}};
 var $=function(id){return document.getElementById(id)},app=$("app"),esc=CF.escText,today=function(){return CF.dateKey(new Date())};
 function say(t){var l=$("live");if(l)l.textContent=t}
@@ -126,7 +127,13 @@ function save(){
  try{var js=JSON.stringify(S);localStorage.setItem(KEY,js);if(localStorage.getItem(KEY)!==js)throw new Error("a verificação da gravação falhou");banner("");return true}
  catch(e){console.error("Crowfit: falha ao salvar",e);banner("Alterações NÃO salvas ("+(e&&e.name==="QuotaExceededError"?"armazenamento cheio":"erro de gravação")+"). Exporte um backup.");return false}}
 function persist(){var a=S.active,ex=a&&a.exercises[a.exIdx];if(ex&&ex.timer)CF.timerTick(ex.timer,Date.now());return save()}
-function pauseActive(){S.active.exercises.forEach(function(e){if(e.timer&&e.timer.state==="running"){e.timer.state="paused";e.timer.endAt=null;if(e.status==="running")e.status="paused"}})}
+/* Ao carregar/importar: cada cronômetro "running" é fechado com base em endAt. Se ainda resta tempo, pausa e preserva o restante;
+   se acabou, conclui (remaining=0, endAt=null). Descanso concluído é liberado como no loop(). Não concede pontos. */
+function pauseActive(){var now=Date.now();S.active.exercises.forEach(function(e){var t=e.timer;if(!t||t.state!=="running")return;
+ CF.timerTick(t,now);
+ if(t.state==="time_completed"){t.remaining=0;t.endAt=null;if(t.kind==="rest"){e.restPending=false;e.timer=null}}
+ else CF.timerPause(t,now);
+ CF.syncStatus(e)})}
 window.addEventListener("error",function(e){console.error("Crowfit:",e.error||e.message);banner("Ocorreu um erro inesperado. Recarregue a página; seus dados salvos não foram apagados.")});
 
 /* ---------- Backup ---------- */
@@ -149,8 +156,8 @@ var QS=[
 {k:"exp",q:"Qual é a sua experiência com exercícios?",type:"chips",o:CF.EXP},
 {k:"dias",q:"Quantos dias por semana quer treinar?",type:"chips",o:["3","4","5","6"]}];
 function renderOb(){var s=ob.step;
- if(s===0&&!ob.started){view('<div class="hero pop">'+raven(150,"happy")+'<img class="logo" src="logo.png" alt="Crowfit"><p>Treinos sem equipamento. Um dia de cada vez, com ofensiva e pontos.</p><p class="tip">O Crowfit não substitui avaliação profissional. Se sentir dor ou tontura, pare.</p></div><button class="btn" id="go">Começar</button>');$("go").onclick=function(){ob.started=1;renderOb()};return}
- var q=QS[s],pct=Math.round(s/QS.length*100),h='<div class="bar" aria-hidden="true"><i style="width:'+pct+'%"></i></div><div class="center" style="margin:18px 0">'+raven(80)+'</div><h2 class="center">'+q.q+'</h2><div style="margin-top:18px">';
+ if(s===0&&!ob.started){view('<div class="hero pop">'+mascote(150)+'<img class="logo" src="logo.png" alt="Crowfit"><p>Treinos sem equipamento. Um dia de cada vez, com ofensiva e pontos.</p><p class="tip">O Crowfit não substitui avaliação profissional. Se sentir dor ou tontura, pare.</p></div><button class="btn" id="go">Começar</button>');$("go").onclick=function(){ob.started=1;renderOb()};return}
+ var q=QS[s],pct=Math.round(s/QS.length*100),h='<div class="bar" aria-hidden="true"><i style="width:'+pct+'%"></i></div><div class="center" style="margin:18px 0">'+mascote(80)+'</div><h2 class="center">'+q.q+'</h2><div style="margin-top:18px">';
  if(q.type==="chips")h+='<div class="chips" style="justify-content:center">'+q.o.map(function(o){return'<button class="chip'+(String(ob.d[q.k])===o?" on":"")+'" data-v="'+CF.escAttr(o)+'">'+esc(o)+'</button>'}).join("")+'</div>';
  else h+='<input id="in" type="'+q.type+'" inputmode="'+(q.type==="number"?"numeric":"text")+'" placeholder="'+CF.escAttr(q.ph)+'" '+(q.min?'min="'+q.min+'" max="'+q.max+'"':'maxlength="40"')+' aria-label="'+CF.escAttr(q.q)+'">';
  h+='</div><p id="err" class="center" role="alert" style="color:#E5484D;min-height:24px"></p><div class="row">'+(s>0?'<button class="btn sec" id="bk" style="width:40%">Voltar</button>':"")+'<button class="btn" id="nx">'+(s===QS.length-1?"Montar meu plano":"Continuar")+'</button></div>';
@@ -175,9 +182,9 @@ function weekDates(){var n=new Date(),i=(n.getDay()+6)%7,m=new Date(n.getFullYea
 function renderHome(){var p=S.profile,w=weekDates(),plan=CF.PAT[p.dias],li=lvlInfo(),t=today(),b4=S.streak+"/"+S.best;CF.refreshStreak(S,t);if(b4!==S.streak+"/"+S.best)save();
  var doneToday=!!S.done[t],a=S.active,nDone=0,nPlan=0;
  w.dates.forEach(function(d,i){if(plan[i]!=="R"){nPlan++;if(S.done[CF.dateKey(d)])nDone++}});
- var h='<div class="top"><div class="stat" title="Ofensiva atual">🔥 '+S.streak+'</div><div class="stat" title="Nível">'+raven(36)+' Nv '+li.l+'</div><div class="stat" title="Pontos">⭐ '+S.points+'</div></div>';
+ var h='<div class="top"><div class="stat" title="Ofensiva atual">🔥 '+S.streak+'</div><div class="stat" title="Nível">'+mascote(36)+' Nv '+li.l+'</div><div class="stat" title="Pontos">⭐ '+S.points+'</div></div>';
  h+='<div class="bar" role="img" aria-label="Progresso do nível" style="margin-bottom:6px"><i style="width:'+li.pct+'%;background:var(--gold)"></i></div><small style="color:var(--mute)">'+(200-S.points%200)+' pontos para o nível '+(li.l+1)+' · Melhor ofensiva: '+S.best+(S.best===1?" dia":" dias")+'</small>';
- h+='<div class="hero">'+raven(110,doneToday?"happy":"")+'<h1>Olá, '+esc(p.nome)+'!</h1><p>'+(doneToday?"Treino de hoje concluído. Ofensiva garantida!":plan[w.today]==="R"?"Hoje é dia de descanso. Seu corpo agradece.":"Seu treino de hoje está pronto.")+'</p></div>';
+ h+='<div class="hero">'+mascote(110)+'<h1>Olá, '+esc(p.nome)+'!</h1><p>'+(doneToday?"Treino de hoje concluído. Ofensiva garantida!":plan[w.today]==="R"?"Hoje é dia de descanso. Seu corpo agradece.":"Seu treino de hoje está pronto.")+'</p></div>';
  if(a)h+='<div class="card" style="margin-bottom:14px"><b>Treino em andamento</b><div>'+esc(SES[a.type].n)+' · exercício '+Math.min(a.exIdx+1,a.exercises.length)+' de '+a.exercises.length+'</div><div class="row"><button class="btn" id="rs">Retomar</button><button class="btn sec" id="ab">Abandonar</button></div></div>';
  h+='<div class="card"><b>Semana: '+nDone+' de '+nPlan+' treinos</b><div class="bar" style="margin-top:8px"><i style="width:'+(nPlan?nDone/nPlan*100:0)+'%"></i></div></div><div class="path">';
  w.dates.forEach(function(d,i){var ty=plan[i],k=CF.dateKey(d),isT=i===w.today,done=!!S.done[k],cls,ico,sub,go=false;
@@ -204,7 +211,7 @@ function renderEx(){var a=S.active,ex=cur();if(!ex){finish();return}CF.syncStatu
  var pct=Math.round(a.exIdx/a.exercises.length*100),tip=EX[ex.exerciseId]?EX[ex.exerciseId].tip:"",T=ex.timer,n=ex.setIdx+1;
  var chips=ex.sets.map(function(s,i){var c=s.completed?" ok":(i===ex.setIdx&&!ex.restPending?" cur":"");return'<span class="sp'+c+'">'+(s.completed?"✓ ":"")+'Série '+(i+1)+'</span>'}).join("");
  var h='<div class="row" style="align-items:center;margin:0 0 20px"><button class="chip" id="x" aria-label="Sair do treino">✕</button><div class="bar" style="flex:1" role="img" aria-label="Progresso do treino"><i style="width:'+pct+'%"></i></div></div>';
- h+='<div class="card center pop"><div>'+raven(70)+'</div><h2 style="margin-top:10px">'+esc(ex.name)+'</h2><p class="tip" style="margin:6px 0">Exercício '+(a.exIdx+1)+' de '+a.exercises.length+(ex.optional?" · opcional":"")+(a.extra?" · sessão extra":"")+'</p><div class="sets">'+chips+'</div>';
+ h+='<div class="card center pop"><div>'+mascote(70)+'</div><h2 style="margin-top:10px">'+esc(ex.name)+'</h2><p class="tip" style="margin:6px 0">Exercício '+(a.exIdx+1)+' de '+a.exercises.length+(ex.optional?" · opcional":"")+(a.extra?" · sessão extra":"")+'</p><div class="sets">'+chips+'</div>';
  if(ex.restPending){var rt=T&&T.kind==="rest";
   h+='<p><b>Descanso</b> antes da série '+n+' de '+ex.sets.length+'</p><div class="big" id="tg">'+(rt?CF.timerSecs(T):ex.rest)+'s</div>';
   if(!rt)h+='<button class="btn" id="rst">Iniciar descanso</button>';
@@ -237,7 +244,7 @@ function loop(){clearInterval(tm);tm=setInterval(function(){var ex=cur();if(!ex|
  if(ex.timer.state==="time_completed"){clearInterval(tm);if(ex.timer.kind==="rest"){ex.restPending=false;ex.timer=null;say("Descanso terminado")}else say("Tempo concluído. Conclua a série.");CF.syncStatus(ex);persist();renderEx()}
  else{var g=$("tg");if(g)g.textContent=CF.timerSecs(ex.timer)+"s"}},250)}
 function finish(){var a=S.active,st=CF.finishSession(S,a,Date.now(),today());S.active=null;save();var ok=st==="completed";
- view('<div class="hero pop">'+raven(150,ok?"happy":"")+'<h1>'+(ok?"Treino concluído!":"Treino encerrado")+'</h1><p>'+(ok?"Você completou todos os exercícios obrigatórios.":"Há exercícios obrigatórios pendentes: sem bônus de treino completo e o dia não conta para a ofensiva.")+'</p></div><div class="card center"><div class="big" style="color:var(--gold)">+'+a.points+'</div><div>pontos nesta sessão'+(a.extra?" (sessão extra)":"")+'</div><div style="margin-top:14px;font-family:Fredoka;font-size:22px">🔥 Ofensiva: '+S.streak+(S.streak===1?" dia":" dias")+'</div></div>'+
+ view('<div class="hero pop">'+mascote(150)+'<h1>'+(ok?"Treino concluído!":"Treino encerrado")+'</h1><p>'+(ok?"Você completou todos os exercícios obrigatórios.":"Há exercícios obrigatórios pendentes: sem bônus de treino completo e o dia não conta para a ofensiva.")+'</p></div><div class="card center"><div class="big" style="color:var(--gold)">+'+a.points+'</div><div>pontos nesta sessão'+(a.extra?" (sessão extra)":"")+'</div><div style="margin-top:14px;font-family:Fredoka;font-size:22px">🔥 Ofensiva: '+S.streak+(S.streak===1?" dia":" dias")+'</div></div>'+
  (ok?'<div class="card center" style="margin-top:14px"><b>Como foi o treino?</b><div class="chips" style="justify-content:center;margin-top:10px"><button class="chip" data-f="hard">Foi difícil</button><button class="chip" data-f="ok">No ponto</button><button class="chip" data-f="easy">Foi fácil</button></div><p class="tip" id="fm"></p></div>':"")+'<div style="margin-top:18px"><button class="btn" id="hm">Voltar ao plano</button></div>');
  document.querySelectorAll("[data-f]").forEach(function(c){c.onclick=function(){if(a.feedback)return;a.feedback=c.getAttribute("data-f");CF.applyFeedback(S,a.feedback);save();document.querySelectorAll("[data-f]").forEach(function(x){x.classList.toggle("on",x===c);x.disabled=true});$("fm").textContent=a.feedback==="hard"?"Anotado. O próximo treino fica mais leve.":a.feedback==="easy"?"Anotado. Subimos a dificuldade depois de 3 treinos fáceis seguidos.":"Anotado."}});
  $("hm").onclick=renderHome}

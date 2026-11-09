@@ -1,4 +1,4 @@
-/* Crowfit: lógica pura (sem DOM). Usada pelo app e pelos testes (node --test tests/). */
+/* Crowfit: lógica pura (sem DOM). Usada pelo app (index.html). */
 (function (root, f) { if (typeof module === "object" && module.exports) module.exports = f(); else root.CF = f(); })(typeof self !== "undefined" ? self : this, function () {
 "use strict";
 var EXP = ["Nunca treinei", "Treino às vezes", "Treino sempre"], DIAS_OK = [3, 4, 5, 6];
@@ -48,9 +48,32 @@ function normalizeProfileV1(p) {
 }
 function validTimer(t) {
   if (t === null) return true;
-  return !!t && typeof t === "object" && (t.kind === "work" || t.kind === "rest") && ["running", "paused", "time_completed"].indexOf(t.state) >= 0 &&
-    isInt(t.total, 1, 600) && typeof t.remaining === "number" && isFinite(t.remaining) && t.remaining >= 0 && t.remaining <= 600000 &&
-    (t.endAt === null || (typeof t.endAt === "number" && isFinite(t.endAt)));
+  if (!t || typeof t !== "object" || (t.kind !== "work" && t.kind !== "rest")) return false;
+  if (!isInt(t.total, 1, 600)) return false;
+  if (typeof t.remaining !== "number" || !isFinite(t.remaining) || t.remaining < 0 || t.remaining > 600000) return false;
+  if (t.state === "running") return typeof t.endAt === "number" && isFinite(t.endAt);
+  if (t.state === "paused") return t.endAt === null;
+  if (t.state === "time_completed") return t.remaining === 0 && t.endAt === null;
+  return false;
+}
+/* Compatibilidade com dados antigos: time_completed e paused podiam ser gravados com endAt numérico.
+   Normaliza só isso (em memória); o localStorage não é alterado aqui. */
+function normalizeTimer(t) {
+  if (!t || typeof t !== "object") return t;
+  if (t.state === "time_completed") { t.remaining = 0; t.endAt = null; }
+  else if (t.state === "paused" && t.endAt !== null && t.endAt !== undefined) t.endAt = null;
+  return t;
+}
+/* Cronômetro inválido vira null (o exercício pode ser reiniciado), em vez de descartar a sessão inteira. Devolve quantos foram corrigidos. */
+function sanitizeTimers(ses) {
+  var n = 0;
+  if (!ses || typeof ses !== "object" || !Array.isArray(ses.exercises)) return 0;
+  ses.exercises.forEach(function (x) {
+    if (!x || typeof x !== "object" || x.timer === undefined || x.timer === null) return;
+    normalizeTimer(x.timer);
+    if (!validTimer(x.timer)) { x.timer = null; n++; }
+  });
+  return n;
 }
 function validSession(s) {
   if (!s || typeof s !== "object" || typeof s.id !== "string" || s.id.length > 64) return false;
@@ -66,7 +89,7 @@ function validSession(s) {
   });
 }
 function validateState(raw) {
-  var er = [], wr = [], st = emptyState();
+  var er = [], wr = [], st = emptyState(), fixed = 0;
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return { ok: false, errors: ["Formato inválido"], warnings: [], state: null };
   var v = raw.version === undefined ? 1 : raw.version;
   if (v !== 1 && v !== 2) er.push("Versão do formato não suportada");
@@ -83,7 +106,7 @@ function validateState(raw) {
   obj("rewards", 20000, function (k) { return k.length <= 80; });
   if (raw.history !== undefined) {
     if (!Array.isArray(raw.history) || raw.history.length > 2000) er.push("Histórico inválido");
-    else raw.history.forEach(function (s) { if (validSession(s)) st.history.push(s); else er.push("Sessão inválida no histórico"); });
+    else raw.history.forEach(function (s) { fixed += sanitizeTimers(s); if (validSession(s)) st.history.push(s); else er.push("Sessão inválida no histórico"); });
   }
   if (raw.planHistory !== undefined) {
     if (!Array.isArray(raw.planHistory) || raw.planHistory.length > 200) er.push("Histórico de planos inválido");
@@ -91,7 +114,8 @@ function validateState(raw) {
   }
   if (raw.adjust !== undefined) { if (isInt(raw.adjust, -1, 1)) st.adjust = raw.adjust; else er.push("Campo inválido: adjust"); }
   if (raw.easyStreak !== undefined) { if (isInt(raw.easyStreak, 0, 10)) st.easyStreak = raw.easyStreak; else er.push("Campo inválido: easyStreak"); }
-  if (raw.active) { if (validSession(raw.active)) st.active = raw.active; else wr.push("Treino em andamento inválido foi descartado"); }
+  if (raw.active) { fixed += sanitizeTimers(raw.active); if (validSession(raw.active)) st.active = raw.active; else wr.push("Treino em andamento inválido foi descartado"); }
+  if (fixed) wr.push("Cronômetro com estado inválido foi reiniciado (" + fixed + ")");
   if (st.profile && !st.planHistory.length) st.planHistory.push({ from: "1970-01-01", dias: st.profile.dias }); /* migração v1 -> v2 */
   return { ok: er.length === 0, errors: er, warnings: wr, state: er.length ? null : st };
 }
@@ -134,7 +158,7 @@ function refreshStreak(S, today) { var c = computeStreak(S.done, S.planHistory, 
 function timerStart(sec, kind, now) { return { kind: kind, state: "running", total: sec, remaining: sec * 1000, endAt: now + sec * 1000 }; }
 function timerPause(t, now) { if (t && t.state === "running") { t.remaining = Math.max(0, t.endAt - now); t.state = "paused"; t.endAt = null; } return t; }
 function timerResume(t, now) { if (t && t.state === "paused") { t.endAt = now + t.remaining; t.state = "running"; } return t; }
-function timerTick(t, now) { if (t && t.state === "running") { t.remaining = Math.max(0, t.endAt - now); if (t.remaining === 0) t.state = "time_completed"; } return t; }
+function timerTick(t, now) { if (t && t.state === "running") { t.remaining = Math.max(0, t.endAt - now); if (t.remaining === 0) { t.state = "time_completed"; t.endAt = null; } } return t; }
 function timerSecs(t) { return Math.ceil(t.remaining / 1000); }
 
 /* ---- sessões ---- */

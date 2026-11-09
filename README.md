@@ -11,7 +11,7 @@ Receba um plano semanal sob medida, mantenha sua ofensiva e acumule pontos, como
 
 ![PWA](https://img.shields.io/badge/PWA-instalável-1a1a1a?style=flat-square)
 ![Offline](https://img.shields.io/badge/funciona-offline-444444?style=flat-square)
-![Sem dependências](https://img.shields.io/badge/dependências-zero-ffb703?style=flat-square)
+![Login](https://img.shields.io/badge/login-Supabase-ffb703?style=flat-square)
 ![Mobile first](https://img.shields.io/badge/mobile-first-1a1a1a?style=flat-square)
 
 <img src="logo.png" alt="Crowfit" width="320">
@@ -22,7 +22,7 @@ Receba um plano semanal sob medida, mantenha sua ofensiva e acumule pontos, como
 
 ## O que é
 
-Um app de exercícios **sem nenhum equipamento**. Você responde algumas perguntas, o Crowfit monta a sua semana de treinos com dias de descanso, e o corvo te acompanha a cada sessão. Treinar todo dia previsto aumenta a **ofensiva**, e cada exercício feito rende **pontos**.
+Um app de exercícios **sem nenhum equipamento**. Você responde algumas perguntas, o Crowfit monta a sua semana de treinos com dias de descanso, e o urso polar te acompanha a cada sessão. Treinar todo dia previsto aumenta a **ofensiva**, e cada exercício feito rende **pontos**.
 
 Foi pensado para o celular, para treinar em casa, no quarto ou no parque.
 
@@ -72,7 +72,7 @@ O **nível** (iniciante, intermediário ou avançado) parte da experiência decl
 
 **Aparência**
 - Tema claro e escuro automático.
-- Mascote corvo preto e identidade própria.
+- Mascote: urso polar branco, simples e sem acessórios (a arte nos arquivos de imagem ainda será trocada; veja *Observações*).
 
 ## 📲 Instalar no celular
 
@@ -82,51 +82,67 @@ O **nível** (iniciante, intermediário ou avançado) parte da experiência decl
 
 ## 💾 Seus dados
 
-- Tudo fica **salvo no próprio aparelho**, no armazenamento do navegador. Nada é enviado para servidores.
+- O **progresso** (perfil de treino, pontos, ofensiva e histórico) fica **salvo no próprio aparelho**, no `localStorage` do navegador, na chave `corvofit-v1` (nome histórico, mantido para não perder dados já salvos). O progresso **não é enviado** a nenhum servidor.
 - Se a gravação falhar (por exemplo, armazenamento cheio), o app mostra um aviso fixo "Alterações NÃO salvas".
 - Se os dados salvos estiverem corrompidos, o app **não os apaga**: mostra uma tela de recuperação e guarda uma cópia.
 - Limpar os dados do navegador ou desinstalar o app **apaga o seu progresso**.
 - Faça backup em **Exportar backup** (arquivo `.json`) na tela inicial e restaure em **Importar backup**, inclusive em outro aparelho. A importação valida o arquivo antes de trocar os dados.
 - Para refazer o plano, use **Refazer perfil e plano**. Pontos, histórico e ofensiva são mantidos.
 
+## 🔐 Conta e login
+
+- A **autenticação Supabase está integrada ao código**: cadastro e login por e-mail e senha, login com Google, recuperação e troca de senha e logout. A sessão fica salva no navegador.
+- Ao entrar, o app só libera as telas de treino com uma sessão ativa. Se o aparelho já teve login e está sem internet, o app abre mesmo assim.
+- **Sair da conta não apaga o progresso local.** O progresso não é separado por conta: quem entrar neste navegador vê o progresso salvo nele.
+- **Perfil remoto: ainda não implementado.** O perfil de treino continua só no aparelho.
+- **Sincronização entre aparelhos: ainda não implementada.** Entrar em outro aparelho não traz o progresso; use Exportar e Importar backup.
+- O **SDK do Supabase** é uma dependência externa, carregada de `cdn.jsdelivr.net` (versão fixada) e guardada em cache pelo service worker.
+- A chave publicável do Supabase em `supabase-config.js` é pública por design. Nunca coloque ali `service_role`, senhas ou o Client Secret do Google.
+
+**Configuração externa necessária (feita no painel do Supabase e no Google, e ainda por validar na prática):**
+- Supabase, *Authentication > URL Configuration*: Site URL com o endereço real do app e, em Redirect URLs, o endereço de retorno exato (com e sem `index.html`) e `http://localhost:PORTA/**` para testes locais.
+- Supabase, *Authentication > Providers*: e-mail (decidir sobre "Confirm email") e Google (Client ID e Secret só no painel do Supabase).
+- Google Cloud: URI de redirecionamento autorizado `https://gqhcknwuqwudctanigyf.supabase.co/auth/v1/callback`.
+- E-mails: o SMTP padrão do Supabase tem limite baixo de envios; para uso real, configure um SMTP próprio.
+
 ## 🛠 Para quem quer mexer no código
 
-É um app em HTML, CSS e JavaScript puro, sem build e sem dependências. Os arquivos do app ficam todos na mesma pasta; só os testes ficam em `tests/`.
+É um app em HTML, CSS e JavaScript puro, sem build. A única dependência externa é o SDK do Supabase (via CDN). Todos os arquivos ficam na mesma pasta (raiz do repositório).
 
 ```
 crowfit/
 ├── index.html              # telas e estilo
 ├── core.js                 # regras (validação, pontos, séries, ofensiva)
+├── supabase-config.js      # URL e chave publicável do Supabase
+├── auth.js                 # lógica de autenticação
+├── auth-ui.js              # telas de login, cadastro e recuperação
+├── auth.css                # estilo das telas de autenticação
 ├── manifest.json           # nome, cores e ícones do PWA
 ├── sw.js                   # service worker (cache offline)
-├── mascot.png              # o corvo mascote
+├── mascot.png              # mascote
 ├── logo.png                # nome Crowfit em letras
 ├── icon-180.png            # ícone do iPhone
 ├── icon-192.png
 ├── icon-512.png
-├── icon-maskable-512.png   # ícone adaptável do Android
-└── tests/
-    └── core.test.js        # testes automatizados
+└── icon-maskable-512.png   # ícone adaptável do Android
 ```
 
 Para rodar localmente, sirva a pasta com qualquer servidor estático (por exemplo `python3 -m http.server`) e abra `http://localhost:8000`. O service worker só funciona em `localhost` ou `https`.
 
-Para publicar a sua cópia: faça um fork, vá em **Settings > Pages**, escolha a branch `main` e a pasta `/ (root)`.
+Para publicar a sua cópia: faça um fork, vá em **Settings > Pages**, escolha a branch `main` e a pasta `/ (root)`. O login só funciona depois de configurar o seu próprio projeto Supabase (veja *Conta e login*).
 
-**Testes:** com o Node.js 18 ou mais novo, rode `node --test tests/core.test.js`. Não há nada para instalar.
-
-**Atualizando o app:** depois de mudar um arquivo, aumente `CACHE_VERSION` no `sw.js`. O service worker usa a rede primeiro para HTML, JS e JSON, então a versão nova chega assim que houver conexão. Ele só apaga caches que começam com `crowfit-cache-`.
+**Atualizando o app:** depois de mudar um arquivo, aumente `CACHE_VERSION` no `sw.js`. O service worker usa a rede primeiro para HTML, JS e JSON, então a versão nova chega assim que houver conexão. Ele só apaga caches que começam com `crowfit-cache-`, e nunca intercepta nem guarda requisições ao Supabase. Se trocar a versão do SDK, altere a URL no `index.html` **e** no `sw.js`.
 
 Os exercícios e as sessões ficam nos objetos `EX` e `SES` dentro do `index.html`. Os padrões semanais (`PAT`) ficam no `core.js`.
 
 ## Ainda não tem
 
+- Perfil remoto (tabela de perfis no Supabase).
+- Sincronização do progresso entre aparelhos.
 - Ilustrações ou vídeos dos exercícios.
 - Conquistas, ligas e amigos.
 - Lembretes diários.
-- Sincronização entre aparelhos.
 - Tela de histórico de sessões (os dados já são gravados).
-- Contas de usuário.
 
 Sugestões e contribuições são bem-vindas: abra uma *issue* ou um *pull request*.
 
@@ -134,6 +150,7 @@ Sugestões e contribuições são bem-vindas: abra uma *issue* ou um *pull reque
 
 - O Crowfit não substitui orientação médica nem de um profissional de educação física. Se você tem alguma condição de saúde, converse com um profissional antes de começar.
 - Respeite o seu corpo: se algo doer, pare ou pule o exercício.
+- A identidade oficial do mascote é um urso polar branco, mas `mascot.png` e os ícones ainda trazem a arte antiga e serão substituídos.
 
 ---
 

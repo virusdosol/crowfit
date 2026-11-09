@@ -2,7 +2,7 @@
    Versionamento: aumente CACHE_VERSION a cada publicação que mude arquivos.
    Só mexemos em caches que começam com o prefixo "crowfit-cache-"; caches de outros apps da mesma origem são preservados. */
 var PREFIX = "crowfit-cache-";
-var CACHE_VERSION = 5;
+var CACHE_VERSION = 6;
 var CACHE = PREFIX + "v" + CACHE_VERSION;
 var CORE = ["./", "./index.html", "./core.js", "./manifest.json", "./icon-192.png", "./icon-512.png", "./icon-180.png", "./icon-maskable-512.png", "./mascot.png", "./logo.png"];
 /* Autenticação: fora do CORE para que um arquivo ausente ou falha de rede não impeça a instalação do SW. */
@@ -38,7 +38,9 @@ self.addEventListener("fetch", function (e) {
   var isCode = same && (req.mode === "navigate" || /\.(html|js|json)$/.test(url.pathname) || url.pathname.slice(-1) === "/");
   if (isCode) {
     /* rede primeiro: o app novo chega assim que houver conexão; offline usa o cache */
-    e.respondWith(fetch(req).then(function (res) { return put(req, res); }).catch(function () {
+    /* URLs com query string (ex.: retorno de login com ?error=...) não são guardadas em cache */
+    var cacheable = !url.search;
+    e.respondWith(fetch(req).then(function (res) { return cacheable ? put(req, res) : res; }).catch(function () {
       return caches.match(req).then(function (hit) { return hit || caches.match("./index.html"); });
     }));
   } else {
