@@ -22,7 +22,7 @@ Receba um plano semanal sob medida, mantenha sua ofensiva e acumule pontos, como
 
 ## O que é
 
-Um app de exercícios **sem nenhum equipamento**. Você responde algumas perguntas, o Crowfit monta a sua semana de treinos com dias de descanso, e o urso polar te acompanha a cada sessão. Treinar todo dia previsto aumenta a **ofensiva**, e cada exercício feito rende **pontos**.
+Um app de exercícios **sem nenhum equipamento**. Você responde algumas perguntas, o Crowfit monta a sua semana de treinos com dias de descanso, e o corvo mascote te acompanha a cada sessão. Treinar todo dia previsto aumenta a **ofensiva**, e cada exercício feito rende **pontos**.
 
 Foi pensado para o celular, para treinar em casa, no quarto ou no parque.
 
@@ -72,17 +72,17 @@ O **nível** (iniciante, intermediário ou avançado) parte da experiência decl
 
 **Aparência**
 - Tema claro e escuro automático.
-- Mascote: urso polar branco, simples e sem acessórios (a arte nos arquivos de imagem ainda será trocada; veja *Observações*).
+- Mascote: o corvo preto, presente no app, nos ícones e no logotipo.
 
 ## 📲 Instalar no celular
 
 1. Abra **https://virusdosol.github.io/crowfit/** no **Chrome** (Android) ou no **Safari** (iPhone).
 2. Toque em **Instalar app** (Chrome) ou em **Compartilhar > Adicionar à Tela de Início** (Safari).
-3. Abra pelo ícone novo. Depois do primeiro acesso, funciona offline.
+3. Abra pelo ícone novo. O primeiro acesso e o primeiro login precisam de internet. Depois, o app abre offline neste aparelho (veja *Conta e login*).
 
 ## 💾 Seus dados
 
-- O **progresso** (perfil de treino, pontos, ofensiva e histórico) fica **salvo no próprio aparelho**, no `localStorage` do navegador, na chave `corvofit-v1` (nome histórico, mantido para não perder dados já salvos). O progresso **não é enviado** a nenhum servidor.
+- O **progresso** (perfil de treino, pontos, ofensiva e histórico) fica **salvo no próprio aparelho**, no `localStorage` do navegador, na chave `corvofit-v1` (nome histórico, mantido para não perder dados já salvos). O progresso **não é enviado** a nenhum servidor. Só os dados da conta (nome e e-mail informados no cadastro, senha protegida pelo Supabase) ficam no Supabase.
 - Se a gravação falhar (por exemplo, armazenamento cheio), o app mostra um aviso fixo "Alterações NÃO salvas".
 - Se os dados salvos estiverem corrompidos, o app **não os apaga**: mostra uma tela de recuperação e guarda uma cópia.
 - Limpar os dados do navegador ou desinstalar o app **apaga o seu progresso**.
@@ -92,7 +92,8 @@ O **nível** (iniciante, intermediário ou avançado) parte da experiência decl
 ## 🔐 Conta e login
 
 - A **autenticação Supabase está integrada ao código**: cadastro e login por e-mail e senha, login com Google, recuperação e troca de senha e logout. A sessão fica salva no navegador.
-- Ao entrar, o app só libera as telas de treino com uma sessão ativa. Se o aparelho já teve login e está sem internet, o app abre mesmo assim.
+- Sem sessão, uma tela de acesso cobre o app. Essa tela é uma barreira de uso, não de segurança: o progresso é local e não depende da conta. Se o aparelho já teve login e está sem internet (ou o SDK não carregou), o app abre mesmo assim; sem login anterior e sem internet, só aparece a tela de entrada.
+- O botão **Sair** fica flutuante no canto inferior esquerdo. Sem internet o logout pode falhar com aviso, pois o SDK avisa o servidor.
 - **Sair da conta não apaga o progresso local.** O progresso não é separado por conta: quem entrar neste navegador vê o progresso salvo nele.
 - **Perfil remoto: ainda não implementado.** O perfil de treino continua só no aparelho.
 - **Sincronização entre aparelhos: ainda não implementada.** Entrar em outro aparelho não traz o progresso; use Exportar e Importar backup.
@@ -107,7 +108,7 @@ O **nível** (iniciante, intermediário ou avançado) parte da experiência decl
 
 ## 🛠 Para quem quer mexer no código
 
-É um app em HTML, CSS e JavaScript puro, sem build. A única dependência externa é o SDK do Supabase (via CDN). Todos os arquivos ficam na mesma pasta (raiz do repositório).
+É um app em HTML, CSS e JavaScript puro, sem build. As dependências externas são o SDK do Supabase (via CDN, versão fixada) e as fontes Fredoka e Nunito (Google Fonts, só visual). Todos os arquivos ficam na mesma pasta (raiz do repositório).
 
 ```
 crowfit/
@@ -135,6 +136,10 @@ Para publicar a sua cópia: faça um fork, vá em **Settings > Pages**, escolha 
 
 Os exercícios e as sessões ficam nos objetos `EX` e `SES` dentro do `index.html`. Os padrões semanais (`PAT`) ficam no `core.js`.
 
+## Status da autenticação
+
+A autenticação está **integrada ao código e revisada por inspeção**, mas **ainda não foi validada de ponta a ponta** em navegador real contra o Supabase e o Google. Até esses testes, não trate cadastro, login, Google, recuperação de senha e uso offline como confirmados.
+
 ## Ainda não tem
 
 - Perfil remoto (tabela de perfis no Supabase).
@@ -150,7 +155,6 @@ Sugestões e contribuições são bem-vindas: abra uma *issue* ou um *pull reque
 
 - O Crowfit não substitui orientação médica nem de um profissional de educação física. Se você tem alguma condição de saúde, converse com um profissional antes de começar.
 - Respeite o seu corpo: se algo doer, pare ou pule o exercício.
-- A identidade oficial do mascote é um urso polar branco, mas `mascot.png` e os ícones ainda trazem a arte antiga e serão substituídos.
 
 ---
 

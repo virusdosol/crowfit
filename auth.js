@@ -74,9 +74,12 @@
   function handle(event, session) {
     state.session = session || null;
     if (event === 'PASSWORD_RECOVERY') state.recovery = true;
-    if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) { hadSession = true; state.expired = false; }
+    /* Qualquer evento com sessão válida encerra o modo offline (ex.: token renovado quando a rede volta). */
+    if (session) { state.offline = false; hadSession = true; }
+    if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) { state.expired = false; }
     if (event === 'SIGNED_OUT') {
       state.recovery = false;
+      state.offline = false; /* sem isto, o app ficava aberto sem sessão após o logout */
       if (!userInitiatedSignOut && hadSession) state.expired = true;
       hadSession = false;
       userInitiatedSignOut = false;
