@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Crowfit: treinos sem equipamento com ofensivas e pontos.">
+<meta name="theme-color" content="#1A1A1A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Crowfit">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Crowfit</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#EEF1FF;--card:#fff;--ink:#1B1F3B;--mute:#6A6F8F;--line:#D9DEF5;--brand:#4F5BFF;--brand-d:#3340D9;--gold:#FFB703;--ok:#18B67A;--rest:#9AA3D6;--onbrand:#fff;--mbg:transparent;--linv:none}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#12152B;--card:#1C2040;--ink:#F2F4FF;--mute:#9EA4CC;--line:#2C3260;--brand:#7380FF;--brand-d:#4F5BFF;--rest:#4A5290;--mbg:#E4E8FF;--linv:invert(1)}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#12152B;--card:#1C2040;--ink:#F2F4FF;--mute:#9EA4CC;--line:#2C3260;--brand:#7380FF;--brand-d:#4F5BFF;--rest:#4A5290;--mbg:#E4E8FF;--linv:invert(1)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:700 16px/1.45 Nunito,system-ui,sans-serif;min-height:100vh}
+h1,h2,h3{font-family:Fredoka,Nunito,sans-serif;font-weight:600;margin:0;line-height:1.15}
+#app{max-width:480px;margin:0 auto;padding:16px 16px 40px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:18px}
+.stat{display:flex;align-items:center;gap:6px;font-family:Fredoka;font-size:20px}
+.btn{display:block;width:100%;border:0;border-radius:16px;padding:14px;font:800 16px Nunito;background:var(--brand);color:var(--onbrand);box-shadow:0 4px 0 var(--brand-d);cursor:pointer}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--brand-d)}
+.btn.sec{background:var(--card);color:var(--brand);box-shadow:0 4px 0 var(--line);border:2px solid var(--line)}
+.btn:focus-visible,.chip:focus-visible,.node:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.card{background:var(--card);border:2px solid var(--line);border-radius:20px;padding:18px}
+label{display:block;margin:14px 0 6px;color:var(--mute);font-size:14px}
+input{width:100%;border:2px solid var(--line);border-radius:14px;padding:12px;font:700 17px Nunito;background:var(--bg);color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:2px solid var(--line);background:var(--bg);color:var(--ink);border-radius:14px;padding:10px 14px;font:800 15px Nunito;cursor:pointer}
+.chip.on{border-color:var(--brand);background:var(--brand);color:var(--onbrand)}
+.hero{text-align:center;padding:10px 0 20px}
+.mascot{object-fit:contain;display:inline-block;border-radius:24px;background:var(--mbg)}
+.logo{display:block;margin:12px auto 0;width:min(260px,72%);height:auto;filter:var(--linv)}
+.hero h1{font-size:30px;margin-top:8px}
+.hero p{color:var(--mute);margin:6px 0 0}
+.path{display:flex;flex-direction:column;gap:14px;margin-top:18px}
+.node{display:flex;align-items:center;gap:14px;background:var(--card);border:2px solid var(--line);border-radius:20px;padding:14px;text-align:left;font:inherit;color:inherit;width:100%}
+.node.today{border-color:var(--brand);box-shadow:0 4px 0 var(--brand)}
+.node.today{cursor:pointer}
+.dot{flex:none;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-size:24px;background:var(--line);color:var(--mute)}
+.today .dot{background:var(--brand);color:#fff}.done .dot{background:var(--ok);color:#fff}.rest .dot{background:var(--rest);color:#fff}
+.node small{color:var(--mute);display:block;font-weight:700}
+.node b{font-family:Fredoka;font-size:18px;font-weight:600}
+.locked{opacity:.6}
+.bar{height:16px;background:var(--line);border-radius:10px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ok);border-radius:10px;transition:width .3s}
+.big{font-family:Fredoka;font-size:64px;line-height:1;color:var(--brand);margin:8px 0}
+.tip{color:var(--mute);margin:10px 0 18px}
+.row{display:flex;gap:10px;margin-top:10px}
+.center{text-align:center}
+.week{display:flex;justify-content:space-between;margin:14px 0 4px}
+.week span{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-size:13px;background:var(--line);color:var(--mute)}
+.week .d{background:var(--ok);color:#fff}.week .t{outline:3px solid var(--brand)}
+.link{background:none;border:0;color:var(--mute);font:700 14px Nunito;text-decoration:underline;cursor:pointer;margin-top:24px;width:100%}
+@media (prefers-reduced-motion:no-preference){.pop{animation:pop .5s}@keyframes pop{0%{transform:scale(.7);opacity:0}70%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+function raven(sz){sz=sz||96;return '<img class="mascot" src="mascot.png" height="'+sz+'" alt="Crowfit, o corvo mascote" style="height:'+sz+'px;width:auto">'}
+
+/* Dados: exercícios, tipos de sessão e padrões semanais */
+/* Exercícios: v = [iniciante, intermediário, avançado]; t = "r" repetições, "s" segundos */
+var EX={
+fl_j:{n:"Flexão com joelhos no chão",t:"r",v:[8,12,16],tip:"Corpo reto dos joelhos à cabeça. Desça até o peito quase tocar o chão."},
+fl:{n:"Flexão de braço",t:"r",v:[6,12,20],tip:"Mãos na largura dos ombros, cotovelos a 45° do corpo."},
+fl_d:{n:"Flexão diamante",t:"r",v:[4,8,14],tip:"Mãos juntas formando um diamante. Foco no tríceps."},
+mg:{n:"Mergulho no sofá ou cadeira firme",t:"r",v:[6,10,15],tip:"Use um apoio estável. Desça dobrando os cotovelos para trás."},
+pk:{n:"Flexão em pike",t:"r",v:[5,8,12],tip:"Quadril alto em V invertido. Desça a cabeça em direção ao chão."},
+ag:{n:"Agachamento livre",t:"r",v:[12,20,30],tip:"Pés na largura dos ombros, peito aberto, joelhos alinhados com os pés."},
+af:{n:"Afundo alternado",t:"r",v:[8,12,20],tip:"Passo longo à frente. O joelho de trás quase toca o chão."},
+pg:{n:"Ponte de glúteos",t:"r",v:[12,18,25],tip:"Deitado, pés no chão. Suba o quadril e aperte o glúteo no topo."},
+ag_s:{n:"Agachamento isométrico na parede",t:"s",v:[20,35,50],tip:"Costas na parede, coxas paralelas ao chão. Respire fundo."},
+pa:{n:"Elevação de panturrilha",t:"r",v:[15,25,35],tip:"Suba nas pontas dos pés, devagar, e segure 1 segundo."},
+ab:{n:"Abdominal tradicional",t:"r",v:[10,18,25],tip:"Mãos cruzadas no peito. Suba a escápula, sem puxar o pescoço."},
+pr:{n:"Prancha",t:"s",v:[20,40,60],tip:"Cotovelos sob os ombros, abdômen firme, sem afundar o quadril."},
+mc:{n:"Escalador (mountain climber)",t:"s",v:[20,30,45],tip:"Posição de flexão, traga os joelhos ao peito em ritmo constante."},
+bi:{n:"Abdominal bicicleta",t:"r",v:[12,20,30],tip:"Cotovelo oposto ao joelho, movimento controlado."},
+pe:{n:"Elevação de pernas",t:"r",v:[8,12,18],tip:"Deitado, pernas retas. Desça sem encostar os pés no chão."},
+po:{n:"Polichinelo",t:"s",v:[30,45,60],tip:"Aquecimento ou cardio. Aterrisse macio."},
+bu:{n:"Burpee",t:"r",v:[5,8,12],tip:"Agache, prancha, volte e salte. Vá no seu ritmo."},
+al:{n:"Alongamento final",t:"s",v:[30,40,60],tip:"Respire devagar. Alongue peito, pernas e costas."}};
+var SES={
+P:{n:"Peito e braços",ex:["po","fl_j|fl","fl|fl_d","mg","pk","al"]},
+L:{n:"Pernas e glúteos",ex:["po","ag","af","pg","ag_s","pa","al"]},
+C:{n:"Abdômen e core",ex:["po","ab","pr","bi","pe","mc","al"]},
+F:{n:"Corpo todo",ex:["po","ag","fl_j|fl","mc","pg","pr","bu|bi","al"]}};
+var PAT={3:["F","R","L","R","P","R","R"],4:["P","L","R","C","F","R","R"],5:["P","L","C","R","F","P","R"],6:["P","L","C","F","P","L","R"]};
+var DIAS=["Segunda","Terça","Quarta","Quinta","Sexta","Sábado","Domingo"];
+
+/* Lógica do app: estado, onboarding, home, treino, ofensiva e pontos */
+var KEY="corvofit-v1",S={profile:null,points:0,streak:0,best:0,last:"",done:{}},ob={step:0,d:{}},sess=null,tm=null;
+try{var raw=localStorage.getItem(KEY);if(raw)S=Object.assign(S,JSON.parse(raw))}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+var $=function(id){return document.getElementById(id)},app=$("app");
+
+function level(p){var l=({"Nunca treinei":0,"Treino às vezes":1,"Treino sempre":2})[p.exp];var imc=p.peso/Math.pow(p.altura/100,2);if(p.idade>=55||imc>=30)l=Math.max(0,l-1);return l}
+function buildSession(type,lv){return SES[type].ex.map(function(k){var parts=k.split("|"),id=parts[Math.min(lv,parts.length-1)];if(parts.length>1&&lv===0)id=parts[0];if(parts.length>1&&lv>0)id=parts[1]&&lv>=1?parts[1]:parts[0];var e=EX[id],sets=(e.t==="s"||id==="al"||id==="po")?1:(lv===0?2:3);return{id:id,n:e.n,t:e.t,tip:e.tip,val:e.v[lv],sets:sets}})}
+function dk(d){return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2)}
+function weekDates(){var n=new Date(),i=(n.getDay()+6)%7,m=new Date(n.getFullYear(),n.getMonth(),n.getDate()-i),a=[];for(var j=0;j<7;j++)a.push(new Date(m.getFullYear(),m.getMonth(),m.getDate()+j));return{dates:a,today:i}}
+function checkStreak(){var y=new Date();y.setDate(y.getDate()-1);if(S.last&&S.last!==dk(new Date())&&S.last!==dk(y)){/* só zera se perdeu um dia de treino previsto */var w=weekDates(),plan=PAT[S.profile.dias],miss=false,d=new Date(S.last);d.setDate(d.getDate()+1);var t=dk(new Date());while(dk(d)<t){var wd=(d.getDay()+6)%7;if(plan[wd]!=="R"){miss=true;break}d.setDate(d.getDate()+1)}if(miss){S.streak=0;save()}}}
+
+/* ---------- Onboarding ---------- */
+var QS=[
+{k:"nome",q:"Como podemos te chamar?",type:"text",ph:"Seu nome"},
+{k:"idade",q:"Quantos anos você tem?",type:"number",ph:"Idade",min:12,max:90},
+{k:"peso",q:"Quanto você pesa (kg)?",type:"number",ph:"Peso em kg",min:30,max:250},
+{k:"altura",q:"Qual é a sua altura (cm)?",type:"number",ph:"Altura em cm",min:120,max:230},
+{k:"exp",q:"Qual é a sua experiência com exercícios?",type:"chips",o:["Nunca treinei","Treino às vezes","Treino sempre"]},
+{k:"dias",q:"Quantos dias por semana quer treinar?",type:"chips",o:["3","4","5","6"]}];
+function renderOb(){var s=ob.step;if(s===0&&!ob.started){app.innerHTML='<div class="hero pop">'+raven(150,"happy")+'<img class="logo" src="logo.png" alt="Crowfit"><p>Treinos sem equipamento. Um dia de cada vez, com ofensiva e pontos.</p></div><button class="btn" id="go">Começar</button>';$("go").onclick=function(){ob.started=1;renderOb()};return}
+var q=QS[s],pct=Math.round(s/QS.length*100),h='<div class="bar" aria-hidden="true"><i style="width:'+pct+'%"></i></div><div class="center" style="margin:18px 0">'+raven(80)+'</div><h2 class="center">'+q.q+'</h2><div style="margin-top:18px">';
+if(q.type==="chips"){h+='<div class="chips" style="justify-content:center">'+q.o.map(function(o){return'<button class="chip'+(ob.d[q.k]===o?" on":"")+'" data-v="'+o+'">'+o+'</button>'}).join("")+'</div>'}
+else h+='<input id="in" type="'+q.type+'" inputmode="'+(q.type==="number"?"numeric":"text")+'" placeholder="'+q.ph+'" value="'+(ob.d[q.k]||"")+'" '+(q.min?'min="'+q.min+'" max="'+q.max+'"':"")+' aria-label="'+q.q+'">';
+h+='</div><p id="err" class="center" style="color:#E5484D;min-height:24px"></p><div class="row">'+(s>0?'<button class="btn sec" id="bk" style="width:40%">Voltar</button>':"")+'<button class="btn" id="nx">'+(s===QS.length-1?"Montar meu plano":"Continuar")+'</button></div>';
+app.innerHTML=h;
+document.querySelectorAll(".chip").forEach(function(c){c.onclick=function(){ob.d[q.k]=c.dataset.v;renderOb()}});
+if($("bk"))$("bk").onclick=function(){ob.step--;renderOb()};
+if($("in"))$("in").focus();
+$("nx").onclick=function(){var v;if(q.type==="chips"){v=ob.d[q.k];if(!v){$("err").textContent="Escolha uma opção.";return}}else{v=$("in").value.trim();if(!v){$("err").textContent="Preencha para continuar.";return}if(q.type==="number"){v=+v;if(v<q.min||v>q.max){$("err").textContent="Digite um valor entre "+q.min+" e "+q.max+".";return}}}
+ob.d[q.k]=v;if(s<QS.length-1){ob.step++;renderOb()}else{S.profile={nome:ob.d.nome,idade:+ob.d.idade,peso:+ob.d.peso,altura:+ob.d.altura,exp:ob.d.exp,dias:+ob.d.dias};save();renderHome()}}}
+
+/* ---------- Home ---------- */
+function lvlInfo(){var l=Math.floor(S.points/200)+1;return{l:l,pct:(S.points%200)/200*100}}
+function renderHome(){checkStreak();var p=S.profile,lv=level(p),w=weekDates(),plan=PAT[p.dias],li=lvlInfo(),todayKey=dk(new Date()),doneToday=!!S.done[todayKey];
+var nDone=0,nPlan=0;w.dates.forEach(function(d,i){if(plan[i]!=="R"){nPlan++;if(S.done[dk(d)])nDone++}});
+var h='<div class="top"><div class="stat" title="Ofensiva">🔥 '+S.streak+'</div><div class="stat" title="Nível">'+raven(36)+' Nv '+li.l+'</div><div class="stat" title="Pontos">⭐ '+S.points+'</div></div>';
+h+='<div class="bar" aria-label="Progresso do nível" style="margin-bottom:6px"><i style="width:'+li.pct+'%;background:var(--gold)"></i></div><small style="color:var(--mute)">'+(200-S.points%200)+' pontos para o nível '+(li.l+1)+'</small>';
+h+='<div class="hero">'+raven(110,doneToday?"happy":"")+'<h1>Olá, '+esc(p.nome)+'!</h1><p>'+(doneToday?"Treino de hoje concluído. Ofensiva garantida!":plan[w.today]==="R"?"Hoje é dia de descanso. Seu corpo agradece.":"Seu treino de hoje está pronto.")+'</p></div>';
+h+='<div class="card"><b>Semana: '+nDone+' de '+nPlan+' treinos</b><div class="bar" style="margin-top:8px"><i style="width:'+(nDone/nPlan*100)+'%"></i></div></div><div class="path">';
+w.dates.forEach(function(d,i){var t=plan[i],k=dk(d),isT=i===w.today,done=!!S.done[k],cls,ico,sub;
+if(t==="R"){cls="rest";ico="🌙";sub="Descanso e recuperação"}
+else if(done){cls="done";ico="✓";sub="Concluído"}
+else if(isT){cls="today";ico="▶";sub="Toque para começar"}
+else if(i<w.today){cls="locked";ico="–";sub="Não realizado"}
+else{cls="locked";ico="🔒";sub="Em breve"}
+var title=t==="R"?"Descanso":SES[t].n;
+h+='<button class="node '+cls+'" '+(cls==="today"?'data-go="1"':"disabled")+'><span class="dot">'+ico+'</span><span><small>'+DIAS[i]+(isT?" · hoje":"")+'</small><b>'+title+'</b><small>'+sub+'</small></span></button>'});
+h+='</div><button class="link" id="reset">Refazer perfil e plano</button>';
+app.innerHTML=h;
+var g=document.querySelector("[data-go]");if(g)g.onclick=function(){startSession(plan[w.today],lv)};
+$("reset").onclick=function(){if(confirm("Refazer o perfil? Seus pontos e sua ofensiva são mantidos.")){S.profile=null;save();ob={step:0,d:{}};renderOb()}}}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+
+/* ---------- Treino ---------- */
+function startSession(type,lv){sess={type:type,list:buildSession(type,lv),i:0,pts:0,did:0};renderEx()}
+function renderEx(){clearInterval(tm);var e=sess.list[sess.i],pct=Math.round(sess.i/sess.list.length*100);
+var tgt=e.t==="s"?e.val+" segundos":(e.sets>1?e.sets+" × "+e.val:e.val)+" repetições";if(e.t==="s"&&e.sets>1)tgt=e.sets+" × "+e.val+" segundos";
+var h='<div class="row" style="align-items:center;margin:0 0 20px"><button class="chip" id="x" aria-label="Sair do treino">✕</button><div class="bar" style="flex:1"><i style="width:'+pct+'%"></i></div></div>';
+h+='<div class="card center pop"><div>'+raven(70)+'</div><h2 style="margin-top:10px">'+e.n+'</h2><div class="big" id="tg">'+tgt+'</div><p class="tip">'+e.tip+'</p>';
+if(e.t==="s")h+='<button class="btn sec" id="tmr" style="margin-bottom:14px">Iniciar cronômetro de '+e.val+'s</button>';
+h+='<button class="btn" id="ok">Concluí (+10)</button><button class="link" id="sk" style="margin-top:14px">Pular exercício</button></div><p class="center" style="color:var(--mute)">Exercício '+(sess.i+1)+' de '+sess.list.length+'</p>';
+app.innerHTML=h;
+$("x").onclick=function(){if(confirm("Sair do treino? O progresso desta sessão será perdido.")){clearInterval(tm);renderHome()}};
+$("ok").onclick=function(){sess.pts+=10;sess.did++;next()};$("sk").onclick=next;
+if($("tmr"))$("tmr").onclick=function(){var t=e.val,b=$("tmr");b.disabled=true;$("tg").textContent=t+"s";tm=setInterval(function(){t--;$("tg").textContent=t+"s";if(t<=0){clearInterval(tm);$("tg").textContent="Tempo!";b.textContent="Feito!"}},1000)}}
+function next(){sess.i++;if(sess.i<sess.list.length)renderEx();else finish()}
+function finish(){clearInterval(tm);var k=dk(new Date()),bonus=0,first=!S.done[k];
+if(sess.did>0&&first){bonus=20;var y=new Date();y.setDate(y.getDate()-1);S.streak=(S.last===dk(y)||S.streak>0&&S.last&&prevWasRest(S.last))?S.streak+1:1;if(S.last===k)S.streak=Math.max(S.streak,1);S.best=Math.max(S.best||0,S.streak);S.last=k;S.done[k]=true}
+var gain=sess.pts+bonus;S.points+=gain;save();
+app.innerHTML='<div class="hero pop">'+raven(150,"happy")+'<h1>'+(sess.did?"Treino concluído!":"Treino encerrado")+'</h1><p>'+sess.did+' de '+sess.list.length+' exercícios feitos</p></div><div class="card center"><div class="big" style="color:var(--gold)">+'+gain+'</div><div>pontos'+(bonus?" (bônus de treino completo incluído)":"")+'</div><div style="margin-top:14px;font-family:Fredoka;font-size:22px">🔥 Ofensiva: '+S.streak+(S.streak===1?" dia":" dias")+'</div></div><div style="margin-top:18px"><button class="btn" id="hm">Voltar ao plano</button></div>';
+$("hm").onclick=renderHome}
+/* ofensiva continua se os dias entre o último treino e hoje eram descanso */
+function prevWasRest(last){var plan=PAT[S.profile.dias],d=new Date(last);d.setDate(d.getDate()+1);var t=dk(new Date());while(dk(d)<t){if(plan[(d.getDay()+6)%7]!=="R")return false;d.setDate(d.getDate()+1)}return true}
+
+if(S.profile)renderHome();else renderOb();
+
+
+if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}
+</script>
+</body>
+</html>
