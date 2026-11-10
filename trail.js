@@ -1,4 +1,7 @@
-/* Crowfit: trilha de progressão contínua (seções, unidades, aro vermelho e página do treino).
+/* Crowfit: trilha de progressão (semanas de 7 dias, unidades, aro vermelho e página do treino).
+   Visual: a cada 7 dias muda a semana e a cor dos círculos (grafite, vermelho, branco, preto, em ciclo).
+   Só o mês atual (4 semanas = 28 dias) fica liberado; os meses seguintes aparecem bloqueados, com cadeado.
+   Internamente a "seção" de 3 meses continua existindo (program.js e as chaves s1u4 não mudam); só deixou de aparecer na tela.
    Depende de CF (core.js) e CFP (program.js). O progresso fica em S.trail, dentro da chave "corvofit-v1":
      S.trail = { start: "AAAA-MM-DD", ex: { "s1u4": { "ag": true } }, lv: { "1": 0 } }
    Tudo o mais (seção, unidade, data, grupo, exercícios, totais, estado) é DERIVADO de start + calendário + program.js. */
@@ -56,22 +59,39 @@ function ring(p) {
 function icon(g) { return '<svg class="ico" viewBox="0 0 48 48" aria-hidden="true">' + P.ICON[g] + '</svg>'; }
 function pct(p) { return Math.round(p * 100); }
 
-function nodeHtml(ctx, i) {
-  var u = unitAt(ctx.S, i), ct = content(ctx, u), pr = prog(ctx, u, ct), isT = u.date === ctx.today, x = Math.round(Math.sin(i * 0.85) * 62);
-  var label = "Seção " + u.sec + ", unidade " + u.n + ", " + P.DIAS[u.dow] + ", " + ct.title + ", " + pr.done + " de " + pr.total + " exercícios concluídos" + (pr.st === "fut" ? ", ainda não liberado" : "");
-  return '<button class="tn st-' + pr.st + (isT ? " today" : "") + '" data-i="' + i + '" data-sec="' + u.sec + '" data-n="' + u.n + '" data-t="' + ctx.esc(ct.title) + '" data-d="' + P.DIAS_ABR[u.dow] + '" style="--x:' + x + 'px" aria-label="' + ctx.esc(label) + '">' +
+/* Semana = 7 dias corridos a partir do início da trilha; mês liberado = 4 semanas. Só afeta a exibição. */
+var MES = 28, FRASES = ["Tenha paciência.", "Você vai chegar lá."], fi = 0, tt = 0;
+function wk(i) { return { w: Math.floor(i / 7) + 1, d: (i % 7) + 1, c: Math.floor(i / 7) % 4 }; }
+function lastOpen(ti) { return (Math.floor(ti / MES) + 1) * MES - 1; }
+function toast() {
+  var el = $("t-toast");
+  if (!el) { el = document.createElement("div"); el.id = "t-toast"; el.className = "t-toast"; el.setAttribute("role", "status"); document.body.appendChild(el); }
+  el.textContent = FRASES[fi++ % FRASES.length]; el.classList.add("on"); clearTimeout(tt);
+  tt = setTimeout(function () { el.classList.remove("on"); }, 2200);
+}
+var LOCK = '<svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><rect x="11" y="21" width="26" height="19" rx="4"/><path d="M16 21v-6a8 8 0 0 1 16 0v6"/><circle cx="24" cy="30.5" r="2"/></svg>';
+
+function nodeHtml(ctx, i, locked) {
+  var u = unitAt(ctx.S, i), W = wk(i), x = Math.round(Math.sin(i * 0.85) * 62);
+  if (locked) {
+    return '<button class="tn st-lock" data-i="' + i + '" data-w="' + W.w + '" data-n="' + W.d + '" data-t="Treino bloqueado" style="--x:' + x + 'px" aria-label="Semana ' + W.w + ', unidade ' + W.d + ', ' + P.DIAS[u.dow] + ', bloqueada">' +
+      '<span class="rb">' + ring(0) + '<span class="tn-btn">' + LOCK + '</span></span><span class="tn-lbl">U' + W.d + ' · ' + P.DIAS_ABR[u.dow] + '</span></button>';
+  }
+  var ct = content(ctx, u), pr = prog(ctx, u, ct), isT = u.date === ctx.today;
+  var label = "Semana " + W.w + ", unidade " + W.d + ", " + P.DIAS[u.dow] + ", " + ct.title + ", " + pr.done + " de " + pr.total + " exercícios concluídos" + (pr.st === "fut" ? ", ainda não liberado" : "");
+  return '<button class="tn wk' + W.c + ' st-' + pr.st + (isT ? " today" : "") + '" data-i="' + i + '" data-w="' + W.w + '" data-n="' + W.d + '" data-t="' + ctx.esc(ct.title) + '" data-d="' + P.DIAS_ABR[u.dow] + '" style="--x:' + x + 'px" aria-label="' + ctx.esc(label) + '">' +
     (isT ? '<span class="tn-bub">' + (pr.st === "done" ? "FEITO" : pr.done ? "CONTINUAR" : "COMEÇAR") + '</span>' : "") +
     '<span class="rb">' + ring(pr.p) + '<span class="tn-btn">' + icon(ct.group) + '</span></span>' +
     (pr.st === "done" ? '<span class="tn-chk" aria-hidden="true">✓</span>' : "") +
-    '<span class="tn-lbl">U' + u.n + ' · ' + P.DIAS_ABR[u.dow] + '</span></button>';
+    '<span class="tn-lbl">U' + W.d + ' · ' + P.DIAS_ABR[u.dow] + '</span></button>';
 }
-function secCard(ctx, k) {
-  var a = secStart(ctx.S, k), b = C.addDays(secStart(ctx.S, k + 1), -1);
-  return '<div class="t-sec" role="heading" aria-level="2"><div class="ts-t"><small>SEÇÃO ' + k + '</small><b>' + ctx.esc(P.secTitle(k).toUpperCase()) + '</b><span>' + fmt(a) + ' a ' + fmt(b) + '</span></div>' + ctx.mascote(56) + '</div>';
+function gate(ctx, i) {
+  var m = Math.floor(i / MES) + 1;
+  return '<button class="t-gate" type="button" aria-label="Mês ' + m + ' bloqueado"><span class="tg-i">' + LOCK + '</span><span class="tg-t"><b>MÊS ' + m + '</b><small>Libera em ' + fmt(C.addDays(ctx.S.trail.start, i)) + '</small></span></button>';
 }
-function range(ctx, lo, hi) {
+function range(ctx, lo, hi, last) {
   var h = "";
-  for (var i = lo; i <= hi; i++) { var u = unitAt(ctx.S, i); if (u.n === 1) h += secCard(ctx, u.sec); h += nodeHtml(ctx, i); }
+  for (var i = lo; i <= hi; i++) { if (i === last + 1) h += gate(ctx, i); h += nodeHtml(ctx, i, i > last); }
   return h;
 }
 function flush(ctx) { if (dirty) { dirty = false; ctx.save(); } }
@@ -81,33 +101,32 @@ function banner() {
   var nodes = document.querySelectorAll(".tn"), line = ban.getBoundingClientRect().bottom + 8, pick = nodes[0];
   for (var j = 0; j < nodes.length; j++) { pick = nodes[j]; if (nodes[j].getBoundingClientRect().bottom > line) break; }
   if (!pick) return;
-  $("tb-s").textContent = "SEÇÃO " + pick.getAttribute("data-sec") + ", UNIDADE " + pick.getAttribute("data-n");
+  $("tb-s").textContent = "SEMANA " + pick.getAttribute("data-w") + ", UNIDADE " + pick.getAttribute("data-n");
   $("tb-t").textContent = pick.getAttribute("data-t");
 }
 function onScroll() { if (raf) return; raf = requestAnimationFrame(function () { raf = 0; banner(); }); }
 
 function mount(el, ctx) {
-  var S = ctx.S, tr = ensure(S, ctx.today), ti = Math.max(0, idxOf(S, ctx.today));
-  if (!V || V.start !== tr.start) V = { start: tr.start, lo: Math.max(0, ti - 6), hi: ti + 28, scroll: null };
+  var S = ctx.S, tr = ensure(S, ctx.today), ti = Math.max(0, idxOf(S, ctx.today)), last = lastOpen(ti), hi = last + MES;
+  if (!V || V.start !== tr.start) V = { start: tr.start, lo: Math.max(0, ti - 6), scroll: null };
   V.ctx = ctx;
   el.innerHTML = '<div class="t-ban" id="t-ban"><div class="tb-l"><small id="tb-s"></small><b id="tb-t"></b></div><button id="t-hoje" aria-label="Ir para o treino de hoje">Hoje</button></div>' +
     (V.lo > 0 ? '<button class="btn sec t-more" id="t-prev">Ver dias anteriores</button>' : "") +
-    '<div class="t-path" id="t-path">' + range(ctx, V.lo, V.hi) + '</div><div id="t-end" class="t-end"><button class="btn sec t-more" id="t-next">Mostrar mais dias</button></div>';
+    '<div class="t-path" id="t-path">' + range(ctx, V.lo, hi, last) + '</div>';
   flush(ctx);
-  var path = $("t-path"), end = $("t-end");
+  var path = $("t-path");
   el.onclick = function (e) {
-    var b = e.target.closest && e.target.closest(".tn"); if (b) { V.scroll = window.scrollY; openUnit(ctx, +b.getAttribute("data-i")); }
+    var t = e.target.closest && e.target.closest(".tn, .t-gate"); if (!t) return;
+    if (t.classList.contains("t-gate") || t.classList.contains("st-lock")) { toast(); return; }
+    V.scroll = window.scrollY; openUnit(ctx, +t.getAttribute("data-i"));
   };
-  function more() { var o = V.hi; V.hi += 28; path.insertAdjacentHTML("beforeend", range(V.ctx, o + 1, V.hi)); flush(V.ctx); if (obs) { obs.unobserve(end); obs.observe(end); } }
-  $("t-next").onclick = more;
   if ($("t-prev")) $("t-prev").onclick = function () {
     var h0 = document.documentElement.scrollHeight, y = window.scrollY, nl = Math.max(0, V.lo - 28);
-    path.insertAdjacentHTML("afterbegin", range(V.ctx, nl, V.lo - 1)); V.lo = nl; flush(V.ctx);
+    path.insertAdjacentHTML("afterbegin", range(V.ctx, nl, V.lo - 1, last)); V.lo = nl; flush(V.ctx);
     window.scrollTo(0, y + document.documentElement.scrollHeight - h0); if (!V.lo) $("t-prev").remove(); banner();
   };
   $("t-hoje").onclick = function () { var n = el.querySelector('[data-i="' + ti + '"]'); if (n) n.scrollIntoView({ block: "center", behavior: "smooth" }); };
-  if (obs) obs.disconnect();
-  if ("IntersectionObserver" in window) { obs = new IntersectionObserver(function (es) { if (es[0].isIntersecting) more(); }, { rootMargin: "800px" }); obs.observe(end); }
+  if (obs) { obs.disconnect(); obs = null; }
   if (!bound) { window.addEventListener("scroll", onScroll, { passive: true }); bound = true; }
   var n = el.querySelector('[data-i="' + ti + '"]');
   if (V.scroll != null) window.scrollTo(0, V.scroll); else if (n) n.scrollIntoView({ block: "center" });
@@ -191,13 +210,13 @@ function runner(ctx, u, ct) {
 }
 
 function openUnit(ctx, i) {
-  var S = ctx.S, u = unitAt(S, i), ct = content(ctx, u), locked = !unlocked(ctx, i), esc = ctx.esc;
+  var S = ctx.S, u = unitAt(S, i), W = wk(i), ct = content(ctx, u), locked = !unlocked(ctx, i), esc = ctx.esc;
   var pr = prog(ctx, u, ct), list = ct.exercises.map(function (e, k) {
     var on = pr.map[e.id] === true;
     return '<li class="ex' + (on ? " ok" : "") + '" data-id="' + e.id + '"><button class="ex-chk" data-id="' + e.id + '" aria-pressed="' + on + '" aria-label="Marcar ' + esc(e.name) + ' como concluído"' + (locked ? " disabled" : "") + '>' + (on ? "✓" : "") + '</button><div class="ex-b"><b>' + (k + 1) + '. ' + esc(e.name) + '</b><span>' + esc(e.label) + '</span><small>' + esc(e.tip) + '</small></div></li>';
   }).join("");
-  ctx.view('<div class="u-top"><button class="chip" id="u-bk" aria-label="Voltar à trilha">← Trilha</button><span>SEÇÃO ' + u.sec + ' — UNIDADE ' + u.n + '</span></div>' +
-    '<div class="u-hero"><span class="rb u-rb st-' + pr.st + '" id="u-rb">' + ring(pr.p) + '<span class="tn-btn">' + icon(ct.group) + '</span></span><p class="u-day">' + P.DIAS[u.dow].toUpperCase() + ' · ' + fmt(u.date) + '</p><h1>' + esc(ct.title.toUpperCase()) + '</h1></div>' +
+  ctx.view('<div class="u-top"><button class="chip" id="u-bk" aria-label="Voltar à trilha">← Trilha</button><span>SEMANA ' + W.w + ' — UNIDADE ' + W.d + '</span></div>' +
+    '<div class="u-hero"><span class="rb u-rb wk' + W.c + ' st-' + pr.st + '" id="u-rb">' + ring(pr.p) + '<span class="tn-btn">' + icon(ct.group) + '</span></span><p class="u-day">' + P.DIAS[u.dow].toUpperCase() + ' · ' + fmt(u.date) + '</p><h1>' + esc(ct.title.toUpperCase()) + '</h1></div>' +
     '<div class="card u-prog"><b id="u-pt"></b><div class="bar" style="margin-top:8px"><i id="u-pb"></i></div></div>' +
     (locked ? '<p class="u-note">Este treino será liberado em ' + fmt(u.date) + ' (a partir da meia-noite). Você pode consultar a programação.</p>' : '<button class="btn u-go" id="u-go"></button>') +
     '<ol class="u-list">' + list + '</ol>' +
@@ -206,7 +225,7 @@ function openUnit(ctx, i) {
   flush(ctx);
   function refresh() {
     var p2 = prog(ctx, u, ct), rb = $("u-rb");
-    rb.className = "rb u-rb st-" + p2.st; rb.innerHTML = ring(p2.p) + '<span class="tn-btn">' + icon(ct.group) + '</span>';
+    rb.className = "rb u-rb wk" + W.c + " st-" + p2.st; rb.innerHTML = ring(p2.p) + '<span class="tn-btn">' + icon(ct.group) + '</span>';
     $("u-pt").textContent = p2.done + " de " + p2.total + " exercícios · " + pct(p2.p) + "%" + (p2.p >= 1 ? " · Treino completo ✓" : "");
     $("u-pb").style.width = pct(p2.p) + "%";
     var go = $("u-go"); if (go) { go.hidden = p2.p >= 1; go.textContent = p2.done ? "Continuar treino" : "Iniciar treino"; }
@@ -228,6 +247,6 @@ function openUnit(ctx, i) {
   $("u-bk").onclick = $("u-bk2").onclick = ctx.back;
 }
 
-T.mount = mount; T.openUnit = openUnit; T.unitAt = unitAt; T.secStart = secStart; T.idxOf = idxOf;
+T.mount = mount; T.openUnit = openUnit; T.unitAt = unitAt; T.secStart = secStart; T.week = wk; T.idxOf = idxOf;
 root.CFT = T;
 })(typeof self !== "undefined" ? self : this);
