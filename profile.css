@@ -5,3 +5,14 @@
 .cf-btn-ghost { background: var(--cf-card); color: var(--cf-ink); border-color: var(--cf-line); box-shadow: 0 4px 0 var(--cf-line); margin-top: 16px; }
 .cf-btn-ghost:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--cf-line); }
 .cf-prof .cf-title:focus { outline: none; }
+
+/* Perfil: barra com engrenagem, cartões de nível/XP, sair da conta */
+.cf-prof .cf-bar { display: flex; justify-content: flex-end; margin-bottom: 4px; }
+.cf-icon { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 14px; border: 2px solid var(--cf-line); background: var(--cf-card); color: var(--cf-ink); cursor: pointer; }
+.cf-icon:active { transform: translateY(2px); }
+.cf-prof .cf-name { font-size: 1.9rem; overflow-wrap: anywhere; }
+.cf-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 8px 0 8px; }
+.cf-stat { background: var(--cf-card); border: 2px solid var(--cf-line); border-radius: 18px; padding: 16px 12px; text-align: center; display: flex; flex-direction: column; gap: 4px; }
+.cf-stat-v { font-family: Fredoka, Nunito, sans-serif; font-size: 2rem; line-height: 1; color: var(--cf-a); }
+.cf-stat-l { font-size: .85rem; color: var(--cf-muted); }
+.cf-btn-danger { color: var(--cf-a); }

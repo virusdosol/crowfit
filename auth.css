@@ -18,7 +18,8 @@
 }
 .cf-auth[hidden] { display: none; }
 html.cf-auth-open, html.cf-auth-open body { overflow: hidden; }
-.cf-wrap { max-width: 380px; margin: 0 auto; min-height: 100%; display: flex; flex-direction: column; justify-content: center; padding: 12px 0; }
+.cf-wrap { max-width: 380px; margin: 0 auto; min-height: 100%; display: flex; flex-direction: column; justify-content: flex-start; padding: clamp(8px, 4vh, 40px) 0 16px; }
+.cf-wrap.cf-center { justify-content: center; }
 .cf-mascot { display: block; height: 76px; width: auto; margin: 0 0 6px; }
 .cf-brand { font-family: Fredoka, Nunito, sans-serif; font-size: 2.1rem; font-weight: 600; letter-spacing: -0.03em; margin-bottom: 28px; }
 .cf-title { font-family: Fredoka, Nunito, sans-serif; font-size: 1.6rem; line-height: 1.15; margin: 0 0 6px; font-weight: 600; letter-spacing: -0.01em; }

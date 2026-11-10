@@ -14,6 +14,12 @@
 <title>Crowfit</title>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
+#splash{position:fixed;inset:0;z-index:100001;background:#000;display:flex;align-items:center;justify-content:center;transition:opacity .35s ease}
+#splash img{display:block;max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain}
+#splash.out{opacity:0;pointer-events:none}
+@media (prefers-reduced-motion:reduce){#splash{transition:none}}
+.pf{background:none;border:0;padding:4px;min-width:44px;min-height:44px;display:inline-grid;place-items:center;cursor:pointer;border-radius:14px;color:inherit}
+.pf:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 :root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:dark;
 --bg:#080808;--card:#202020;--ink:#F5F5F5;--mute:#A9A9A9;--line:#333;--brand:#D92332;--brand-d:#9C1823;--gold:#F5F5F5;--ok:#D92332;--rest:#3A3A3A;--onbrand:#F5F5F5;--mbg:#F5F5F5;--linv:invert(1)}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
@@ -71,6 +77,13 @@ input{width:100%;border:2px solid var(--line);border-radius:14px;padding:12px;fo
 <link rel="stylesheet" href="trail.css">
 </head>
 <body>
+<div id="splash" aria-hidden="true"><img src="splash.jpg" alt=""></div>
+<script>
+/* Splash: 1 s a partir de agora, depois some com fade. Só usa timer (não depende de login nem de rede), então nunca fica presa. */
+(function(){var s=document.getElementById("splash");if(!s)return;var done=false;
+function rm(){if(done)return;done=true;s.classList.add("out");setTimeout(function(){if(s.parentNode)s.parentNode.removeChild(s)},450)}
+setTimeout(rm,1000);var i=s.querySelector("img");if(i)i.addEventListener("error",rm)})();
+</script>
 <div id="bn" role="alert" hidden></div>
 <div id="live" class="sr" aria-live="polite"></div>
 <div id="app"></div>
@@ -185,7 +198,7 @@ function weekDates(){var n=new Date(),i=(n.getDay()+6)%7,m=new Date(n.getFullYea
 /* ---------- Trilha (home) ---------- */
 function trailCtx(){return{S:S,save:save,say:say,esc:esc,today:today(),mascote:mascote,view:view,back:renderHome}}
 function renderHome(){var li=lvlInfo(),t=today(),a=S.active,b4=S.streak+"/"+S.best;CF.refreshStreak(S,t);if(b4!==S.streak+"/"+S.best)save();
- var h='<div class="top" style="margin-bottom:8px"><div class="stat" title="Ofensiva atual">🔥 '+S.streak+'</div><div class="stat" title="Nível">'+mascote(36)+' Nv '+li.l+'</div><div class="stat" title="Pontos">⭐ '+S.points+'</div></div><div class="bar" role="img" aria-label="Progresso do nível"><i style="width:'+li.pct+'%;background:var(--gold)"></i></div><small style="color:var(--mute)">'+(200-S.points%200)+' pontos para o nível '+(li.l+1)+' · Melhor ofensiva: '+S.best+(S.best===1?" dia":" dias")+'</small>';
+ var h='<div class="top" style="margin-bottom:8px"><div class="stat" title="Ofensiva atual">🔥 '+S.streak+'</div><div class="stat" title="Nível"><button type="button" class="pf" id="pf" aria-label="Abrir meu perfil">'+mascote(36)+'</button> Nv '+li.l+'</div><div class="stat" title="Pontos">⭐ '+S.points+'</div></div><div class="bar" role="img" aria-label="Progresso do nível"><i style="width:'+li.pct+'%;background:var(--gold)"></i></div><small style="color:var(--mute)">'+(200-S.points%200)+' pontos para o nível '+(li.l+1)+' · Melhor ofensiva: '+S.best+(S.best===1?" dia":" dias")+'</small>';
  if(a)h+='<div class="card" style="margin-top:12px"><b>Treino antigo em andamento</b><div>'+esc(SES[a.type].n)+' · exercício '+Math.min(a.exIdx+1,a.exercises.length)+' de '+a.exercises.length+'</div><div class="row"><button class="btn" id="rs">Retomar</button><button class="btn sec" id="ab">Abandonar</button></div></div>';
  h+='<details class="more"><summary>Backup e perfil</summary><div class="row" style="margin-top:12px"><button class="btn sec" id="xb">Exportar backup</button><button class="btn sec" id="ib">Importar backup</button></div><button class="link" id="reset">Refazer perfil e plano</button></details><div id="trail"></div>';
  view(h);
@@ -193,6 +206,7 @@ function renderHome(){var li=lvlInfo(),t=today(),a=S.active,b4=S.streak+"/"+S.be
  if($("ab"))$("ab").onclick=function(){if(confirm("Abandonar este treino? As séries feitas ficam no histórico, mas sem bônus de conclusão.")){CF.abandonSession(S,S.active,Date.now());S.active=null;save();renderHome()}};
  $("xb").onclick=function(){exportText(CF.makeBackup(S),"crowfit-backup-"+t+".json")};$("ib").onclick=pickImport;
  $("reset").onclick=function(){if(S.active){alert("Termine ou abandone o treino em andamento antes de refazer o plano.");return}if(confirm("Refazer o perfil? Seus pontos, histórico, ofensiva e trilha são mantidos.")){S.profile=null;save();ob={step:0,d:{}};renderOb()}};
+ if($("pf"))$("pf").onclick=function(){if(window.CrowfitProfile)CrowfitProfile.open($("pf"))};
  CFT.mount($("trail"),trailCtx())}
 
 /* ---------- Treino ---------- */
@@ -244,6 +258,8 @@ function finish(){var a=S.active,st=CF.finishSession(S,a,Date.now(),today());S.a
 
 /* ---------- Início ---------- */
 load();
+/* Perfil lê nível e XP daqui (mesma fonte da home: S.points e lvlInfo). Nada é copiado nem recalculado em outro lugar. */
+if(window.CrowfitProfile)CrowfitProfile.setStats(function(){return{level:lvlInfo().l,points:S.points}});
 if(loadErr&&blocked)renderRecovery();else S.profile?renderHome():renderOb();
 if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(e){console.warn("Crowfit: service worker não registrado",e)})})}
 </script>
