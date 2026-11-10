@@ -2,11 +2,11 @@
    Versionamento: aumente CACHE_VERSION a cada publicação que mude arquivos.
    Só mexemos em caches que começam com o prefixo "crowfit-cache-"; caches de outros apps da mesma origem são preservados. */
 var PREFIX = "crowfit-cache-";
-var CACHE_VERSION = 11;
+var CACHE_VERSION = 12;
 var CACHE = PREFIX + "v" + CACHE_VERSION;
-var CORE = ["./", "./index.html", "./core.js", "./program.js", "./trail.js", "./trail.css", "./manifest.json", "./icon-192.png", "./icon-512.png", "./icon-180.png", "./icon-maskable-512.png", "./mascot.png", "./logo.png", "./splash.jpg"];
+var CORE = ["./", "./index.html", "./core.js", "./store.js", "./program.js", "./trail.js", "./trail.css", "./manifest.json", "./icon-192.png", "./icon-512.png", "./icon-180.png", "./icon-maskable-512.png", "./mascot.png", "./logo.png", "./splash.jpg"];
 /* Autenticação: fora do CORE para que um arquivo ausente ou falha de rede não impeça a instalação do SW. */
-var EXTRA = ["./supabase-config.js", "./auth.js", "./auth-ui.js", "./auth.css", "./profile.js", "./profile.css",
+var EXTRA = ["./supabase-config.js", "./auth.js", "./auth-ui.js", "./auth.css", "./profile.js", "./profile.css", "./settings.css",
   "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"];
 
 self.addEventListener("install", function (e) {

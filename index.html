@@ -74,6 +74,7 @@ input{width:100%;border:2px solid var(--line);border-radius:14px;padding:12px;fo
 </style>
 <link rel="stylesheet" href="auth.css">
 <link rel="stylesheet" href="profile.css">
+<link rel="stylesheet" href="settings.css">
 <link rel="stylesheet" href="trail.css">
 </head>
 <body>
@@ -94,6 +95,7 @@ setTimeout(rm,1000);var i=s.querySelector("img");if(i)i.addEventListener("error"
 <script src="auth-ui.js"></script>
 <script src="profile.js"></script>
 <script src="core.js"></script>
+<script src="store.js"></script>
 <script src="program.js"></script>
 <script src="trail.js"></script>
 <script>
@@ -123,24 +125,28 @@ L:{n:"Pernas e glúteos",ex:["po","ag","af","pg","ag_s","pa","al"]},
 C:{n:"Abdômen e core",ex:["po","ab","pr","bi","pe","mc","al"]},
 F:{n:"Corpo todo",ex:["po","ag","fl_j|fl","mc","pg","pr","bu|bi","al"]}};
 var DIAS=["Segunda","Terça","Quarta","Quinta","Sexta","Sábado","Domingo"];
-/* "corvofit-v1" é o nome histórico da chave: NÃO renomear (preserva o progresso já salvo). */
-var KEY="corvofit-v1",S=null,loadErr=null,blocked=false,rawBad=null,bakOk=false,tm=null,lastAct=0,ob={step:0,d:{}};
+/* Dados por conta: cada conta usa "corvofit-v2:u:<UID>" (ver store.js).
+   "corvofit-v1" é o nome histórico da chave antiga: NÃO renomear, NÃO apagar e NÃO escrever mais nela. Ela só é lida para a adoção única pelo dono. */
+var S=null,curUid="",gen=0,booted=null,homeStale=false,loadErr=null,blocked=false,rawBad=null,bakOk=false,tm=null,lastAct=0,ob={step:0,d:{}};
 var $=function(id){return document.getElementById(id)},app=$("app"),esc=CF.escText,today=function(){return CF.dateKey(new Date())};
+function LS(){try{return window.localStorage}catch(e){return null}}
 function say(t){var l=$("live");if(l)l.textContent=t}
 function banner(m){var b=$("bn");if(b){b.textContent=m||"";b.hidden=!m}}
 function act(){var n=Date.now();if(n-lastAct<350)return false;lastAct=n;return true}
 function view(h){clearInterval(tm);app.innerHTML=h;var t=app.querySelector("h1,h2,.logo");if(t){t.setAttribute("tabindex","-1");try{t.focus({preventScroll:true})}catch(e){}}}
 
-/* ---------- Persistência ---------- */
-function load(){var raw=null;
- try{raw=localStorage.getItem(KEY)}catch(e){loadErr=["Armazenamento indisponível neste navegador."];S=CF.emptyState();banner("Armazenamento indisponível: seu progresso NÃO será salvo.");return}
- if(!raw){S=CF.emptyState();return}
+/* ---------- Persistência (partição da conta atual) ---------- */
+/* Devolve "ok" (dados da conta lidos), "empty" (a conta ainda não tem dados) ou "unavail" (armazenamento indisponível). */
+function load(uid){var raw=null,k=CFStore.key(uid);
+ try{raw=localStorage.getItem(k)}catch(e){loadErr=["Armazenamento indisponível neste navegador."];S=CF.emptyState();banner("Armazenamento indisponível: seu progresso NÃO será salvo.");return"unavail"}
+ if(raw==null){S=CF.emptyState();return"empty"}
  var o,r;try{o=JSON.parse(raw);r=CF.validateState(o)}catch(e){r={ok:false,errors:["O arquivo salvo está corrompido (JSON inválido)."]}}
- if(!r.ok){rawBad=raw;loadErr=r.errors.slice(0,6);blocked=true;S=CF.emptyState();try{localStorage.setItem(KEY+":corrompido",raw);bakOk=true}catch(e){console.error("Crowfit: não foi possível copiar os dados antigos",e)}console.error("Crowfit: dados locais inválidos",r.errors);return}
- S=r.state;if(S.active)pauseActive()}
+ if(!r.ok){rawBad=raw;loadErr=r.errors.slice(0,6);blocked=true;S=CF.emptyState();try{localStorage.setItem(k+":corrompido",raw);bakOk=true}catch(e){console.error("Crowfit: não foi possível copiar os dados antigos",e)}console.error("Crowfit: dados locais inválidos",r.errors);return"ok"}
+ S=r.state;if(S.active)pauseActive();return"ok"}
 function save(){
+ if(!S||!curUid)return false;
  if(blocked){banner("Dados não carregados: nada será salvo até você restaurar um backup ou começar do zero.");return false}
- try{var js=JSON.stringify(S);localStorage.setItem(KEY,js);if(localStorage.getItem(KEY)!==js)throw new Error("a verificação da gravação falhou");banner("");return true}
+ try{var k=CFStore.key(curUid),js=JSON.stringify(S);localStorage.setItem(k,js);if(localStorage.getItem(k)!==js)throw new Error("a verificação da gravação falhou");banner("");return true}
  catch(e){console.error("Crowfit: falha ao salvar",e);banner("Alterações NÃO salvas ("+(e&&e.name==="QuotaExceededError"?"armazenamento cheio":"erro de gravação")+"). Exporte um backup.");return false}}
 function persist(){var a=S.active,ex=a&&a.exercises[a.exIdx];if(ex&&ex.timer)CF.timerTick(ex.timer,Date.now());return save()}
 /* Ao carregar/importar: cada cronômetro "running" é fechado com base em endAt. Se ainda resta tempo, pausa e preserva o restante;
@@ -152,15 +158,47 @@ function pauseActive(){var now=Date.now();S.active.exercises.forEach(function(e)
  CF.syncStatus(e)})}
 window.addEventListener("error",function(e){console.error("Crowfit:",e.error||e.message);banner("Ocorreu um erro inesperado. Recarregue a página; seus dados salvos não foram apagados.")});
 
+/* ---------- Conta ativa: entrar, sair e trocar ---------- */
+/* Só carrega dados depois de saber o UID. Eventos da mesma conta (renovação de token etc.) são ignorados. */
+function boot(snap){
+ if(!snap||!snap.ready)return;
+ var uid=snap.user?snap.user.id:(snap.offline?(snap.offlineUid||""):""),tag=uid||(snap.offline?"~offline":"~none");
+ if(tag===booted)return;
+ leave();booted=tag;
+ if(!uid){if(tag==="~offline")view('<div class="hero"><h1>Não foi possível identificar a conta</h1><p>Conecte-se à internet e entre de novo. Seus dados continuam guardados neste aparelho.</p></div>');return}
+ if(!CFStore.uidOk(uid)){view('<div class="hero"><h1>Conta não reconhecida</h1><p>Entre novamente.</p></div>');return}
+ curUid=uid;enter(uid)}
+/* Sai da conta atual: grava o que é dela na partição dela, invalida tarefas pendentes e limpa a memória e a tela. Nada persistido é apagado. */
+function leave(){
+ if(S&&curUid&&!blocked)save();
+ gen++;S=null;curUid="";ob={step:0,d:{}};loadErr=null;blocked=false;rawBad=null;bakOk=false;homeStale=false;
+ clearInterval(tm);banner("");app.innerHTML="";say("")}
+function legacyValid(raw){try{return CF.validateState(JSON.parse(raw)).ok}catch(e){return false}}
+function enter(uid){var st=load(uid);
+ if(loadErr&&blocked){renderRecovery();return}
+ if(st==="empty"&&CFStore.legacyStatus(LS(),uid,legacyValid)==="offer"){S=null;renderAdopt(uid);return} /* S nulo: nada pode ser gravado enquanto a decisão está pendente */
+ S.profile?renderHome():renderOb()}
+/* Dados antigos (sem dono) só passam para uma conta com confirmação explícita; depois disso não são oferecidos a nenhuma outra. */
+function renderAdopt(uid){var my=gen,old=null;try{old=JSON.parse(localStorage.getItem(CFStore.LEGACY))}catch(e){}
+ var nm=old&&old.profile&&typeof old.profile.nome==="string"?old.profile.nome:"",pts=old&&isFinite(old.points)?old.points:0;
+ view('<div class="hero"><h1>Dados antigos encontrados</h1><p>Este aparelho tem um progresso do Crowfit salvo antes das contas existirem'+(nm?' (perfil "'+esc(nm)+'", '+esc(pts)+' pontos)':'')+'. Eles são seus?</p></div><div class="card"><p class="tip" style="margin:0">Se confirmar, eles passam a pertencer a esta conta e não serão oferecidos a nenhuma outra. Em qualquer caso, os dados originais continuam guardados no aparelho.</p></div><div class="row"><button class="btn" id="ad-y">Sim, usar nesta conta</button></div><div class="row"><button class="btn sec" id="ad-n">Não, começar do zero</button></div>');
+ $("ad-y").onclick=function(){if(my!==gen)return;var r=CFStore.adopt(LS(),uid);
+  if(r.ok){enter(uid);return}
+  if(r.reason==="write"){alert("Não foi possível copiar os dados antigos para esta conta. Nada foi alterado.");return}
+  enter(uid)};
+ $("ad-n").onclick=function(){if(my!==gen)return;CFStore.decline(LS(),uid);S=CF.emptyState();renderOb()}}
+
 /* ---------- Backup ---------- */
 function exportText(t,name){var b=new Blob([t],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1000)}
-function pickImport(){var i=document.createElement("input");i.type="file";i.accept="application/json,.json";i.onchange=function(){var f=i.files[0];if(!f)return;if(f.size>1000000){alert("Arquivo grande demais (máximo 1 MB).");return}
- var rd=new FileReader();rd.onerror=function(){alert("Não foi possível ler o arquivo.")};rd.onload=function(){var r=CF.parseBackup(String(rd.result));if(!r.ok){alert("Backup recusado:\n- "+r.errors.slice(0,5).join("\n- ")+"\n\nNenhum dado foi alterado.");return}
-  if(!confirm("Substituir os dados atuais pelo backup? Uma cópia dos dados atuais será guardada neste aparelho."))return;
-  try{localStorage.setItem(KEY+":antes-importar",JSON.stringify(S))}catch(e){}
-  S=r.state;blocked=false;loadErr=null;if(S.active)pauseActive();save();S.profile?renderHome():renderOb()};rd.readAsText(f)};i.click()}
+/* A importação vale só para a conta que estava ativa ao escolher o arquivo; se a conta mudar, o resultado é descartado. */
+function pickImport(onDone){var my=gen,uid=curUid;if(!uid)return;var i=document.createElement("input");i.type="file";i.accept="application/json,.json";i.onchange=function(){var f=i.files[0];if(!f)return;if(f.size>1000000){alert("Arquivo grande demais (máximo 1 MB).");return}
+ var rd=new FileReader();rd.onerror=function(){alert("Não foi possível ler o arquivo.")};rd.onload=function(){if(my!==gen)return;var r=CF.parseBackup(String(rd.result));if(!r.ok){alert("Backup recusado:\n- "+r.errors.slice(0,5).join("\n- ")+"\n\nNenhum dado foi alterado.");return}
+  if(!confirm("Substituir os dados desta conta pelo backup? Uma cópia dos dados atuais será guardada neste aparelho."))return;
+  if(my!==gen)return;
+  try{localStorage.setItem(CFStore.key(uid)+":antes-importar",JSON.stringify(S))}catch(e){}
+  S=r.state;blocked=false;loadErr=null;if(S.active)pauseActive();save();homeStale=false;if(onDone)onDone();S.profile?renderHome():renderOb()};rd.readAsText(f)};i.click()}
 function renderRecovery(){view('<div class="hero"><h1>Não consegui carregar seus dados</h1><p>'+(bakOk?"Seus dados originais foram preservados e não foram apagados.":"Seus dados originais ainda não foram apagados, mas não coube uma cópia de segurança neste aparelho. Baixe a cópia abaixo antes de qualquer outra ação.")+'</p></div><div class="card"><b>O que foi encontrado:</b><ul>'+loadErr.map(function(x){return"<li>"+esc(x)+"</li>"}).join("")+'</ul></div><div class="row"><button class="btn" id="im">Restaurar de um backup</button></div><div class="row"><button class="btn sec" id="ex">Baixar cópia dos dados antigos</button></div><button class="link" id="fr">Começar do zero (a cópia antiga fica guardada)</button>');
- $("im").onclick=pickImport;$("ex").onclick=function(){exportText(rawBad||"","crowfit-dados-antigos.json")};
+ $("im").onclick=function(){pickImport()};$("ex").onclick=function(){exportText(rawBad||"","crowfit-dados-antigos.json")};
  $("fr").onclick=function(){if(confirm(bakOk?"Começar do zero? Os dados antigos continuam guardados em uma cópia neste aparelho.":"ATENÇÃO: não foi possível guardar uma cópia dos dados antigos neste aparelho. Se continuar, eles serão apagados. Use antes \"Baixar cópia dos dados antigos\". Começar do zero mesmo assim?")){blocked=false;loadErr=null;S=CF.emptyState();save();renderOb()}}}
 
 /* ---------- Onboarding ---------- */
@@ -196,18 +234,53 @@ function renderOb(){var s=ob.step;
 function lvlInfo(){return{l:Math.floor(S.points/200)+1,pct:(S.points%200)/200*100}}
 function weekDates(){var n=new Date(),i=(n.getDay()+6)%7,m=new Date(n.getFullYear(),n.getMonth(),n.getDate()-i),a=[];for(var j=0;j<7;j++)a.push(new Date(m.getFullYear(),m.getMonth(),m.getDate()+j));return{dates:a,today:i}}
 /* ---------- Trilha (home) ---------- */
-function trailCtx(){return{S:S,save:save,say:say,esc:esc,today:today(),mascote:mascote,view:view,back:renderHome}}
+/* O save do contexto só vale para a conta que estava ativa quando a tela foi montada. */
+function trailCtx(){var g=gen;return{S:S,save:function(){return g===gen?save():false},say:say,esc:esc,today:today(),mascote:mascote,view:view,back:renderHome}}
 function renderHome(){var li=lvlInfo(),t=today(),a=S.active,b4=S.streak+"/"+S.best;CF.refreshStreak(S,t);if(b4!==S.streak+"/"+S.best)save();
  var h='<div class="top" style="margin-bottom:8px"><div class="stat" title="Ofensiva atual">🔥 '+S.streak+'</div><div class="stat" title="Nível"><button type="button" class="pf" id="pf" aria-label="Abrir meu perfil">'+mascote(36)+'</button> Nv '+li.l+'</div><div class="stat" title="Pontos">⭐ '+S.points+'</div></div><div class="bar" role="img" aria-label="Progresso do nível"><i style="width:'+li.pct+'%;background:var(--gold)"></i></div><small style="color:var(--mute)">'+(200-S.points%200)+' pontos para o nível '+(li.l+1)+' · Melhor ofensiva: '+S.best+(S.best===1?" dia":" dias")+'</small>';
  if(a)h+='<div class="card" style="margin-top:12px"><b>Treino antigo em andamento</b><div>'+esc(SES[a.type].n)+' · exercício '+Math.min(a.exIdx+1,a.exercises.length)+' de '+a.exercises.length+'</div><div class="row"><button class="btn" id="rs">Retomar</button><button class="btn sec" id="ab">Abandonar</button></div></div>';
- h+='<details class="more"><summary>Backup e perfil</summary><div class="row" style="margin-top:12px"><button class="btn sec" id="xb">Exportar backup</button><button class="btn sec" id="ib">Importar backup</button></div><button class="link" id="reset">Refazer perfil e plano</button></details><div id="trail"></div>';
+ h+='<div id="trail"></div>';
  view(h);
  if($("rs"))$("rs").onclick=function(){S.active.status="in_progress";renderEx()};
  if($("ab"))$("ab").onclick=function(){if(confirm("Abandonar este treino? As séries feitas ficam no histórico, mas sem bônus de conclusão.")){CF.abandonSession(S,S.active,Date.now());S.active=null;save();renderHome()}};
- $("xb").onclick=function(){exportText(CF.makeBackup(S),"crowfit-backup-"+t+".json")};$("ib").onclick=pickImport;
- $("reset").onclick=function(){if(S.active){alert("Termine ou abandone o treino em andamento antes de refazer o plano.");return}if(confirm("Refazer o perfil? Seus pontos, histórico, ofensiva e trilha são mantidos.")){S.profile=null;save();ob={step:0,d:{}};renderOb()}};
  if($("pf"))$("pf").onclick=function(){if(window.CrowfitProfile)CrowfitProfile.open($("pf"))};
  CFT.mount($("trail"),trailCtx())}
+
+/* ---------- Configurações (renderizadas dentro do painel de perfil, categorias "Perfil de treino" e "Dados e backup") ---------- */
+function secTrain(host,a){var p=S&&S.profile;
+ if(!p){host.innerHTML='<p class="tip">Esta conta ainda não tem perfil de treino. Ele é criado no primeiro acesso.</p>';return}
+ var d={exp:p.exp,dias:p.dias};
+ function fld(id,lab,type,val,ex){return'<div class="cf-field"><label for="'+id+'">'+lab+'</label><input id="'+id+'" type="'+type+'" value="'+CF.escAttr(val)+'" '+ex+'></div>'}
+ function chips(lab,id,at,list,cur){return'<div class="cf-field"><label id="'+id+'">'+lab+'</label><div class="chips" role="group" aria-labelledby="'+id+'">'+list.map(function(o){return'<button type="button" class="chip" '+at+'="'+CF.escAttr(o)+'" aria-pressed="false">'+esc(o)+'</button>'}).join("")+'</div></div>'}
+ host.innerHTML='<form class="cf-form" novalidate id="tf">'+fld("tf-n","Nome","text",p.nome,'maxlength="40" autocomplete="given-name"')+fld("tf-i","Idade","number",p.idade,'inputmode="numeric" min="12" max="90"')+fld("tf-p","Peso (kg)","number",p.peso,'inputmode="decimal" step="any" min="30" max="250"')+fld("tf-h","Altura (cm)","number",p.altura,'inputmode="decimal" step="any" min="120" max="230"')+
+  chips("Experiência com exercícios","tf-el","data-e",CF.EXP)+chips("Dias de treino por semana","tf-dl","data-d",[3,4,5,6])+
+  '<p class="cf-msg" role="status" aria-live="polite" id="tf-m" hidden></p><button class="cf-btn cf-btn-main" type="submit">Salvar alterações</button></form>'+
+  '<p class="cf-hint">Editar não apaga pontos, histórico, ofensiva nem a trilha. A experiência vale a partir da próxima seção da trilha; os dias por semana valem a partir de hoje.</p>'+
+  '<button class="cf-btn cf-btn-ghost" type="button" id="tf-r">Refazer perfil e plano</button>';
+ function mark(sel,at,val){host.querySelectorAll(sel).forEach(function(c){var on=c.getAttribute(at)===String(val);c.classList.toggle("on",on);c.setAttribute("aria-pressed",on?"true":"false")})}
+ function m(t,ok){var n=host.querySelector("#tf-m");n.textContent=t||"";n.className="cf-msg "+(ok?"ok":"error");n.hidden=!t}
+ mark("[data-e]","data-e",d.exp);mark("[data-d]","data-d",d.dias);
+ host.querySelectorAll("[data-e]").forEach(function(b){b.onclick=function(){d.exp=b.getAttribute("data-e");mark("[data-e]","data-e",d.exp)}});
+ host.querySelectorAll("[data-d]").forEach(function(b){b.onclick=function(){d.dias=Number(b.getAttribute("data-d"));mark("[data-d]","data-d",d.dias)}});
+ host.querySelector("#tf").onsubmit=function(e){e.preventDefault();
+  var g=function(id){return host.querySelector(id).value.trim()};
+  var r=CF.validateProfile({nome:g("#tf-n"),idade:Number(g("#tf-i")),peso:Number(g("#tf-p")),altura:Number(g("#tf-h")),exp:d.exp,dias:d.dias});
+  if(!r.ok){m(r.errors[0]);return}
+  var old=S.profile,ph=JSON.stringify(S.planHistory),t=today();
+  S.profile=r.profile;if(r.profile.dias!==old.dias)CF.setPlan(S,r.profile.dias,t);CF.refreshStreak(S,t);
+  if(!save()){S.profile=old;S.planHistory=JSON.parse(ph);CF.refreshStreak(S,t);m("Não foi possível salvar. Nada foi alterado.");return}
+  homeStale=true;m("Alterações salvas.",true)};
+ host.querySelector("#tf-r").onclick=function(){
+  if(S.active){alert("Termine ou abandone o treino em andamento antes de refazer o plano.");return}
+  if(!confirm("Refazer o perfil? Seus pontos, histórico, ofensiva e trilha são mantidos."))return;
+  var old=S.profile;S.profile=null;if(!save()){S.profile=old;alert("Não foi possível salvar. Nada foi alterado.");return}
+  ob={step:0,d:{}};homeStale=false;a.close();renderOb()}}
+function secData(host,a){
+ host.innerHTML='<div class="card"><b>O que o backup inclui</b><ul class="cf-ul"><li>Perfil de treino (nome, idade, peso, altura, experiência e dias por semana)</li><li>Pontos, nível e ofensiva</li><li>Histórico de treinos e de planos</li><li>Progresso da trilha</li><li>Ajuste de dificuldade</li></ul><p class="tip" style="margin:8px 0 0">Não inclui e-mail, senha nem o nome de exibição da conta. O arquivo tem dados pessoais: guarde com cuidado.</p></div>'+
+  '<div class="row" style="margin-top:14px"><button class="btn sec" type="button" id="d-x">Exportar backup</button></div><div class="row"><button class="btn sec" type="button" id="d-i">Importar backup</button></div>'+
+  '<p class="cf-hint">Importar substitui os dados desta conta neste aparelho. Antes de substituir, pedimos confirmação e guardamos uma cópia dos dados atuais.</p>';
+ host.querySelector("#d-x").onclick=function(){if(S)exportText(CF.makeBackup(S),"crowfit-backup-"+today()+".json")};
+ host.querySelector("#d-i").onclick=function(){pickImport(function(){a.close()})}}
 
 /* ---------- Treino ---------- */
 function buildSession(type,lv){return SES[type].ex.map(function(k){var parts=k.split("|"),id=parts.length>1&&lv>=1?parts[1]:parts[0],e=EX[id],opt=(id==="po"||id==="al");
@@ -247,7 +320,7 @@ function renderEx(){var a=S.active,ex=cur();if(!ex){finish();return}CF.syncStatu
  B("sk",function(){CF.skipExercise(a);say("Exercício pulado");next()});
  if(T&&T.state==="running")loop()}
 function next(){var fin=CF.advance(S.active);persist();fin?finish():renderEx()}
-function loop(){clearInterval(tm);tm=setInterval(function(){var ex=cur();if(!ex||!ex.timer||ex.timer.state!=="running")return;CF.timerTick(ex.timer,Date.now());
+function loop(){clearInterval(tm);var g0=gen;tm=setInterval(function(){if(g0!==gen||!S){clearInterval(tm);return}var ex=cur();if(!ex||!ex.timer||ex.timer.state!=="running")return;CF.timerTick(ex.timer,Date.now());
  if(ex.timer.state==="time_completed"){clearInterval(tm);if(ex.timer.kind==="rest"){ex.restPending=false;ex.timer=null;say("Descanso terminado")}else say("Tempo concluído. Conclua a série.");CF.syncStatus(ex);persist();renderEx()}
  else{var g=$("tg");if(g)g.textContent=CF.timerSecs(ex.timer)+"s"}},250)}
 function finish(){var a=S.active,st=CF.finishSession(S,a,Date.now(),today());S.active=null;save();var ok=st==="completed";
@@ -257,10 +330,14 @@ function finish(){var a=S.active,st=CF.finishSession(S,a,Date.now(),today());S.a
  $("hm").onclick=renderHome}
 
 /* ---------- Início ---------- */
-load();
-/* Perfil lê nível e XP daqui (mesma fonte da home: S.points e lvlInfo). Nada é copiado nem recalculado em outro lugar. */
-if(window.CrowfitProfile)CrowfitProfile.setStats(function(){return{level:lvlInfo().l,points:S.points}});
-if(loadErr&&blocked)renderRecovery();else S.profile?renderHome():renderOb();
+/* Nada é carregado aqui: os dados só são lidos depois que a autenticação informa o UID (boot). */
+if(window.CrowfitProfile){
+ /* Perfil lê nível e XP daqui (mesma fonte da home: S.points e lvlInfo). Sem conta carregada, devolve null. */
+ CrowfitProfile.setStats(function(){return S&&S.profile?{level:lvlInfo().l,points:S.points}:null});
+ CrowfitProfile.setSections(function(name,host,api){if(!S)return;if(name==="train")secTrain(host,api);else if(name==="data")secData(host,api)});
+ CrowfitProfile.setOnClose(function(){if(homeStale&&S&&S.profile){homeStale=false;renderHome()}})}
+if(window.CrowfitAuth){CrowfitAuth.onChange(boot);CrowfitAuth.init().then(function(){boot(CrowfitAuth.getState())})}
+else view('<div class="hero"><h1>Não foi possível iniciar</h1><p>O módulo de acesso não carregou. Recarregue a página.</p></div>');
 if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(e){console.warn("Crowfit: service worker não registrado",e)})})}
 </script>
 </body>

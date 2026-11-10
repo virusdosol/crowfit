@@ -1,9 +1,12 @@
 /* Crowfit — perfil remoto do usuário (Supabase, tabela public.profiles).
-   Expõe window.CrowfitProfile. Não lê nem escreve nenhuma chave de localStorage (o progresso "corvofit-v1" não é tocado).
+   Expõe window.CrowfitProfile. Não lê nem escreve nenhuma chave de localStorage (o progresso local não é tocado).
    O perfil fica só em memória: é descartado no logout / troca de conta e nunca é guardado no aparelho.
    O app LÊ e ATUALIZA display_name. A criação normal é feita pelo banco (trigger). Se o perfil não existir,
    o app pede ao banco a recuperação via RPC ensure_my_profile(), que usa auth.uid() (nunca um id vindo daqui).
-   Tudo passa por RLS. */
+   Tudo passa por RLS.
+   Painel: "profile" (nome, nível, XP, engrenagem) -> "settings" (menu de categorias) -> "account" (nome de exibição, conta, sair),
+   "train" (Perfil de treino) e "data" (Dados e backup). As duas últimas são desenhadas pelo app via setSections():
+   o profile.js não conhece nem guarda dados de treino. */
 (function (global, doc) {
   'use strict';
   var Auth = global.CrowfitAuth;
@@ -188,9 +191,9 @@
   }
 
   /* ---------- interface (reaproveita as classes cf-* de auth.css) ---------- */
-  /* Duas telas dentro do mesmo painel: "profile" (nome, nível, XP, engrenagem, sair) e "settings" (editar nome).
-     Nível e XP vêm do app via setStats(): o profile.js não calcula nem guarda nada disso. */
-  var panel = null, panelOpen = false, screen = 'profile', draft = null, uiMsg = null, opener = null, statsFn = null;
+  var panel = null, panelOpen = false, screen = 'profile', draft = null, uiMsg = null, opener = null, statsFn = null, sectionsFn = null, onCloseFn = null;
+  var SCREENS = { account: 1, train: 1, data: 1 };
+  var TITLES = { train: 'Perfil de treino', data: 'Dados e backup' };
 
   function el(tag, cls) { var n = doc.createElement(tag); if (cls) n.className = cls; return n; }
 
@@ -215,13 +218,16 @@
       var t = e.target.closest && e.target.closest('button');
       if (!t || saving) return;
       if (t.hasAttribute('data-prof-close')) closePanel(true);
-      else if (t.hasAttribute('data-prof-settings')) go('settings');
+      else if (t.hasAttribute('data-prof-settings') || t.hasAttribute('data-prof-menu')) go('settings');
       else if (t.hasAttribute('data-prof-back')) go('profile');
+      else if (t.hasAttribute('data-prof-go')) { var g = t.getAttribute('data-prof-go'); if (SCREENS[g]) go(g); }
       else if (t.hasAttribute('data-prof-retry')) { uiMsg = null; refresh(); }
     });
     panel.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape' || saving) return;
-      if (screen === 'settings') go('profile'); else closePanel(true);
+      if (screen === 'settings') go('profile');
+      else if (SCREENS[screen]) go('settings');
+      else closePanel(true);
     });
   }
 
@@ -243,11 +249,14 @@
     if (state.status === 'error' && state.errorKind !== 'session') refresh(); /* reabrir tenta de novo */
   }
 
+  /* restoreFocus=true significa fechamento pedido pelo usuário (avisa o app para atualizar a home se algo mudou).
+     Fechamentos automáticos (troca de conta, logout) passam false e não avisam o app. */
   function closePanel(restoreFocus) {
     if (!panel) return;
     panelOpen = false; draft = null; uiMsg = null; screen = 'profile';
     panel.hidden = true; panel.innerHTML = '';
     if (!authOverlayOpen()) { doc.documentElement.classList.remove('cf-auth-open'); setAppInert(false); }
+    if (restoreFocus && onCloseFn) { try { onCloseFn(); } catch (e) {} }
     if (restoreFocus) {
       var o = (opener && doc.contains(opener)) ? opener : doc.getElementById('pf');
       if (o && o.focus) { try { o.focus(); } catch (e) {} }
@@ -273,21 +282,39 @@
   }
 
   var GEAR = '<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
+  var BAR = '<div class="cf-bar"><button class="cf-icon" type="button" data-prof-settings aria-label="Configurações">' + GEAR + '</button></div>';
   var CLOSE = '<button class="cf-btn cf-btn-ghost" type="button" data-prof-close>Fechar</button>';
   var LOGOUT = '<button class="cf-btn cf-btn-ghost cf-btn-danger" type="button" data-crowfit-logout>Sair da conta</button>';
+  var BACK_MENU = '<button class="cf-btn cf-btn-ghost" type="button" data-prof-menu>Voltar às configurações</button>';
+  function menuItem(id, title, sub) { return '<button class="cf-menu-item" type="button" data-prof-go="' + id + '"><span>' + title + '<small>' + sub + '</small></span></button>'; }
+
+  /* API entregue às seções desenhadas pelo app. */
+  var api = { rerender: function () { renderPanel(false); }, close: function () { closePanel(true); } };
 
   /* keepTyped: re-render disparado por mudança de estado (não pelo usuário): preserva o que está sendo digitado. */
   function renderPanel(focus, keepTyped) {
     if (!panel || !panelOpen || saving) return;
+    /* Seções do app têm formulários próprios: uma atualização do perfil remoto não deve apagar o que está sendo digitado. */
+    if (keepTyped && (screen === 'train' || screen === 'data') && panel.querySelector('[data-host]')) return;
     var snap = Auth.getState();
     var st = state.status, h, mode;
-    if (keepTyped && screen === 'settings' && st === 'ready') {
+    if (keepTyped && screen === 'account' && st === 'ready') {
       var cur = panel.querySelector('#cf-prof-name');
       if (cur) draft = cur.value;
     }
-    if (st === 'ready' && screen === 'settings') {
-      mode = 'settings';
-      h = '<div class="cf-wrap"><h1 class="cf-title" tabindex="-1">Configurações</h1>' +
+    if (screen === 'settings') {
+      mode = 'menu';
+      h = '<div class="cf-wrap cf-set"><h1 class="cf-title" tabindex="-1">Configurações</h1><p class="cf-sub">Escolha uma categoria.</p>' +
+        '<div class="cf-menu">' + menuItem('account', 'Conta e perfil', 'Nome de exibição, conta e sair') +
+        menuItem('train', 'Perfil de treino', 'Idade, peso, altura, experiência e dias') +
+        menuItem('data', 'Dados e backup', 'Exportar e importar backup') + '</div>' +
+        '<button class="cf-btn cf-btn-ghost" type="button" data-prof-back>Voltar ao perfil</button></div>';
+    } else if (SCREENS[screen] && screen !== 'account') {
+      mode = 'host';
+      h = '<div class="cf-wrap cf-set"><h1 class="cf-title" tabindex="-1">' + TITLES[screen] + '</h1><div data-host></div>' + BACK_MENU + '</div>';
+    } else if (screen === 'account' && st === 'ready') {
+      mode = 'account';
+      h = '<div class="cf-wrap cf-set"><h1 class="cf-title" tabindex="-1">Conta e perfil</h1>' +
         '<p class="cf-sub"><span class="cf-acct" data-acct></span></p>' +
         '<p class="cf-msg" role="status" aria-live="polite" data-msg hidden></p>' +
         '<form class="cf-form" novalidate data-prof-form>' +
@@ -295,10 +322,15 @@
         '<input id="cf-prof-name" name="name" type="text" autocomplete="name" maxlength="' + (NAME_MAX * 2) + '" required>' +
         '<p class="cf-hint">De ' + NAME_MIN + ' a ' + NAME_MAX + ' caracteres.</p></div>' +
         '<button class="cf-btn cf-btn-main" type="submit" data-label="Salvar">Salvar</button></form>' +
-        '<button class="cf-btn cf-btn-ghost" type="button" data-prof-back>Voltar ao perfil</button></div>';
+        LOGOUT + BACK_MENU + '</div>';
+    } else if (screen === 'account') {
+      mode = 'account-off';
+      var retryA = (st === 'error' && state.errorKind !== 'session') ? '<button class="cf-btn cf-btn-main" type="button" data-prof-retry>Tentar de novo</button>' : '';
+      var body = st === 'loading' ? '<div class="cf-spin" role="status" aria-label="Carregando"></div>' : '<p class="cf-msg error" role="alert" data-err></p>' + retryA;
+      h = '<div class="cf-wrap cf-set"><h1 class="cf-title" tabindex="-1">Conta e perfil</h1><p class="cf-sub"><span class="cf-acct" data-acct></span></p>' + body + LOGOUT + BACK_MENU + '</div>';
     } else if (st === 'ready') {
       mode = 'profile';
-      h = '<div class="cf-wrap"><div class="cf-bar"><button class="cf-icon" type="button" data-prof-settings aria-label="Configurações">' + GEAR + '</button></div>' +
+      h = '<div class="cf-wrap">' + BAR +
         '<h1 class="cf-title cf-name" tabindex="-1" data-name></h1>' +
         '<p class="cf-sub"><span class="cf-acct" data-acct></span></p>' +
         '<div class="cf-stats"><div class="cf-stat"><span class="cf-stat-v" data-level>–</span><span class="cf-stat-l">Nível</span></div>' +
@@ -307,25 +339,29 @@
     } else if (st === 'error') {
       mode = 'error';
       var retry = state.errorKind === 'session' ? '' : '<button class="cf-btn cf-btn-main" type="button" data-prof-retry>Tentar de novo</button>';
-      h = '<div class="cf-wrap"><h1 class="cf-title" tabindex="-1">Seu perfil</h1><p class="cf-msg error" role="alert" data-err></p>' + retry + CLOSE + LOGOUT + '</div>';
+      h = '<div class="cf-wrap">' + BAR + '<h1 class="cf-title" tabindex="-1">Seu perfil</h1><p class="cf-msg error" role="alert" data-err></p>' + retry + CLOSE + LOGOUT + '</div>';
     } else if (st === 'loading') {
       mode = 'loading';
-      h = '<div class="cf-wrap"><h1 class="cf-title" tabindex="-1">Seu perfil</h1><div class="cf-spin" role="status" aria-label="Carregando"></div>' + CLOSE + '</div>';
+      h = '<div class="cf-wrap">' + BAR + '<h1 class="cf-title" tabindex="-1">Seu perfil</h1><div class="cf-spin" role="status" aria-label="Carregando"></div>' + CLOSE + '</div>';
     } else {
       mode = 'idle';
-      h = '<div class="cf-wrap"><h1 class="cf-title" tabindex="-1">Seu perfil</h1><p class="cf-msg error" role="alert">' + MSG.network + '</p>' + CLOSE + '</div>';
+      h = '<div class="cf-wrap">' + BAR + '<h1 class="cf-title" tabindex="-1">Seu perfil</h1><p class="cf-msg error" role="alert">' + MSG.network + '</p>' + CLOSE + '</div>';
     }
     panel.innerHTML = h;
 
     var ac = panel.querySelector('[data-acct]');
     if (ac) ac.textContent = snap.user && snap.user.email ? 'Conta: ' + snap.user.email : '';
 
-    if (mode === 'settings') {
+    if (mode === 'account') {
       var input = panel.querySelector('#cf-prof-name');
       input.value = draft != null ? draft : state.profile.displayName;
       if (uiMsg) setMsg(uiMsg.text, uiMsg.kind);
       panel.querySelector('[data-prof-form]').addEventListener('submit', onSubmit);
       if (focus) { try { input.focus(); input.select(); } catch (e) {} }
+    } else if (mode === 'host') {
+      var host = panel.querySelector('[data-host]');
+      try { if (sectionsFn) sectionsFn(screen, host, api); } catch (e) { host.textContent = MSG.generic; }
+      if (focus) { var th = panel.querySelector('.cf-title'); if (th) th.focus(); }
     } else if (mode === 'profile') {
       panel.querySelector('[data-name]').textContent = state.profile.displayName; /* sempre via textContent */
       var s = readStats();
@@ -377,7 +413,11 @@
     updateDisplayName: updateDisplayName,
     validateName: validateName,
     open: openPanel,
-    setStats: function (fn) { statsFn = typeof fn === 'function' ? fn : null; }
+    setStats: function (fn) { statsFn = typeof fn === 'function' ? fn : null; },
+    /* fn(nome, elementoHospedeiro, api) desenha as categorias "train" e "data". */
+    setSections: function (fn) { sectionsFn = typeof fn === 'function' ? fn : null; },
+    /* fn() é chamada quando o usuário fecha o painel (não em troca de conta nem logout). */
+    setOnClose: function (fn) { onCloseFn = typeof fn === 'function' ? fn : null; }
   };
 
   function start() {

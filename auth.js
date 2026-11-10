@@ -1,5 +1,6 @@
 /* Crowfit — módulo de autenticação (sem UI, sem relação com a lógica de treino).
-   Expõe window.CrowfitAuth. Não lê nem escreve nenhuma chave de localStorage do app.
+   Expõe window.CrowfitAuth. Não lê nem escreve nenhuma chave de localStorage do app
+   (a única leitura é o UID dentro da sessão guardada pelo próprio SDK, para identificar a conta no modo offline).
    Nunca registra tokens em log. */
 (function (global) {
   'use strict';
@@ -28,6 +29,15 @@
   }
   function hasStoredSession() {
     try { var k = storageKey(); return !!(k && global.localStorage.getItem(k)); } catch (e) { return false; }
+  }
+  /* UID (e só ele) da sessão guardada pelo SDK. Usado apenas no modo offline, quando não há objeto de sessão em memória. */
+  function storedUserId() {
+    try {
+      var k = storageKey(), raw = k && global.localStorage.getItem(k);
+      if (!raw) return '';
+      var o = JSON.parse(raw), id = o && o.user && o.user.id;
+      return typeof id === 'string' ? id : '';
+    } catch (e) { return ''; }
   }
 
   function mapError(err) {
@@ -60,7 +70,9 @@
   function snapshot(event) {
     return {
       event: event || '', ready: state.ready, user: publicUser(state.session), recovery: state.recovery && !!state.session,
-      offline: state.offline, expired: state.expired, urlError: state.urlError
+      offline: state.offline, expired: state.expired, urlError: state.urlError,
+      /* só preenchido no modo offline sem sessão em memória; o app usa para escolher a partição de dados da conta */
+      offlineUid: (state.offline && !state.session) ? storedUserId() : ''
     };
   }
 
