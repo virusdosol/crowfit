@@ -85,14 +85,13 @@ function nodeHtml(ctx, i, locked) {
     (pr.st === "done" ? '<span class="tn-chk" aria-hidden="true">✓</span>' : "") +
     '<span class="tn-lbl">U' + W.d + ' · ' + P.DIAS_ABR[u.dow] + '</span></button>';
 }
-function gate(ctx, i) {
-  var m = Math.floor(i / MES) + 1;
-  return '<button class="t-gate" type="button" aria-label="Mês ' + m + ' bloqueado"><span class="tg-i">' + LOCK + '</span><span class="tg-t"><b>MÊS ' + m + '</b><small>Libera em ' + fmt(C.addDays(ctx.S.trail.start, i)) + '</small></span></button>';
+function gate() {
+  return '<button class="t-gate" type="button" aria-label="Meses seguintes bloqueados"><span class="tg-l"></span><span class="tg-i">' + LOCK + '</span><span class="tg-l"></span></button>';
 }
 function range(ctx, lo, hi, last) {
-  var h = "";
-  for (var i = lo; i <= hi; i++) { if (i === last + 1) h += gate(ctx, i); h += nodeHtml(ctx, i, i > last); }
-  return h;
+  var h = "", zone = false;
+  for (var i = lo; i <= hi; i++) { if (i === last + 1) { h += gate() + '<div class="t-zone">'; zone = true; } h += nodeHtml(ctx, i, i > last); }
+  return h + (zone ? "</div>" : "");
 }
 function flush(ctx) { if (dirty) { dirty = false; ctx.save(); } }
 

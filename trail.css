@@ -27,12 +27,15 @@
 .wk3 .tn-btn{background:radial-gradient(circle at 35% 28%,#2B2B2B,#080808 62%);box-shadow:0 5px 0 #000,inset 0 2px 0 rgba(245,245,245,.12),inset 0 -3px 6px rgba(0,0,0,.5)}
 .tn.wk1:active .tn-btn{box-shadow:0 2px 0 #B8121F}.tn.wk2:active .tn-btn{box-shadow:0 2px 0 #C9C9D6,inset 0 0 0 2px #D5D5E0}
 /* Meses bloqueados */
-.st-lock{opacity:.6}
-.st-lock .tn-btn{background:radial-gradient(circle at 35% 28%,#B9B9C4,#9A9AA6 62%);box-shadow:0 5px 0 #7C7C88,inset 0 2px 0 rgba(255,255,255,.3)}
-.t-gate{align-self:stretch;display:flex;align-items:center;gap:12px;background:var(--card);border:2px solid var(--line);border-radius:18px;padding:14px 16px;margin:26px 0 12px;font:inherit;color:var(--ink);text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.t-zone{align-self:stretch;display:flex;flex-direction:column;align-items:center;background:#303036;border-radius:24px;padding:10px 0 26px;margin-top:4px}
+.t-zone .tn-lbl{color:#C9C9D6}
+.st-lock .tn-btn{background:radial-gradient(circle at 35% 28%,#FFFFFF,#EDEDF3 62%);box-shadow:0 5px 0 #A9A9B6,inset 0 0 0 2px #D5D5E0,inset 0 -3px 6px rgba(0,0,0,.06)}
+.st-lock .ico{stroke:#303036}
+.st-lock .rg .trk{stroke:#4A4A52}
+.t-gate{align-self:stretch;display:flex;align-items:center;gap:12px;margin:22px 0 6px;padding:6px 0;border:0;background:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .t-gate:focus-visible{outline:3px solid var(--focus,#17171C);outline-offset:2px}
-.tg-i{flex:none;width:46px;height:46px;border-radius:50%;background:#9A9AA6;display:grid;place-items:center}.tg-i .ico{width:60%;height:60%}
-.tg-t b{display:block;font:600 20px/1.15 Fredoka,Nunito,sans-serif}.tg-t small{color:var(--mute);font-weight:700;font-size:13px}
+.tg-l{flex:1;height:3px;border-radius:2px;background:#303036}
+.tg-i{flex:none;width:36px;height:36px;border-radius:50%;background:#303036;display:grid;place-items:center}.tg-i .ico{width:20px;height:20px}
 .t-toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translate(-50%,12px);max-width:calc(100% - 32px);background:#17171C;color:#fff;border-radius:16px;padding:12px 22px;font:700 16px Nunito,system-ui,sans-serif;text-align:center;opacity:0;pointer-events:none;z-index:50}
 .t-toast.on{opacity:1;transform:translate(-50%,0)}
 @media (prefers-reduced-motion:no-preference){.t-toast{transition:opacity .2s,transform .2s}}
