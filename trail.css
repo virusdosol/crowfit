@@ -2,7 +2,7 @@
 .tabs{display:flex;gap:8px;margin:0 0 14px}
 .tab{flex:1;border:2px solid var(--line);background:var(--card);color:var(--mute);border-radius:14px;padding:10px;font:800 15px Nunito,system-ui,sans-serif;cursor:pointer}
 .tab.on{border-color:var(--brand);color:var(--ink);box-shadow:0 3px 0 var(--brand-d)}
-.tab:focus-visible,.tn:focus-visible,.ex-chk:focus-visible,.t-ban button:focus-visible{outline:3px solid #F5F5F5;outline-offset:2px}
+.tab:focus-visible,.tn:focus-visible,.ex-chk:focus-visible,.t-ban button:focus-visible{outline:3px solid var(--focus,#17171C);outline-offset:2px}
 .t-ban{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;background:var(--brand);color:#F5F5F5;border-radius:16px;box-shadow:0 4px 0 var(--brand-d);margin:14px 0 8px}
 .tb-l{flex:1;min-width:0;padding:12px 14px}
 .tb-l small{display:block;font-weight:800;letter-spacing:.04em;opacity:.9}
@@ -17,17 +17,17 @@
 .tn.today{margin-top:34px}
 .rb{position:relative;display:block;width:var(--sz,92px);height:var(--sz,92px)}
 .rg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-.rg .trk{fill:none;stroke:#2C2C2C;stroke-width:6}
+.rg .trk{fill:none;stroke:var(--line);stroke-width:6}
 .rg .arc{fill:none;stroke:#D92332;stroke-width:6;stroke-linecap:round}
 .tn-btn{position:absolute;inset:13%;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 35% 28%,#3B3B3B,#202020 62%);box-shadow:0 5px 0 #000,inset 0 2px 0 rgba(245,245,245,.14),inset 0 -3px 6px rgba(0,0,0,.4);transition:transform .08s}
 .tn:active .tn-btn{transform:translateY(3px);box-shadow:0 2px 0 #000,inset 0 2px 0 rgba(245,245,245,.14)}
 .ico{width:56%;height:56%;fill:none;stroke:#F5F5F5;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 .st-done .tn-btn{background:radial-gradient(circle at 35% 28%,#EE4A58,#D92332 62%);box-shadow:0 5px 0 #8F1520,inset 0 2px 0 rgba(245,245,245,.25)}
-.st-fut{opacity:.5}.st-fut .rg .trk{stroke:#1A1A1A}
+.st-fut{opacity:.5}.st-fut .rg .trk{stroke:var(--line)}
 .tn-lbl{font:800 12px Nunito,sans-serif;color:var(--mute)}.tn.today .tn-lbl{color:var(--ink)}
 .tn-chk{position:absolute;top:-2px;right:calc(50% - 50px);width:26px;height:26px;border-radius:50%;background:#F5F5F5;color:#D92332;display:grid;place-items:center;font:900 15px Nunito,sans-serif;box-shadow:0 2px 0 #000}
-.tn-bub{position:absolute;top:-34px;left:50%;transform:translateX(-50%);background:#202020;border:2px solid #3A3A3A;border-radius:12px;padding:2px 10px;color:#D92332;font:800 14px Nunito,sans-serif;white-space:nowrap}
-.tn-bub:after{content:"";position:absolute;left:50%;bottom:-7px;width:10px;height:10px;background:#202020;border:solid #3A3A3A;border-width:0 2px 2px 0;transform:translateX(-50%) rotate(45deg)}
+.tn-bub{position:absolute;top:-34px;left:50%;transform:translateX(-50%);background:#fff;border:2px solid #E6E6EE;border-radius:12px;padding:2px 10px;color:#D92332;font:800 14px Nunito,sans-serif;white-space:nowrap}
+.tn-bub:after{content:"";position:absolute;left:50%;bottom:-7px;width:10px;height:10px;background:#fff;border:solid #E6E6EE;border-width:0 2px 2px 0;transform:translateX(-50%) rotate(45deg)}
 .t-end{height:1px;overflow:visible;text-align:center}
 .u-top{display:flex;align-items:center;gap:12px;margin-bottom:14px;color:var(--mute);font-weight:800;letter-spacing:.04em;font-size:14px}
 .u-hero{text-align:center;margin:8px 0 18px}.u-rb{--sz:140px;margin:0 auto}
@@ -38,7 +38,7 @@
 .u-list{list-style:none;margin:12px 0 0;padding:0}
 .ex{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:2px solid var(--line);border-radius:18px;padding:14px;margin:10px 0}
 .ex.ok{border-color:var(--brand)}
-.ex-chk{flex:none;width:44px;height:44px;border-radius:50%;border:3px solid #5A5A5A;background:transparent;color:#F5F5F5;display:grid;place-items:center;cursor:pointer;font:900 20px Nunito,sans-serif}
+.ex-chk{flex:none;width:44px;height:44px;border-radius:50%;border:3px solid #C9C9D6;background:transparent;color:#F5F5F5;display:grid;place-items:center;cursor:pointer;font:900 20px Nunito,sans-serif}
 .ex.ok .ex-chk{background:var(--brand);border-color:var(--brand)}
 .ex-chk:disabled{opacity:.4;cursor:not-allowed}
 .ex-b b{display:block;font:600 18px/1.25 Fredoka,Nunito,sans-serif}.ex-b span{display:block;color:var(--brand);font-weight:800;margin:2px 0}

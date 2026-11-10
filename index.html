@@ -2,9 +2,9 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="description" content="Crowfit: treinos sem equipamento com ofensivas e pontos.">
-<meta name="theme-color" content="#080808">
+<meta name="theme-color" content="#FFFFFF">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Crowfit">
@@ -18,7 +18,7 @@
 #splash img{display:block;max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain}
 #splash.out{opacity:0;pointer-events:none}
 @media (prefers-reduced-motion:reduce){#splash{transition:none}}
-.intro{position:fixed;inset:0;z-index:50;background:#FBFBFC;color:#17171C;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.intro{position:fixed;left:0;right:0;top:0;height:var(--vvh,100%);bottom:auto;z-index:50;background:var(--bg);color:#17171C;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .in-wrap{min-height:100%;max-width:480px;margin:0 auto;display:flex;flex-direction:column;align-items:center;text-align:center;padding:max(28px,calc(env(safe-area-inset-top,0px) + 16px)) 18px max(24px,calc(env(safe-area-inset-bottom,0px) + 16px))}
 .in-logo{display:block;width:min(68%,300px);height:auto;margin:clamp(8px,4vh,40px) auto 0}
 .in-art{position:relative;width:100%;aspect-ratio:1040/760;margin-top:clamp(16px,3.5vh,34px)}
@@ -26,18 +26,37 @@
 .in-art img{position:absolute;left:16.3%;top:1%;width:70.7%;height:auto}
 .in-wrap h1{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:clamp(28px,9.6vw,40px);line-height:1.15;color:#17171C;margin:clamp(14px,3.5vh,32px) 0 0}
 .in-wrap p{font:600 clamp(16px,5.4vw,22px)/1.4 Nunito,system-ui,sans-serif;color:#5E5E73;margin:12px 0 0}
-.in-dots{display:flex;gap:11px;justify-content:center;margin-top:clamp(18px,4vh,34px)}
-.in-dots i{display:block;width:12px;height:12px;border-radius:50%;background:#E6E6EE}
-.in-dots i.on{background:#E01B2F}
+.in-dots{display:flex;gap:10px;justify-content:center;align-items:center;margin-top:clamp(18px,4vh,34px)}
+.in-dots i{display:block;width:12px;height:12px;border-radius:99px;background:#E6E6EE;transition:width .25s,background .25s}
+.in-dots i.done{background:#F2A0AA}
+.in-dots i.on{background:#E3182D;width:28px}
+.ob .in-dots{margin:0 0 8px;width:100%}
+.ob-m{display:block;height:clamp(96px,20vh,170px);width:auto;margin:clamp(8px,2vh,20px) auto 0}
+.ob-q{font-size:clamp(26px,8vw,34px)!important;margin:clamp(10px,2.5vh,22px) 0 0!important}
+.ob-f{width:100%;display:flex;flex-direction:column;flex:1 0 auto}
+.ob-body{margin-top:clamp(14px,3vh,28px);width:100%}
+.ob-in{display:block;width:100%;height:62px;border:2px solid var(--line);border-radius:20px;background:#fff;color:var(--ink);font:600 22px Nunito,system-ui,sans-serif;text-align:center;padding:0 16px}
+.ob-in::placeholder{color:#9A9AAE}
+.ob-in:focus,.ob-in:focus-visible{outline:none;border-color:var(--brand);box-shadow:0 0 0 4px rgba(227,24,45,.14)}
+.ob-chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.ob-chips .chip{min-height:52px;padding:12px 20px;border-radius:18px;font:600 18px Fredoka,Nunito,sans-serif;background:#fff;border:2px solid var(--line);color:var(--ink);box-shadow:0 3px 0 var(--line)}
+.ob-chips .chip.on{background:var(--brand);border-color:var(--brand);color:#fff;box-shadow:0 3px 0 var(--brand-d)}
+.ob-err{color:#C4121F;font:700 15px Nunito,sans-serif;min-height:24px;margin:10px 0 0}
+.ob-act{display:flex;gap:12px;margin-top:auto;padding-top:16px;width:100%}
+.ob-act .in-cta{margin-top:0;flex:1}
+.ob-back{flex:0 0 auto;width:96px;height:58px;border:2px solid var(--line);border-radius:28px;background:#fff;color:var(--ink);font:700 18px Fredoka,Nunito,sans-serif;box-shadow:0 4px 0 var(--line);cursor:pointer}
+.ob-back:active{transform:translateY(3px);box-shadow:0 1px 0 var(--line)}
+.ob-back:focus-visible{outline:3px solid #17171C;outline-offset:3px}
+.in-cta:disabled{opacity:.6;cursor:default}
 .in-cta{margin-top:auto;display:flex;align-items:center;justify-content:center;gap:12px;width:100%;height:58px;border:0;border-radius:28px;background:#E3182D;color:#fff;font:700 22px Fredoka,Nunito,sans-serif;box-shadow:0 4px 0 #B8121F,0 12px 24px rgba(227,24,45,.28);cursor:pointer}
 .in-wrap .in-gap{flex:0 0 auto;height:clamp(20px,4vh,36px)}
 .in-cta svg{width:26px;height:26px}
 .in-cta:active{transform:translateY(3px);box-shadow:0 1px 0 #B8121F,0 6px 14px rgba(227,24,45,.25)}
 .in-cta:focus-visible{outline:3px solid #17171C;outline-offset:3px}
 .pf{background:none;border:0;padding:4px;min-width:44px;min-height:44px;display:inline-grid;place-items:center;cursor:pointer;border-radius:14px;color:inherit}
-.pf:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
-:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:dark;
---bg:#080808;--card:#202020;--ink:#F5F5F5;--mute:#A9A9A9;--line:#333;--brand:#D92332;--brand-d:#9C1823;--gold:#F5F5F5;--ok:#D92332;--rest:#3A3A3A;--onbrand:#F5F5F5;--mbg:#F5F5F5;--linv:invert(1)}
+.pf:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light;
+--bg:#FFFFFF;--card:#F8F8FB;--ink:#17171C;--mute:#5E5E73;--line:#E6E6EE;--brand:#E3182D;--brand-d:#B8121F;--gold:#F5B800;--ok:#E3182D;--rest:#C9C9D6;--onbrand:#FFFFFF;--mbg:transparent;--linv:none;--focus:#17171C}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:700 16px/1.45 Nunito,system-ui,sans-serif;min-height:100vh}
@@ -47,8 +66,8 @@ h1,h2,h3{font-family:Fredoka,Nunito,sans-serif;font-weight:600;margin:0;line-hei
 .stat{display:flex;align-items:center;gap:6px;font-family:Fredoka;font-size:20px}
 .btn{display:block;width:100%;border:0;border-radius:16px;padding:14px;font:800 16px Nunito;background:var(--brand);color:var(--onbrand);box-shadow:0 4px 0 var(--brand-d);cursor:pointer}
 .btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--brand-d)}
-.btn.sec{background:var(--card);color:var(--brand);box-shadow:0 4px 0 var(--line);border:2px solid var(--line)}
-.btn:focus-visible,.chip:focus-visible,.node:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.btn.sec{background:#fff;color:var(--ink);box-shadow:0 4px 0 var(--line);border:2px solid var(--line)}
+.btn:focus-visible,.chip:focus-visible,.node:focus-visible,input:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
 .card{background:var(--card);border:2px solid var(--line);border-radius:20px;padding:18px}
 label{display:block;margin:14px 0 6px;color:var(--mute);font-size:14px}
 input{width:100%;border:2px solid var(--line);border-radius:14px;padding:12px;font:700 17px Nunito;background:var(--bg);color:var(--ink)}
@@ -78,6 +97,7 @@ input{width:100%;border:2px solid var(--line);border-radius:14px;padding:12px;fo
 .week{display:flex;justify-content:space-between;margin:14px 0 4px}
 .week span{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-size:13px;background:var(--line);color:var(--mute)}
 .week .d{background:var(--ok);color:#fff}.week .t{outline:3px solid var(--brand)}
+[tabindex="-1"]:focus{outline:none}
 .link{background:none;border:0;color:var(--mute);font:700 14px Nunito;text-decoration:underline;cursor:pointer;margin-top:24px;width:100%}
 @media (prefers-reduced-motion:no-preference){.pop{animation:pop .5s}@keyframes pop{0%{transform:scale(.7);opacity:0}70%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}}
 .sets{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:8px 0}
@@ -226,25 +246,37 @@ var QS=[
 {k:"exp",q:"Qual é a sua experiência com exercícios?",type:"chips",o:CF.EXP},
 {k:"dias",q:"Quantos dias por semana quer treinar?",type:"chips",o:["3","4","5","6"]}];
 function renderOb(){var s=ob.step;
- if(s===0&&!ob.started){var tc=document.querySelector('meta[name="theme-color"]'),tc0=tc&&tc.getAttribute('content');if(tc)tc.setAttribute('content','#FBFBFC');view('<div class="intro"><div class="in-wrap"><img class="in-logo" src="intro-logo.png" alt="Crowfit"><div class="in-art"><svg viewBox="0 0 1040 760" aria-hidden="true" focusable="false"><g fill="#F1F2F7"><ellipse cx="225" cy="255" rx="165" ry="160"/><ellipse cx="125" cy="470" rx="120" ry="100"/><ellipse cx="190" cy="440" rx="150" ry="110"/><ellipse cx="850" cy="390" rx="175" ry="165"/><ellipse cx="840" cy="520" rx="195" ry="125"/></g><ellipse cx="520" cy="722" rx="422" ry="28" fill="#E9E9F1"/><ellipse cx="520" cy="716" rx="250" ry="14" fill="#E2E3EC"/><g fill="#D9DAE6" transform="translate(170,700)"><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(-34) scale(.9)"/><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(-4)"/><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(28) scale(.8)"/></g><g fill="#D9DAE6" transform="translate(870,700)"><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(34) scale(.9)"/><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(4)"/><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(-28) scale(.8)"/></g></svg><img src="intro-mascot.png" alt="Crowfit, o corvo mascote com faixa vermelha, flexionando o braço"></div><h1>Treine, evolua<br>e seja mais forte!</h1><p>Com o Crowfit, você desenvolve<br>seu corpo todos os dias.</p><div class="in-dots" aria-hidden="true"><i class="on"></i><i></i><i></i></div><div class="in-gap"></div><button class="in-cta" id="go">Vamos começar <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15"/><path d="M13 6l6 6-6 6"/></svg></button></div></div>');$("go").onclick=function(){if(tc)tc.setAttribute('content',tc0||'#080808');ob.started=1;renderOb()};return}
- var q=QS[s],pct=Math.round(s/QS.length*100),h='<div class="bar" aria-hidden="true"><i style="width:'+pct+'%"></i></div><div class="center" style="margin:18px 0">'+mascote(80)+'</div><h2 class="center">'+q.q+'</h2><div style="margin-top:18px">';
- if(q.type==="chips")h+='<div class="chips" style="justify-content:center">'+q.o.map(function(o){return'<button class="chip'+(String(ob.d[q.k])===o?" on":"")+'" data-v="'+CF.escAttr(o)+'">'+esc(o)+'</button>'}).join("")+'</div>';
- else h+='<input id="in" type="'+q.type+'" inputmode="'+(q.type==="number"?"numeric":"text")+'" placeholder="'+CF.escAttr(q.ph)+'" '+(q.min?'min="'+q.min+'" max="'+q.max+'"':'maxlength="40"')+' aria-label="'+CF.escAttr(q.q)+'">';
- h+='</div><p id="err" class="center" role="alert" style="color:#E5484D;min-height:24px"></p><div class="row">'+(s>0?'<button class="btn sec" id="bk" style="width:40%">Voltar</button>':"")+'<button class="btn" id="nx">'+(s===QS.length-1?"Montar meu plano":"Continuar")+'</button></div>';
+ if(s===0&&!ob.started){view('<div class="intro"><div class="in-wrap"><img class="in-logo" src="intro-logo.png" alt="Crowfit"><div class="in-art"><svg viewBox="0 0 1040 760" aria-hidden="true" focusable="false"><g fill="#F1F2F7"><ellipse cx="225" cy="255" rx="165" ry="160"/><ellipse cx="125" cy="470" rx="120" ry="100"/><ellipse cx="190" cy="440" rx="150" ry="110"/><ellipse cx="850" cy="390" rx="175" ry="165"/><ellipse cx="840" cy="520" rx="195" ry="125"/></g><ellipse cx="520" cy="722" rx="422" ry="28" fill="#E9E9F1"/><ellipse cx="520" cy="716" rx="250" ry="14" fill="#E2E3EC"/><g fill="#D9DAE6" transform="translate(170,700)"><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(-34) scale(.9)"/><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(-4)"/><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(28) scale(.8)"/></g><g fill="#D9DAE6" transform="translate(870,700)"><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(34) scale(.9)"/><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(4)"/><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(-28) scale(.8)"/></g></svg><img src="intro-mascot.png" alt="Crowfit, o corvo mascote com faixa vermelha, flexionando o braço"></div><h1>Treine, evolua<br>e seja mais forte!</h1><p>Com o Crowfit, você desenvolve<br>seu corpo todos os dias.</p>'+dots(-1)+'<div class="in-gap"></div><button class="in-cta" id="go">Vamos começar <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15"/><path d="M13 6l6 6-6 6"/></svg></button></div></div>');$("go").onclick=function(){ob.started=1;renderOb()};return}
+ var q=QS[s],n=QS.length,last=s===n-1,isChips=q.type==="chips",cur=ob.d[q.k];
+ var h='<div class="intro"><div class="in-wrap ob">'+dots(s)+'<img class="ob-m" src="intro-mascot.png" alt="">'+
+  '<h1 class="ob-q">'+esc(q.q)+'</h1><form class="ob-f" id="obf" novalidate><div class="ob-body">';
+ if(isChips)h+='<div class="ob-chips" role="group" aria-label="'+CF.escAttr(q.q)+'">'+q.o.map(function(o){return'<button type="button" class="chip'+(String(cur)===o?' on':'')+'" aria-pressed="'+(String(cur)===o?'true':'false')+'" data-v="'+CF.escAttr(o)+'">'+esc(o)+'</button>'}).join("")+'</div>';
+ else h+='<input class="ob-in" id="in" type="'+(q.type==="number"?"text":"text")+'" inputmode="'+(q.k==="idade"?"numeric":q.type==="number"?"decimal":"text")+'" enterkeyhint="'+(last?"done":"next")+'" autocomplete="'+(q.k==="nome"?"given-name":"off")+'" placeholder="'+CF.escAttr(q.ph)+'" '+(q.type==="number"?'':'maxlength="40" ')+'aria-label="'+CF.escAttr(q.q)+'">';
+ h+='</div><p id="err" class="ob-err" role="alert"></p><div class="ob-act"><button type="button" class="ob-back" id="bk">Voltar</button><button type="submit" class="in-cta" id="nx">'+(last?"Montar meu plano":"Continuar")+'</button></div></form></div></div>';
  view(h);
- if($("in")){$("in").value=ob.d[q.k]==null?"":String(ob.d[q.k]);$("in").focus()}
- document.querySelectorAll(".chip").forEach(function(c){c.onclick=function(){ob.d[q.k]=c.getAttribute("data-v");renderOb()}});
- if($("bk"))$("bk").onclick=function(){ob.step--;renderOb()};
- $("nx").onclick=function(){var v,E=$("err");
-  if(q.type==="chips"){v=ob.d[q.k];if(v==null||v===""){E.textContent="Escolha uma opção.";return}}
-  else{v=$("in").value.trim();if(!v){E.textContent="Preencha para continuar.";return}
-   if(q.type==="number"){v=Number(v);if(!isFinite(v)||v<q.min||v>q.max||(q.k==="idade"&&!Number.isInteger(v))){E.textContent="Digite um valor entre "+q.min+" e "+q.max+".";return}}
+ var inp=$("in"),E=$("err");
+ if(inp){inp.value=cur==null?"":String(cur);try{inp.focus({preventScroll:true})}catch(e){}}
+ /* guarda o que foi digitado (sem validar) para não perder respostas ao navegar */
+ function stash(){if(inp){var t=inp.value.trim();if(t!=="")ob.d[q.k]=t;else delete ob.d[q.k]}}
+ document.querySelectorAll(".ob-chips .chip").forEach(function(c){c.onclick=function(){ob.d[q.k]=c.getAttribute("data-v");E.textContent="";
+  document.querySelectorAll(".ob-chips .chip").forEach(function(x){var on=x===c;x.classList.toggle("on",on);x.setAttribute("aria-pressed",on?"true":"false")})}});
+ $("bk").onclick=function(){stash();if(s>0)ob.step--;else ob.started=0;renderOb()};
+ $("obf").onsubmit=function(ev){ev.preventDefault();var v;
+  if(isChips){v=ob.d[q.k];if(v==null||v===""){E.textContent="Escolha uma opção.";return}}
+  else{v=inp.value.trim();if(!v){E.textContent="Preencha para continuar.";return}
+   if(q.type==="number"){v=Number(v.replace(",","."));if(!isFinite(v)||v<q.min||v>q.max||(q.k==="idade"&&!Number.isInteger(v))){E.textContent="Digite um valor entre "+q.min+" e "+q.max+".";return}}
    else if(v.length>40){E.textContent="Use no máximo 40 caracteres.";return}}
   ob.d[q.k]=v;
-  if(s<QS.length-1){ob.step++;renderOb();return}
+  if(s<n-1){ob.step++;renderOb();return}
   var r=CF.validateProfile({nome:ob.d.nome,idade:ob.d.idade,peso:ob.d.peso,altura:ob.d.altura,exp:ob.d.exp,dias:Number(ob.d.dias)});
   if(!r.ok){E.textContent=r.errors[0];return}
   S.profile=r.profile;CF.setPlan(S,r.profile.dias,today());save();renderHome()}}
+/* Indicador de progresso: um ponto por pergunta (QS.length) e estado vindo de ob.step. cur=-1 na boas-vindas: todos cinza. */
+function dots(cur){var n=QS.length,h='<div class="in-dots" '+(cur<0?'aria-hidden="true"':'role="progressbar" aria-label="Progresso" aria-valuemin="1" aria-valuemax="'+n+'" aria-valuenow="'+(cur+1)+'" aria-valuetext="Pergunta '+(cur+1)+' de '+n+'"')+'>';
+ for(var i=0;i<n;i++)h+='<i class="'+(i<cur?'done':i===cur?'on':'')+'"></i>';return h+'</div>'}
+/* Teclado Android: se o navegador só encolher a viewport visual, ajusta a altura da tela de onboarding. */
+if(window.visualViewport){var vvf=function(){var d=document.documentElement;d.style.setProperty("--vvh",Math.round(window.visualViewport.height)+"px");var a=document.activeElement;if(a&&a.classList&&a.classList.contains("ob-in")&&a.scrollIntoView)try{a.scrollIntoView({block:"center"})}catch(e){}};window.visualViewport.addEventListener("resize",vvf);vvf()}
+
 
 /* ---------- Home ---------- */
 function lvlInfo(){return{l:Math.floor(S.points/200)+1,pct:(S.points%200)/200*100}}

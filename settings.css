@@ -1,10 +1,10 @@
 /* Crowfit: categorias das configurações (dentro do painel de perfil). Usa as variáveis de cor do app. */
 .cf-set .cf-menu{display:flex;flex-direction:column;gap:10px;margin:16px 0}
-.cf-menu-item{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:60px;padding:12px 16px;background:var(--card,#202020);color:var(--ink,#F5F5F5);border:2px solid var(--line,#333);border-radius:16px;font:800 16px Nunito,system-ui,sans-serif;text-align:left;cursor:pointer}
-.cf-menu-item small{display:block;margin-top:2px;color:var(--mute,#A9A9A9);font-weight:700;font-size:13px}
-.cf-menu-item::after{content:"\203A";flex:none;font-size:26px;line-height:1;color:var(--mute,#A9A9A9)}
+.cf-menu-item{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:60px;padding:12px 16px;background:var(--card,#F8F8FB);color:var(--ink,#17171C);border:2px solid var(--line,#333);border-radius:16px;font:800 16px Nunito,system-ui,sans-serif;text-align:left;cursor:pointer}
+.cf-menu-item small{display:block;margin-top:2px;color:var(--mute,#5E5E73);font-weight:700;font-size:13px}
+.cf-menu-item::after{content:"\203A";flex:none;font-size:26px;line-height:1;color:var(--mute,#5E5E73)}
 .cf-menu-item:active{transform:translateY(2px)}
-.cf-menu-item:focus-visible{outline:3px solid var(--gold,#F5F5F5);outline-offset:2px}
+.cf-menu-item:focus-visible{outline:3px solid var(--focus,#17171C);outline-offset:2px}
 .cf-set [data-host]{margin:12px 0}
 .cf-set .chips{margin-top:2px}
 .cf-set .cf-ul{margin:10px 0 0;padding-left:20px}
