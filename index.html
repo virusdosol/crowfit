@@ -12,12 +12,28 @@
 <link rel="icon" href="icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Crowfit</title>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
 #splash{position:fixed;inset:0;z-index:100001;background:#000;display:flex;align-items:center;justify-content:center;transition:opacity .35s ease}
 #splash img{display:block;max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain}
 #splash.out{opacity:0;pointer-events:none}
 @media (prefers-reduced-motion:reduce){#splash{transition:none}}
+.intro{position:fixed;inset:0;z-index:50;background:#FBFBFC;color:#17171C;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.in-wrap{min-height:100%;max-width:480px;margin:0 auto;display:flex;flex-direction:column;align-items:center;text-align:center;padding:max(28px,calc(env(safe-area-inset-top,0px) + 16px)) 18px max(24px,calc(env(safe-area-inset-bottom,0px) + 16px))}
+.in-logo{display:block;width:min(68%,300px);height:auto;margin:clamp(8px,4vh,40px) auto 0}
+.in-art{position:relative;width:100%;aspect-ratio:1040/760;margin-top:clamp(16px,3.5vh,34px)}
+.in-art svg{position:absolute;inset:0;width:100%;height:100%}
+.in-art img{position:absolute;left:16.3%;top:1%;width:70.7%;height:auto}
+.in-wrap h1{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:clamp(28px,9.6vw,40px);line-height:1.15;color:#17171C;margin:clamp(14px,3.5vh,32px) 0 0}
+.in-wrap p{font:600 clamp(16px,5.4vw,22px)/1.4 Nunito,system-ui,sans-serif;color:#5E5E73;margin:12px 0 0}
+.in-dots{display:flex;gap:11px;justify-content:center;margin-top:clamp(18px,4vh,34px)}
+.in-dots i{display:block;width:12px;height:12px;border-radius:50%;background:#E6E6EE}
+.in-dots i.on{background:#E01B2F}
+.in-cta{margin-top:auto;display:flex;align-items:center;justify-content:center;gap:12px;width:100%;height:58px;border:0;border-radius:28px;background:#E3182D;color:#fff;font:700 22px Fredoka,Nunito,sans-serif;box-shadow:0 4px 0 #B8121F,0 12px 24px rgba(227,24,45,.28);cursor:pointer}
+.in-wrap .in-gap{flex:0 0 auto;height:clamp(20px,4vh,36px)}
+.in-cta svg{width:26px;height:26px}
+.in-cta:active{transform:translateY(3px);box-shadow:0 1px 0 #B8121F,0 6px 14px rgba(227,24,45,.25)}
+.in-cta:focus-visible{outline:3px solid #17171C;outline-offset:3px}
 .pf{background:none;border:0;padding:4px;min-width:44px;min-height:44px;display:inline-grid;place-items:center;cursor:pointer;border-radius:14px;color:inherit}
 .pf:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 :root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:dark;
@@ -210,7 +226,7 @@ var QS=[
 {k:"exp",q:"Qual é a sua experiência com exercícios?",type:"chips",o:CF.EXP},
 {k:"dias",q:"Quantos dias por semana quer treinar?",type:"chips",o:["3","4","5","6"]}];
 function renderOb(){var s=ob.step;
- if(s===0&&!ob.started){view('<div class="hero pop">'+mascote(150)+'<img class="logo" src="logo.png" alt="Crowfit"><p>Treinos sem equipamento. Um dia de cada vez, com ofensiva e pontos.</p><p class="tip">O Crowfit não substitui avaliação profissional. Se sentir dor ou tontura, pare.</p></div><button class="btn" id="go">Começar</button>');$("go").onclick=function(){ob.started=1;renderOb()};return}
+ if(s===0&&!ob.started){var tc=document.querySelector('meta[name="theme-color"]'),tc0=tc&&tc.getAttribute('content');if(tc)tc.setAttribute('content','#FBFBFC');view('<div class="intro"><div class="in-wrap"><img class="in-logo" src="intro-logo.png" alt="Crowfit"><div class="in-art"><svg viewBox="0 0 1040 760" aria-hidden="true" focusable="false"><g fill="#F1F2F7"><ellipse cx="225" cy="255" rx="165" ry="160"/><ellipse cx="125" cy="470" rx="120" ry="100"/><ellipse cx="190" cy="440" rx="150" ry="110"/><ellipse cx="850" cy="390" rx="175" ry="165"/><ellipse cx="840" cy="520" rx="195" ry="125"/></g><ellipse cx="520" cy="722" rx="422" ry="28" fill="#E9E9F1"/><ellipse cx="520" cy="716" rx="250" ry="14" fill="#E2E3EC"/><g fill="#D9DAE6" transform="translate(170,700)"><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(-34) scale(.9)"/><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(-4)"/><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(28) scale(.8)"/></g><g fill="#D9DAE6" transform="translate(870,700)"><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(34) scale(.9)"/><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(4)"/><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(-28) scale(.8)"/></g></svg><img src="intro-mascot.png" alt="Crowfit, o corvo mascote com faixa vermelha, flexionando o braço"></div><h1>Treine, evolua<br>e seja mais forte!</h1><p>Com o Crowfit, você desenvolve<br>seu corpo todos os dias.</p><div class="in-dots" aria-hidden="true"><i class="on"></i><i></i><i></i></div><div class="in-gap"></div><button class="in-cta" id="go">Vamos começar <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15"/><path d="M13 6l6 6-6 6"/></svg></button></div></div>');$("go").onclick=function(){if(tc)tc.setAttribute('content',tc0||'#080808');ob.started=1;renderOb()};return}
  var q=QS[s],pct=Math.round(s/QS.length*100),h='<div class="bar" aria-hidden="true"><i style="width:'+pct+'%"></i></div><div class="center" style="margin:18px 0">'+mascote(80)+'</div><h2 class="center">'+q.q+'</h2><div style="margin-top:18px">';
  if(q.type==="chips")h+='<div class="chips" style="justify-content:center">'+q.o.map(function(o){return'<button class="chip'+(String(ob.d[q.k])===o?" on":"")+'" data-v="'+CF.escAttr(o)+'">'+esc(o)+'</button>'}).join("")+'</div>';
  else h+='<input id="in" type="'+q.type+'" inputmode="'+(q.type==="number"?"numeric":"text")+'" placeholder="'+CF.escAttr(q.ph)+'" '+(q.min?'min="'+q.min+'" max="'+q.max+'"':'maxlength="40"')+' aria-label="'+CF.escAttr(q.q)+'">';
