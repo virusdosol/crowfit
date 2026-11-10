@@ -24,7 +24,7 @@ function parseDate(s) { return new Date(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.s
 function addDays(s, n) { var d = parseDate(s); d.setDate(d.getDate() + n); return dateKey(d); }
 
 /* ---- estado e validação ---- */
-function emptyState() { return { version: 2, profile: null, points: 0, streak: 0, best: 0, last: "", done: {}, rewards: {}, history: [], planHistory: [], adjust: 0, easyStreak: 0, active: null }; }
+function emptyState() { return { version: 2, profile: null, points: 0, streak: 0, best: 0, last: "", done: {}, rewards: {}, history: [], planHistory: [], adjust: 0, easyStreak: 0, active: null, trail: { start: "", ex: {}, lv: {} } }; }
 function validateProfile(p) {
   var e = [];
   if (!p || typeof p !== "object") return { ok: false, errors: ["Perfil inválido"] };
@@ -114,6 +114,24 @@ function validateState(raw) {
   }
   if (raw.adjust !== undefined) { if (isInt(raw.adjust, -1, 1)) st.adjust = raw.adjust; else er.push("Campo inválido: adjust"); }
   if (raw.easyStreak !== undefined) { if (isInt(raw.easyStreak, 0, 10)) st.easyStreak = raw.easyStreak; else er.push("Campo inválido: easyStreak"); }
+  /* Trilha de progressão (campo opcional, adicionado depois). Tolerante: partes inválidas são descartadas com aviso,
+     nunca bloqueiam o carregamento de XP, histórico ou ofensiva. */
+  if (raw.trail !== undefined) {
+    var tr = raw.trail, nt = { start: "", ex: {}, lv: {} };
+    if (tr && typeof tr === "object" && !Array.isArray(tr)) {
+      if (typeof tr.start === "string" && DATE_RE.test(tr.start)) nt.start = tr.start; else if (tr.start) wr.push("Data de início da trilha inválida foi ignorada");
+      if (tr.ex && typeof tr.ex === "object" && !Array.isArray(tr.ex)) {
+        var uk = Object.keys(tr.ex); if (uk.length > 20000) uk = [];
+        uk.forEach(function (k) {
+          var m = tr.ex[k]; if (!/^s\d{1,3}u\d{1,3}$/.test(k) || !m || typeof m !== "object" || Array.isArray(m)) return;
+          var ids = Object.keys(m).filter(function (i) { return i !== "__proto__" && /^[a-z0-9_]{1,24}$/.test(i) && m[i] === true; }).slice(0, 40);
+          if (ids.length) { nt.ex[k] = {}; ids.forEach(function (i) { nt.ex[k][i] = true; }); }
+        });
+      }
+      if (tr.lv && typeof tr.lv === "object" && !Array.isArray(tr.lv)) Object.keys(tr.lv).forEach(function (k) { if (/^\d{1,3}$/.test(k) && isInt(tr.lv[k], 0, 2)) nt.lv[k] = tr.lv[k]; });
+    } else wr.push("Dados da trilha inválidos foram ignorados");
+    st.trail = nt;
+  }
   if (raw.active) { fixed += sanitizeTimers(raw.active); if (validSession(raw.active)) st.active = raw.active; else wr.push("Treino em andamento inválido foi descartado"); }
   if (fixed) wr.push("Cronômetro com estado inválido foi reiniciado (" + fixed + ")");
   if (st.profile && !st.planHistory.length) st.planHistory.push({ from: "1970-01-01", dias: st.profile.dias }); /* migração v1 -> v2 */
