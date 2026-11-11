@@ -9,6 +9,11 @@
   if (!Auth) return;
 
   var opts = Object.assign({ floatingLogout: false, chipPosition: 'bottom-left' }, global.CROWFIT_AUTH_UI || {});
+  var K_INTRO = 'crowfit-intro-v1', K_SKIP = 'crowfit-intro-skip'; /* chaves próprias: não tocam nos dados do treino */
+  function introSeen() { try { return global.localStorage.getItem(K_INTRO) === '1'; } catch (e) { return false; } }
+  function markIntro() { try { global.localStorage.setItem(K_INTRO, '1'); global.localStorage.setItem(K_SKIP, '1'); } catch (e) {} }
+  var ART = '<svg viewBox="0 0 1040 760" aria-hidden="true" focusable="false"><g fill="#F1F2F7"><ellipse cx="225" cy="255" rx="165" ry="160"/><ellipse cx="125" cy="470" rx="120" ry="100"/><ellipse cx="190" cy="440" rx="150" ry="110"/><ellipse cx="850" cy="390" rx="175" ry="165"/><ellipse cx="840" cy="520" rx="195" ry="125"/></g><ellipse cx="520" cy="722" rx="422" ry="28" fill="#E9E9F1"/><ellipse cx="520" cy="716" rx="250" ry="14" fill="#E2E3EC"/><g fill="#D9DAE6" transform="translate(170,700)"><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(-34) scale(.9)"/><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(-4)"/><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(28) scale(.8)"/></g><g fill="#D9DAE6" transform="translate(870,700)"><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(34) scale(.9)"/><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(4)"/><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(-28) scale(.8)"/></g></svg>';
+  var ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15"/><path d="M13 6l6 6-6 6"/></svg>';
   var root = null, chip = null, toastEl = null, toastTimer = 0, view = 'loading';
 
   var GOOGLE_SVG = '<svg viewBox="0 0 18 18" width="18" height="18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.97 10.72A5.41 5.41 0 0 1 3.68 9c0-.6.1-1.18.29-1.72V4.95H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.05l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/></svg>';
@@ -24,11 +29,20 @@
   function submit(label) { return '<button class="cf-btn cf-btn-main" type="submit" data-label="' + label + '">' + label + '</button>'; }
 
   var VIEWS = {
+    /* 1ª tela (mesma do app): apresentação. Só aparece na primeira vez neste aparelho. */
+    intro: function () {
+      return '<div class="in-wrap"><img class="in-logo" src="intro-logo.png" alt="Crowfit"><div class="in-art">' + ART +
+        '<img src="intro-mascot.png" alt="Crowfit, o corvo mascote com faixa vermelha, flexionando o braço"></div>' +
+        '<h1>Treine, evolua<br>e seja mais forte!</h1><p>Com o Crowfit, você desenvolve<br>seu corpo todos os dias.</p>' +
+        '<div class="in-dots" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="in-gap"></div>' +
+        '<button class="in-cta" type="button" data-intro>Vamos começar ' + ARROW + '</button></div>';
+    },
+    /* 2ª tela: já tem conta? */
     welcome: function () {
-      return '<img class="cf-mascot" src="mascot.png" alt="">' + '<div class="cf-brand">Crowfit</div>' +
-        head('Você já tem uma conta?', 'Escolha uma opção para continuar.') +
-        '<button class="cf-btn cf-btn-main" type="button" data-go="login">Já tenho conta</button>' +
-        '<button class="cf-btn cf-btn-ghost" type="button" data-go="signup">Ainda não tenho conta</button>';
+      return '<div class="in-wrap cf-w"><img class="cf-w-mascot" src="mascot.png" alt="Crowfit, o corvo mascote">' +
+        '<img class="cf-w-logo" src="intro-logo.png" alt="Crowfit"><p>Treine, evolua e seja mais forte!</p>' +
+        '<div class="cf-w-btns"><button class="in-cta" type="button" data-go="signup">Começar agora</button>' +
+        '<button class="cf-cta2" type="button" data-go="login">Já tenho uma conta</button></div></div>';
     },
     loading: function () { return '<div class="cf-spin" role="status" aria-label="Carregando"></div>'; },
     login: function () {
@@ -84,7 +98,8 @@
     doc.body.appendChild(root);
     root.addEventListener('click', function (e) {
       var go = e.target.closest && e.target.closest('[data-go]');
-      if (go) renderView(go.getAttribute('data-go'));
+      if (go) { renderView(go.getAttribute('data-go')); return; }
+      if (e.target.closest && e.target.closest('[data-intro]')) { markIntro(); renderView('welcome'); }
     });
   }
 
@@ -109,7 +124,9 @@
     ensureRoot();
     data = data || {};
     view = name;
-    root.innerHTML = '<div class="cf-wrap' + (name === 'loading' ? ' cf-center' : '') + '">' + VIEWS[name](data) + '</div>';
+    var bare = name === 'intro' || name === 'welcome';
+    root.classList.toggle('cf-bare', bare);
+    root.innerHTML = bare ? VIEWS[name](data) : '<div class="cf-wrap' + (name === 'loading' ? ' cf-center' : '') +  + '">' + VIEWS[name](data) + '</div>';
     var em = root.querySelector('[data-email]');
     if (em) em.textContent = data.email || '';
     bind(name);
@@ -198,7 +215,7 @@
     if (snap.user) chip.setAttribute('aria-label', 'Sair da conta ' + (snap.user.email || ''));
   }
 
-  var UNAUTH = { welcome: 1, login: 1, signup: 1, forgot: 1, sent: 1 };
+  var UNAUTH = { intro: 1, welcome: 1, login: 1, signup: 1, forgot: 1, sent: 1 };
 
   function sync(snap) {
     if (!doc.body) return;
@@ -208,7 +225,7 @@
     updateChip(snap);
     var notice = snap.urlError || (snap.expired ? 'Sua sessão expirou. Entre novamente.' : '');
     if (!UNAUTH[view] || notice) {
-      if (notice) renderView('login', { message: notice, kind: 'error' }); else renderView('welcome');
+      if (notice) renderView('login', { message: notice, kind: 'error' }); else renderView(introSeen() ? 'welcome' : 'intro');
       Auth.clearNotices();
     }
     open();
@@ -222,7 +239,7 @@
   });
 
   /* Voltar do Google pelo botão "voltar" (bfcache) não pode deixar a tela travada em "Aguarde". */
-  global.addEventListener('pageshow', function (ev) { if (ev.persisted && root) { var s = Auth.getState(); if (!s.user) { renderView(UNAUTH[view] ? view : 'welcome'); } } });
+  global.addEventListener('pageshow', function (ev) { if (ev.persisted && root) { var s = Auth.getState(); if (!s.user) { renderView(UNAUTH[view] ? view : (introSeen() ? 'welcome' : 'intro')); } } });
 
   function start() {
     ensureRoot(); renderView('loading'); open();

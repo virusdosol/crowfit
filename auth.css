@@ -39,8 +39,6 @@ html.cf-auth-open, html.cf-auth-open body { overflow: hidden; }
 .cf-btn-main { background: var(--cf-a); color: var(--cf-a-ink); margin-top: 4px; box-shadow: 0 4px 0 var(--cf-a-d); }
 .cf-btn-main:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--cf-a-d); }
 .cf-btn-google { background: var(--cf-card); color: var(--cf-ink); border-color: var(--cf-line); box-shadow: 0 4px 0 var(--cf-line); }
-.cf-btn-ghost { background: var(--cf-card); color: var(--cf-ink); border-color: var(--cf-line); box-shadow: 0 4px 0 var(--cf-line); margin-top: 14px; }
-.cf-btn-ghost:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--cf-line); }
 .cf-back { align-self: flex-start; text-decoration: none; margin: 0 0 10px; }
 .cf-btn:disabled { opacity: .65; cursor: default; }
 .cf-or { display: flex; align-items: center; gap: 12px; color: var(--cf-muted); font-size: .85rem; margin: 18px 0; }
@@ -71,3 +69,15 @@ html.cf-auth-open, html.cf-auth-open body { overflow: hidden; }
 }
 .cf-toast.is-on { opacity: 1; transform: translate(-50%, 0); }
 @media (prefers-reduced-motion: reduce) { .cf-spin { animation-duration: 2.4s; } .cf-toast { transition: none; } }
+
+/* Telas de apresentação e escolha de conta (usam as classes .in-* do app) */
+.cf-auth.cf-bare { padding: 0; }
+.cf-w .cf-w-mascot { display: block; height: clamp(150px, 30vh, 260px); width: auto; margin: clamp(24px, 8vh, 72px) auto 0; }
+.cf-w .cf-w-logo { width: min(54%, 230px); margin: clamp(14px, 3vh, 28px) auto 0; }
+.cf-w .cf-w-btns { width: 100%; margin-top: auto; padding-top: 28px; display: flex; flex-direction: column; gap: 14px; }
+.cf-w .cf-w-btns .in-cta { margin-top: 0; font-size: 20px; text-transform: uppercase; letter-spacing: .03em; }
+.cf-cta2 { width: 100%; height: 58px; box-sizing: border-box; border-radius: 28px; background: #fff; color: var(--brand, #E3182D); border: 2px solid var(--line, #E6E6EE);
+  box-shadow: 0 4px 0 var(--line, #E6E6EE); font: 700 20px Fredoka, Nunito, sans-serif; text-transform: uppercase; letter-spacing: .03em; cursor: pointer; }
+.cf-cta2:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--line, #E6E6EE); }
+.cf-cta2:disabled { opacity: .6; cursor: default; }
+.cf-auth .in-cta:focus-visible, .cf-cta2:focus-visible { outline: 3px solid var(--focus, #17171C); outline-offset: 3px; }
