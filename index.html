@@ -134,6 +134,7 @@ setTimeout(rm,1000);var i=s.querySelector("img");if(i)i.addEventListener("error"
 <script src="store.js"></script>
 <script src="program.js"></script>
 <script src="trail.js"></script>
+<script src="supabase-sync.js"></script>
 <script>
 function mascote(sz){sz=sz||96;return '<img class="mascot" src="mascot.png" height="'+sz+'" alt="Crowfit, o corvo mascote" style="height:'+sz+'px;width:auto">'}
 var EX={
@@ -182,7 +183,7 @@ function load(uid){var raw=null,k=CFStore.key(uid);
 function save(){
  if(!S||!curUid)return false;
  if(blocked){banner("Dados não carregados: nada será salvo até você restaurar um backup ou começar do zero.");return false}
- try{var k=CFStore.key(curUid),js=JSON.stringify(S);localStorage.setItem(k,js);if(localStorage.getItem(k)!==js)throw new Error("a verificação da gravação falhou");banner("");return true}
+ try{var k=CFStore.key(curUid),js=JSON.stringify(S);localStorage.setItem(k,js);if(localStorage.getItem(k)!==js)throw new Error("a verificação da gravação falhou");banner("");if(window.CFSync)CFSync.notify("save");return true}
  catch(e){console.error("Crowfit: falha ao salvar",e);banner("Alterações NÃO salvas ("+(e&&e.name==="QuotaExceededError"?"armazenamento cheio":"erro de gravação")+"). Exporte um backup.");return false}}
 function persist(){var a=S.active,ex=a&&a.exercises[a.exIdx];if(ex&&ex.timer)CF.timerTick(ex.timer,Date.now());return save()}
 /* Ao carregar/importar: cada cronômetro "running" é fechado com base em endAt. Se ainda resta tempo, pausa e preserva o restante;
@@ -207,13 +208,13 @@ function boot(snap){
 /* Sai da conta atual: grava o que é dela na partição dela, invalida tarefas pendentes e limpa a memória e a tela. Nada persistido é apagado. */
 function leave(){
  if(S&&curUid&&!blocked)save();
- gen++;S=null;curUid="";ob={step:0,d:{}};loadErr=null;blocked=false;rawBad=null;bakOk=false;homeStale=false;
+ gen++;if(window.CFSync)CFSync.reset();S=null;curUid="";ob={step:0,d:{}};loadErr=null;blocked=false;rawBad=null;bakOk=false;homeStale=false;
  clearInterval(tm);banner("");app.innerHTML="";say("")}
 function legacyValid(raw){try{return CF.validateState(JSON.parse(raw)).ok}catch(e){return false}}
 function enter(uid){var st=load(uid);
  if(loadErr&&blocked){renderRecovery();return}
  if(st==="empty"&&CFStore.legacyStatus(LS(),uid,legacyValid)==="offer"){S=null;renderAdopt(uid);return} /* S nulo: nada pode ser gravado enquanto a decisão está pendente */
- S.profile?renderHome():renderOb()}
+ S.profile?renderHome():renderOb();if(window.CFSync)CFSync.notify("login",true)}
 /* Dados antigos (sem dono) só passam para uma conta com confirmação explícita; depois disso não são oferecidos a nenhuma outra. */
 function renderAdopt(uid){var my=gen,old=null;try{old=JSON.parse(localStorage.getItem(CFStore.LEGACY))}catch(e){}
  var nm=old&&old.profile&&typeof old.profile.nome==="string"?old.profile.nome:"",pts=old&&isFinite(old.points)?old.points:0;
@@ -222,7 +223,7 @@ function renderAdopt(uid){var my=gen,old=null;try{old=JSON.parse(localStorage.ge
   if(r.ok){enter(uid);return}
   if(r.reason==="write"){alert("Não foi possível copiar os dados antigos para esta conta. Nada foi alterado.");return}
   enter(uid)};
- $("ad-n").onclick=function(){if(my!==gen)return;CFStore.decline(LS(),uid);S=CF.emptyState();renderOb()}}
+ $("ad-n").onclick=function(){if(my!==gen)return;CFStore.decline(LS(),uid);S=CF.emptyState();renderOb();if(window.CFSync)CFSync.notify("login",true)}}
 
 /* ---------- Backup ---------- */
 function exportText(t,name){var b=new Blob([t],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1000)}
@@ -384,6 +385,10 @@ if(window.CrowfitProfile){
  CrowfitProfile.setStats(function(){return S&&S.profile?{level:lvlInfo().l,points:S.points}:null});
  CrowfitProfile.setSections(function(name,host,api){if(!S)return;if(name==="train")secTrain(host,api);else if(name==="data")secData(host,api)});
  CrowfitProfile.setOnClose(function(){if(homeStale&&S&&S.profile){homeStale=false;renderHome()}})}
+/* Sincronização (supabase-sync.js): só lê/grava a conta ativa; respostas atrasadas de outra conta são descartadas pela geração (gen). */
+if(window.CFSync)CFSync.attach({state:function(){return S&&curUid&&!blocked?{S:S,uid:curUid,gen:gen}:null},save:save,today:today,
+ changed:function(){if($("t-path"))renderHome()},
+ status:function(s){if(s&&s.state==="error"){say("Sincronização: "+s.message);banner("Sincronização: "+s.message)}}});
 if(window.CrowfitAuth){CrowfitAuth.onChange(boot);CrowfitAuth.init().then(function(){boot(CrowfitAuth.getState())})}
 else view('<div class="hero"><h1>Não foi possível iniciar</h1><p>O módulo de acesso não carregou. Recarregue a página.</p></div>');
 if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(e){console.warn("Crowfit: service worker não registrado",e)})})}

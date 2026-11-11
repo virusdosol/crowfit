@@ -1,435 +1,205 @@
 <div align="center">
 
-<img src="mascot.png" alt="Mascote corvo do Crowfit" width="112">
+<img src="icon-512.png" alt="Crowfit" width="140">
 
 # CROWFIT
 
-### Treino sem equipamento. Evolução com propósito.
+**Treino sem equipamento, um dia de cada vez.**
+Receba um plano semanal sob medida, siga a trilha, mantenha sua ofensiva e acumule pontos, como nos apps de idiomas, mas para flexões, agachamentos e abdominais.
 
-**Um dia de cada vez. Uma repetição de cada vez.**
+[**Abrir o app**](https://virusdosol.github.io/crowfit/) · [Instalar no celular](#-instalar-no-celular) · [Seus dados](#-seus-dados) · [Sincronização](#-sincronização)
 
-[Abrir o aplicativo](https://virusdosol.github.io/crowfit/) · [Instalar
-no celular](https://virusdosol.github.io/crowfit/) · [Reportar um
-problema](https://github.com/virusdosol/crowfit/issues)
+![PWA](https://img.shields.io/badge/PWA-instalável-1a1a1a?style=flat-square)
+![Offline](https://img.shields.io/badge/funciona-offline-444444?style=flat-square)
+![Login](https://img.shields.io/badge/login-Supabase-E5322D?style=flat-square)
+![Mobile first](https://img.shields.io/badge/mobile-first-1a1a1a?style=flat-square)
 
-<br>
-
-<img src="logo.png" alt="Crowfit" width="220">
+<img src="logo.png" alt="Crowfit" width="320">
 
 </div>
 
-------------------------------------------------------------------------
+---
 
-> **Crowfit é mais do que uma lista de exercícios.** É um companheiro de
-> consistência para quem quer desenvolver força, criar hábitos e treinar
-> em qualquer lugar — sem depender de equipamentos.
+## O que é
 
-## ✦ Sobre o projeto
+Um app de exercícios **sem nenhum equipamento**. Você responde algumas perguntas, o Crowfit monta a sua semana de treinos com dias de descanso, e o corvo mascote te acompanha. Treinar todo dia (ou quase) é o objetivo: a ofensiva e os pontos existem para isso.
 
-O Crowfit é um aplicativo de treinamento com peso corporal, pensado
-primeiro para celulares. A experiência combina planos semanais, treinos
-guiados, acompanhamento de consistência e uma progressão inspirada em
-aplicativos de aprendizagem: você treina, conclui etapas, acumula pontos
-e acompanha sua evolução.
+Foi pensado para o celular, para treinar em casa, no quarto ou no parque.
 
-A proposta é simples: tornar o exercício mais acessível, compreensível e
-sustentável. Sem academia obrigatória. Sem equipamento especial. Sem
-transformar cada treino em uma competição.
+## Aparência
 
-**Feito para caber na vida real:** em casa, no quarto, no parque ou onde
-houver espaço para se movimentar.
+Identidade **clara, clean e minimalista**: fundo branco ou muito claro, cartões em tons claros, texto escuro, **vermelho** como cor de destaque e o **corvo preto** como mascote. Não há tema escuro. As telas de introdução e de boas-vindas da autenticação mantêm o logotipo e o mascote originais.
 
-## ✦ A experiência
+## Como o plano é montado
 
-| Pilar             | O que oferece                                                                         |
-|-------------------|---------------------------------------------------------------------------------------|
-| **Treino guiado** | Exercícios apresentados em etapas, com séries, descanso e orientações.                |
-| **Plano semanal** | Distribuição de grupos musculares e dias de descanso conforme a frequência escolhida. |
-| **Progressão**    | Ajustes graduais de dificuldade com base na experiência e no retorno após os treinos. |
-| **Consistência**  | Ofensiva, histórico de dias concluídos e acompanhamento semanal.                      |
-| **Motivação**     | Pontos, níveis e o corvo mascote acompanhando a jornada.                              |
-| **Acesso móvel**  | Aplicativo web progressivo (PWA), instalável em dispositivos compatíveis.             |
+No primeiro acesso, o app pergunta nome, idade, peso, altura, experiência com exercícios e quantos dias por semana você quer treinar (de 3 a 6).
 
-## ✦ Como funciona
+O **nível** (iniciante, intermediário ou avançado) parte da experiência declarada e define repetições, segundos e séries. Depois ele se ajusta pelo seu retorno ao fim de cada treino ("Foi difícil", "No ponto", "Foi fácil").
 
-### 1. Conheça seu ponto de partida
+| Dias por semana | Seg | Ter | Qua | Qui | Sex | Sáb | Dom |
+|---|---|---|---|---|---|---|---|
+| 3 | Corpo todo | Descanso | Pernas | Descanso | Peito e braços | Descanso | Descanso |
+| 4 | Peito e braços | Pernas | Descanso | Abdômen | Corpo todo | Descanso | Descanso |
+| 5 | Peito e braços | Pernas | Abdômen | Descanso | Corpo todo | Peito e braços | Descanso |
+| 6 | Peito e braços | Pernas | Abdômen | Corpo todo | Peito e braços | Pernas | Descanso |
 
-No primeiro acesso, o aplicativo apresenta um onboarding para coletar
-informações como nome, idade, peso, altura, experiência com exercícios e
-quantidade de dias disponíveis para treinar por semana.
+## Funcionalidades
 
-Essas informações ajudam a configurar a experiência inicial. Elas não
-substituem avaliação profissional e não devem ser interpretadas como
-diagnóstico ou prescrição clínica.
+**Trilha de progressão**
+- A tela inicial é uma trilha de unidades, uma por dia, organizadas em **semanas** de 7 dias. A cada semana muda a cor dos círculos.
+- Só o mês atual (4 semanas) fica liberado; os meses seguintes aparecem bloqueados, com cadeado.
+- Cada unidade abre **no dia dela** (a partir da meia-noite). Não dá para adiantar treinos; unidades de dias anteriores continuam disponíveis para concluir.
+- Cada unidade tem seus exercícios, com o progresso em anel. O treino guiado mostra um exercício por vez, série a série, com cronômetro para exercícios por tempo e descanso entre séries. Também é possível marcar exercícios como concluídos na lista da unidade.
 
-### 2. Receba uma semana de treinos
+**Ofensiva**
+- Conta os dias treinados. Ao concluir uma unidade, o dia registrado é o **da própria unidade**: concluir hoje a unidade de ontem registra ontem, não hoje.
+- Os descansos previstos no plano **não quebram** a ofensiva, usando o plano que valia em cada data. Trocar a frequência não reescreve o passado.
+- Perder um dia de treino previsto zera a contagem. A **melhor ofensiva** nunca diminui.
 
-O Crowfit organiza os dias de atividade e descanso de acordo com a
-frequência escolhida. Os padrões semanais atuais contemplam de **3 a 6
-dias de treino**.
+**Pontos e níveis**
+- 10 pontos por exercício concluído e 20 de bônus ao concluir a unidade. Cada recompensa é concedida **uma única vez**; reabrir ou refazer a unidade não repete pontos.
+- Um nível novo a cada 200 pontos, com barra de progresso.
+- A pontuação garante consistência, não é um sistema antifraude.
 
-| Frequência | Organização geral                                            |
-|------------|--------------------------------------------------------------|
-| 3 dias     | Corpo todo, pernas e peito/braços                            |
-| 4 dias     | Peito/braços, pernas, abdômen e corpo todo                   |
-| 5 dias     | Peito/braços, pernas, abdômen e sessões adicionais           |
-| 6 dias     | Alternância entre peito/braços, pernas, abdômen e corpo todo |
+**Perfil e configurações**
+- Painel de perfil com nome de exibição, nível e XP, perfil de treino (experiência e dias por semana), dados e backup, e sair da conta.
+- Se houver um treino antigo em andamento (formato anterior à trilha), ele aparece na tela inicial para retomar ou abandonar.
 
-A distribuição exata é definida pelo plano do aplicativo. Os dias de
-descanso fazem parte da programação — recuperar também é treinar.
+## 📲 Instalar no celular
 
-### 3. Complete as sessões
+1. Abra **https://virusdosol.github.io/crowfit/** no **Chrome** (Android) ou no **Safari** (iPhone).
+2. Toque em **Instalar app** (Chrome) ou em **Compartilhar > Adicionar à Tela de Início** (Safari).
+3. Abra pelo ícone novo. O primeiro acesso e o primeiro login precisam de internet. Depois, o app abre offline neste aparelho.
 
-O treino é dividido em etapas para facilitar o acompanhamento:
+## 💾 Seus dados
 
-- Um exercício por tela.
-- Séries individuais com indicação de progresso.
-- Exercícios por repetição ou por tempo.
-- Cronômetro com pausa e retomada para exercícios cronometrados.
-- Intervalos de descanso que podem ser iniciados, pausados ou pulados.
-- Possibilidade de retomar uma sessão interrompida, quando o estado
-  salvo permitir.
+O progresso fica **primeiro no seu aparelho**, no `localStorage`, **separado por conta**:
 
-Aquecimento e alongamento são opcionais na implementação atual; os
-demais exercícios obrigatórios contam para a conclusão completa da
-sessão.
+| Chave | Conteúdo |
+|---|---|
+| `corvofit-v2:u:<UID>` | Progresso da conta (perfil de treino, pontos, recompensas, ofensiva, dias concluídos, histórico, plano e trilha). `<UID>` é o identificador da conta no Supabase; o e-mail nunca é usado como chave. |
+| `corvofit-v2:sync:<UID>` | Metadados de sincronização da conta (pendência, assinatura do último envio, sessões já enviadas, valores de recompensa). Pode ser apagada sem perder progresso: o app só reenvia. |
+| `corvofit-v1` | Chave **histórica** (dados de antes das contas). Nunca é apagada nem reescrita. Uma única conta pode adotá-la, por decisão explícita, na primeira entrada; depois disso ela não é oferecida a nenhuma outra. |
 
-### 4. Evolua com consistência
+- Sair da conta **não apaga** nada. Entrar com outra conta carrega outra partição; uma conta nunca vê o progresso da outra neste aparelho.
+- Se a gravação falhar (por exemplo, armazenamento cheio), o app mostra um aviso fixo "Alterações NÃO salvas".
+- Se os dados salvos estiverem corrompidos, o app **não os apaga**: mostra uma tela de recuperação e guarda uma cópia.
+- Limpar os dados do navegador ou desinstalar o app **apaga o progresso deste aparelho**. Com a sincronização, o que já foi enviado continua na sua conta (veja abaixo).
+- **Exportar backup** e **Importar backup** (arquivo `.json`) ficam em *Perfil > Dados e backup*. A importação valida o arquivo e guarda uma cópia dos dados atuais antes de trocar.
 
-O Crowfit utiliza pontos e níveis como incentivo:
+## 🔐 Conta e login
 
-- **10 pontos** por exercício concluído, com todas as séries.
-- **20 pontos** de bônus pela conclusão dos exercícios obrigatórios da
-  sessão.
-- **200 pontos** para avançar um nível.
-- Repetir um treino no mesmo dia é permitido, mas não deve conceder
-  novamente recompensas já contabilizadas.
+- Cadastro e login por e-mail e senha, login com Google, recuperação e troca de senha e logout (Supabase Auth). A sessão fica salva no navegador.
+- Sem sessão, uma tela de acesso cobre o app. Se o aparelho já teve login e está sem internet (ou o SDK não carregou), o app abre mesmo assim, na partição da última conta.
+- **Perfil remoto:** o nome de exibição fica em `public.profiles` (leitura e atualização por RLS). O perfil de treino (idade, peso, altura) **não** vai ao servidor.
+- O **SDK do Supabase** é carregado de `cdn.jsdelivr.net` (versão fixada) e guardado em cache pelo service worker.
+- A chave publicável em `supabase-config.js` é pública por design. Nunca coloque ali `service_role`, senhas ou o Client Secret do Google.
 
-A pontuação atual é uma mecânica de motivação local. Não é um sistema
-antifraude, não representa uma medida científica de condicionamento e
-não deve ser usada como classificação competitiva ou premiação.
+## 🔄 Sincronização
 
-## ✦ Ofensiva e acompanhamento semanal
+> **Status:** implementada no código e coberta por testes automatizados que usam um simulador das regras do SQL. **Ainda não foi validada de ponta a ponta** em navegador real contra o Supabase. Até esse teste, não trate a sincronização como confirmada em produção.
 
-A ofensiva representa a continuidade dos treinos previstos no plano.
+### O que sincroniza
 
-- Treinos completos contribuem para a ofensiva.
-- Dias de descanso programados não devem quebrá-la.
-- A melhor ofensiva fica registrada.
-- Alterar a frequência de treino não deve reescrever retroativamente o
-  planejamento de datas anteriores.
+| Dado local | Tabela remota | Como |
+|---|---|---|
+| Pontos, melhor ofensiva, última data de treino, dias concluídos, histórico de plano, recompensas | `public.user_progress` | RPC `merge_my_progress` |
+| Sessões do histórico (`S.history`) | `public.workout_sessions` | RPC `upsert_my_sessions` (lotes de até 100) |
+| Conquistas | `public.achievements_unlocked` | RPC `unlock_my_achievements` (leitura pronta; veja limites) |
 
-A visão semanal ajuda a identificar dias concluídos, o dia atual,
-treinos pendentes, dias futuros e descansos.
+A leitura das três tabelas é por `SELECT` sob RLS: cada usuário só enxerga as próprias linhas. Toda escrita passa pelas RPCs, que usam `auth.uid()`; o app nunca envia um UID.
 
-## ✦ Biblioteca de movimentos
+### Reconciliação (sem perder nem duplicar)
 
-A biblioteca atual contempla exercícios de peso corporal, incluindo:
+- **Pontos:** o servidor calcula `points = base_points + soma(rewards)`. O app envia `base_points = S.points − soma das recompensas enviadas`, o que preserva exatamente o total local. Recompensas sem valor seguro de derivar (chaves desconhecidas) **não** são enviadas e permanecem dentro de `base_points`.
+- **Valor de cada recompensa:** `ex:<data>:<exercício>` = 10; `sess:<data>` = 20; `tr:s<k>u<n>` = 10 × exercícios da unidade + 20. Se o valor já existe no servidor, ele prevalece.
+- **Regras de mescla (no servidor):** `base_points`, melhor ofensiva e última data ficam com o maior valor; dias concluídos e recompensas são unidos; o plano é unido por data. Nada regride.
+- **Resultado:** o app adota a linha devolvida (pontos, recompensas, dias, plano, ofensiva) sem remover nada local, e grava na partição da conta.
+- **Sessões:** só sessões finalizadas (`completed`, `interrupted`, `abandoned`) são enviadas. Sessão finalizada é imutável no servidor; só o feedback pode ser preenchido, uma vez. No login, sessões que só existem no servidor entram no histórico local.
+- **Se os pontos locais forem menores que a soma das recompensas** (estado inconsistente), a sincronização para, mostra um aviso e não envia nada.
 
-**Peito, braços e parte superior** - Flexões com joelhos, tradicionais,
-diamante e pike. - Mergulho em cadeira firme.
+### Quando sincroniza
 
-**Pernas e glúteos** - Agachamento. - Afundo. - Ponte de glúteos. -
-Agachamento na parede. - Elevação de panturrilhas.
+Ao entrar na conta, ao salvar o progresso (agrupado por ~4 s, sem timers soltos), ao voltar a conexão e ao voltar para o app. Se nada relevante mudou, não há requisição.
 
-**Abdômen e core** - Abdominal. - Prancha. - Bicicleta. - Elevação de
-pernas. - Escalador.
+### Offline e falhas
 
-**Condicionamento e mobilidade** - Polichinelo. - Burpee. -
-Alongamentos.
+- O app abre e funciona sem a rede; o progresso continua sendo salvo localmente.
+- Sem rede, a pendência é registrada e o envio é repetido quando a conexão volta (com intervalos crescentes). Nenhum sucesso falso é mostrado.
+- Se o servidor recusar um conteúdo (erro de validação), o app não repete sozinho o mesmo conteúdo, mantém tudo local e avisa.
+- Cada rodada pertence a uma conta e a uma "geração" do app: se a conta trocar no meio de uma resposta, nada é gravado na conta errada.
 
-A execução correta importa mais do que a velocidade. Adapte os
-movimentos à sua capacidade e interrompa o exercício se sentir dor.
+### Limites conhecidos
 
-## ✦ Instale no seu celular
+- **A trilha não é sincronizada** (`S.trail`: data de início, exercícios marcados, níveis congelados). O banco atual não tem coluna para isso. Em outro aparelho, pontos, dias concluídos e recompensas chegam, mas as marcações da trilha e a data de início dela começam do zero. As recompensas já registradas impedem pontos repetidos.
+- **Não sincronizam:** perfil de treino (idade, peso, altura, experiência, dias), ajuste de dificuldade e treino em andamento.
+- **Sessões:** as unidades da trilha não geram sessões; só o histórico de sessões do formato antigo é enviado.
+- **Conquistas:** o app ainda não tem catálogo nem desbloqueios locais, então nada é enviado hoje. O envio está implementado e pronto para quando existirem.
 
-O Crowfit é publicado como um **Progressive Web App (PWA)**. Em
-navegadores compatíveis, pode ser adicionado à tela inicial e aberto
-como um aplicativo.
+## 🛠 Para quem quer mexer no código
 
-1.  Acesse
-    [virusdosol.github.io/crowfit](https://virusdosol.github.io/crowfit/).
-2.  No Android, use a opção de instalação do Chrome quando disponível.
-3.  No iPhone, abra o menu Compartilhar do Safari e escolha **Adicionar
-    à Tela de Início**.
-4.  Abra o Crowfit pelo ícone instalado.
+HTML, CSS e JavaScript puro, sem build e sem framework. Dependências externas: SDK do Supabase (CDN, versão fixada) e as fontes Fredoka e Nunito (Google Fonts, só visual). Todos os arquivos ficam na raiz.
 
-A disponibilidade de recursos offline depende de o aplicativo e seus
-arquivos terem sido carregados e armazenados em cache anteriormente. O
-primeiro acesso e os recursos que dependem de autenticação ou serviços
-externos exigem conexão.
-
-## ✦ Conta, privacidade e armazenamento
-
-O projeto utiliza o **Supabase** para autenticação. O código inclui
-fluxos de cadastro e login por e-mail e senha, autenticação com Google,
-recuperação/atualização de senha e encerramento de sessão.
-
-O módulo de perfil também possui integração com a tabela `profiles` para
-informações básicas, como nome de exibição. A disponibilidade efetiva de
-cada provedor depende da configuração do projeto Supabase e dos
-respectivos provedores externos.
-
-### O que está confirmado na implementação pública consultada
-
-- O estado principal do aplicativo é persistido no navegador usando
-  `localStorage`, sob a chave histórica `corvofit-v1`.
-- O perfil de treino, pontos, ofensiva e histórico permanecem associados
-  ao armazenamento local dessa instalação.
-- A autenticação Supabase mantém uma sessão de usuário, mas isso não
-  significa que todo o progresso esteja sincronizado com essa conta.
-- O código público consultado não demonstra sincronização completa do
-  progresso entre contas ou dispositivos.
-- Fazer logout não deve ser interpretado como exclusão dos dados locais.
-- Limpar os dados do navegador ou desinstalar o aplicativo pode remover
-  dados locais que não tenham sido exportados.
-
-**Atenção:** na implementação pública consultada, os dados locais não
-estão adequadamente isolados por conta. Em um aparelho compartilhado,
-trocar de usuário pode deixar informações locais visíveis para outra
-sessão. Até que o isolamento por usuário seja implementado e testado,
-não considere o Crowfit pronto para uso multiusuário seguro no mesmo
-navegador.
-
-### Backup e recuperação
-
-A versão atual inclui exportação e importação de backup em arquivo JSON.
-O arquivo pode ser usado para transportar dados entre instalações, mas
-deve ser tratado como informação pessoal.
-
-- Guarde backups em local privado.
-- Não publique arquivos de backup em issues, fóruns ou repositórios.
-- Antes de importar, confira se o arquivo pertence ao perfil correto.
-- A importação pode substituir dados locais; mantenha uma cópia de
-  segurança antes de restaurar.
-
-### Segurança
-
-A chave publicável do Supabase usada no cliente é pública por definição.
-Nunca inclua no código do navegador uma chave `service_role`, senha
-administrativa, segredo OAuth ou credencial privada.
-
-A autenticação não transforma automaticamente dados armazenados no
-navegador em dados protegidos por usuário. Isolamento, autorização no
-banco e políticas RLS precisam ser implementados e testados
-separadamente.
-
-## ✦ Estado do projeto
-
-O quadro abaixo descreve a implementação pública consultada no branch
-`main`. Ele deve ser atualizado quando funcionalidades forem
-efetivamente implementadas e validadas.
-
-| Área                                      | Estado documentado                                                        |
-|-------------------------------------------|---------------------------------------------------------------------------|
-| Treinos guiados e exercícios              | Implementados no aplicativo                                               |
-| Plano semanal e dias de descanso          | Implementados no aplicativo                                               |
-| Pontos, níveis e ofensiva                 | Implementados localmente                                                  |
-| Persistência do progresso                 | Local (`localStorage`)                                                    |
-| Exportação e importação de backup         | Implementadas                                                             |
-| PWA e cache de arquivos                   | Implementados; comportamento offline depende do cache e da conexão        |
-| Autenticação Supabase                     | Código integrado; configuração e testes ponta a ponta necessários         |
-| Login com Google                          | Código integrado; depende da configuração do provedor e validação prática |
-| Perfil básico remoto                      | Módulo de perfil Supabase presente                                        |
-| Perfil de treino remoto                   | Não confirmado como sincronizado                                          |
-| Sincronização completa entre dispositivos | Não confirmada na versão pública consultada                               |
-| Isolamento de progresso por conta         | Requer correção e validação                                               |
-| Tela completa de histórico                | Não confirmada como funcionalidade de interface                           |
-| Conquistas, ligas e amigos                | Não implementados na versão consultada                                    |
-| Lembretes diários                         | Não implementados na versão consultada                                    |
-
-> O status acima é uma fotografia do código público consultado, não uma
-> promessa de disponibilidade futura. Uma funcionalidade só deve ser
-> marcada como concluída depois de implementada, testada e documentada.
-
-## ✦ Para desenvolvedores
-
-### Tecnologias
-
-- **HTML5** para estrutura e interface.
-- **CSS3** para identidade visual e responsividade.
-- **JavaScript puro** para lógica e interações.
-- **Supabase Auth** para autenticação.
-- **Supabase Database** para os recursos remotos já integrados.
-- **Service Worker** e **Web App Manifest** para a experiência PWA.
-- **Google Fonts** para tipografia.
-- **GitHub Pages** para publicação.
-
-O projeto não utiliza um processo de build obrigatório na estrutura
-pública consultada. Os arquivos estáticos são servidos diretamente.
-
-### Estrutura do repositório
-
-``` text
+```
 crowfit/
-├── index.html                    # Interface principal e estrutura do app
-├── core.js                       # Estado, regras, pontos, sessões e ofensiva
-├── program.js                    # Lógica relacionada aos programas de treino
-├── trail.js                      # Recursos da trilha/jornada
-├── trail.css                     # Estilos da trilha/jornada
-├── auth.js                       # Integração de autenticação
-├── auth-ui.js                    # Interface de login e cadastro
-├── auth.css                      # Estilos da autenticação
-├── profile.js                    # Integração do perfil
-├── profile.css                   # Estilos do perfil
-├── supabase-config.js             # URL e chave publicável do Supabase
-├── supabase-profiles.sql          # Estrutura inicial de perfis
-├── supabase-profiles-fix.sql      # Ajustes/reparo da estrutura de perfis
-├── supabase-profiles-verify.sql   # Consultas de verificação
-├── sw.js                          # Service Worker e cache
-├── manifest.json                  # Metadados do PWA
-├── mascot.png                     # Mascote
-├── logo.png                       # Logotipo
-├── icon-180.png                   # Ícone para iOS
-├── icon-192.png                   # Ícone PWA
-├── icon-512.png                   # Ícone PWA
-├── icon-maskable-512.png           # Ícone adaptável
-└── splash.jpg                     # Imagem de abertura
+├── index.html              # telas, estilo e lógica principal do app
+├── core.js                 # regras puras: validação, pontos, ofensiva, sessões, recompensas
+├── store.js                # armazenamento local por conta (chaves, adoção do legado)
+├── program.js              # programação dos treinos e exercícios
+├── trail.js                # trilha: semanas, unidades, pontos e ofensiva por unidade
+├── trail.css               # estilo da trilha
+├── supabase-config.js      # URL e chave publicável do Supabase
+├── auth.js                 # autenticação (cliente Supabase único)
+├── auth-ui.js              # telas de entrada, login, cadastro e recuperação
+├── auth.css                # estilo das telas de autenticação
+├── profile.js              # painel de perfil e perfil remoto (public.profiles)
+├── profile.css, settings.css
+├── supabase-sync.js        # sincronização (RPCs, fila, offline, reconciliação)
+├── sw.js                   # service worker (cache offline)
+├── manifest.json           # PWA
+├── supabase-profiles.sql, supabase-profiles-fix.sql, supabase-profiles-verify.sql
+├── supabase-sync.sql       # tabelas, RLS e RPCs da sincronização
+└── imagens: mascot.png, logo.png, intro-logo.png, intro-mascot.png, splash.jpg, icon-*.png
 ```
 
-A lista reflete os arquivos visíveis na raiz do branch público
-consultado. Consulte o repositório antes de assumir que nomes, módulos
-ou responsabilidades continuam iguais.
+Ordem de carregamento no `index.html`: SDK, `supabase-config.js`, `auth.js`, `auth-ui.js`, `profile.js`, `core.js`, `store.js`, `program.js`, `trail.js`, `supabase-sync.js` e, por fim, o script do app.
 
-### Executar localmente
+Para rodar localmente, sirva a pasta com um servidor estático (por exemplo `python3 -m http.server`) e abra `http://localhost:8000`. O service worker só funciona em `localhost` ou `https`.
 
-É necessário ter Python 3 ou outro servidor HTTP estático.
+**Atualizando o app:** depois de mudar um arquivo, aumente `CACHE_VERSION` no `sw.js` e inclua arquivos novos na lista de cache. O service worker usa a rede primeiro para HTML, JS e JSON, apaga só caches com o prefixo `crowfit-cache-` e **nunca intercepta nem guarda** requisições ao Supabase. Se trocar a versão do SDK, altere a URL no `index.html` **e** no `sw.js`.
 
-``` bash
-git clone https://github.com/virusdosol/crowfit.git
-cd crowfit
-python3 -m http.server 8000
-```
+## Instalação própria (seu projeto Supabase)
 
-Abra `http://localhost:8000` no navegador.
+O login e a sincronização só funcionam com o **seu** projeto Supabase.
 
-O Service Worker requer `localhost` ou HTTPS. Recursos de autenticação
-exigem configuração válida do Supabase e URLs de redirecionamento
-compatíveis com o endereço utilizado.
+1. Crie o projeto e coloque a URL e a chave publicável em `supabase-config.js`.
+2. No *SQL Editor*, **revise e execute em um banco novo**, nesta ordem: `supabase-profiles.sql` (já inclui as correções) e depois `supabase-sync.sql`. Use `supabase-profiles-verify.sql` para conferir os perfis; o final de `supabase-sync.sql` traz a verificação da sincronização. (O projeto original já tem esses scripts aplicados; eles não precisam ser executados de novo nele.)
+3. Em *Authentication > URL Configuration*, defina o Site URL com o endereço real do app e as Redirect URLs (com e sem `index.html`; `http://localhost:PORTA/**` para testes locais).
+4. Em *Authentication > Providers*, ative e-mail (decida sobre "Confirm email") e Google (Client ID e Secret só no painel do Supabase).
+5. No Google Cloud, autorize o URI `https://<seu-projeto>.supabase.co/auth/v1/callback`.
+6. Para publicar: fork, *Settings > Pages*, branch `main`, pasta `/ (root)`.
 
-### Configuração do Supabase
+O SMTP padrão do Supabase tem limite baixo de envios; para uso real, configure um SMTP próprio.
 
-Para executar uma cópia própria do projeto:
+## Ainda não tem
 
-1.  Crie um projeto no Supabase.
-2.  Configure a URL do projeto e a chave publicável em
-    `supabase-config.js`.
-3.  Configure os provedores de autenticação que pretende utilizar.
-4.  Defina corretamente Site URL e Redirect URLs.
-5.  Configure as tabelas, funções e políticas RLS necessárias, usando os
-    scripts SQL correspondentes.
-6.  Teste cadastro, login, logout, recuperação de senha e retorno do
-    OAuth em ambiente real.
+- Sincronização da trilha, do perfil de treino e do ajuste de dificuldade.
+- Conquistas (o envio ao servidor já existe; faltam o catálogo e os desbloqueios no app).
+- Tela de histórico de sessões.
+- Ilustrações ou vídeos dos exercícios.
+- Ligas, amigos e lembretes diários.
 
-**Nunca execute scripts SQL sem revisar o conteúdo e confirmar que
-correspondem à versão atual do código.** Faça backup do banco antes de
-alterações estruturais.
+Sugestões e contribuições são bem-vindas: abra uma *issue* ou um *pull request*.
 
-### Atualização do Service Worker
+## Observações
 
-Quando arquivos do aplicativo forem alterados, revise a estratégia de
-cache em `sw.js` e atualize a versão do cache quando necessário.
-Verifique se novos módulos JavaScript, estilos e recursos foram
-incluídos na lista de arquivos essenciais.
+- O Crowfit não substitui orientação médica nem de um profissional de educação física. Se você tem alguma condição de saúde, converse com um profissional antes de começar.
+- Respeite o seu corpo: se algo doer, pare ou pule o exercício.
 
-Não armazene respostas privadas ou dados de autenticação no cache
-público do Service Worker.
-
-## ✦ Princípios de desenvolvimento
-
-O Crowfit deve evoluir sem perder sua simplicidade. Toda contribuição
-deve respeitar estes princípios:
-
-1.  **Mobile first:** a experiência principal acontece no celular.
-2.  **Acessibilidade:** textos legíveis, controles claros e navegação
-    compreensível.
-3.  **Privacidade por padrão:** dados pessoais não devem vazar entre
-    contas.
-4.  **Integridade dos dados:** migrações e sincronizações nunca devem
-    apagar progresso silenciosamente.
-5.  **Offline com honestidade:** indicar o que funciona sem internet e o
-    que depende de serviços externos.
-6.  **Código simples:** preferir soluções nativas e legíveis antes de
-    adicionar dependências.
-7.  **Consistência visual:** preservar a identidade do corvo e o sistema
-    visual do produto.
-8.  **Testes antes de promessas:** documentar somente o que foi
-    realmente validado.
-
-### Diretrizes para alterações com IA
-
-Se utilizar uma ferramenta de IA para modificar o projeto:
-
-- Leia os arquivos existentes antes de propor mudanças.
-- Não recrie módulos que já existem sem justificar.
-- Não substitua arquivos inteiros quando uma alteração localizada for
-  suficiente.
-- Preserve compatibilidade com os dados locais existentes.
-- Não misture dados de contas diferentes.
-- Não exponha segredos no frontend.
-- Revise permissões e políticas RLS no Supabase.
-- Atualize o Service Worker quando necessário.
-- Informe os arquivos modificados, migrações SQL, testes realizados e
-  limitações.
-- Não marque funcionalidades como concluídas sem validação prática.
-
-## ✦ Como contribuir
-
-Toda contribuição que torne o Crowfit mais útil, acessível, seguro e
-agradável é bem-vinda.
-
-1.  Abra uma issue descrevendo o problema ou a melhoria.
-2.  Explique como reproduzir o comportamento, quando aplicável.
-3.  Proponha a solução sem quebrar funcionalidades existentes.
-4.  Envie um pull request com uma descrição objetiva e testes
-    realizados.
-
-Antes de propor uma grande mudança, converse pela área de
-[Issues](https://github.com/virusdosol/crowfit/issues).
-
-## ✦ Segurança e relatos de vulnerabilidade
-
-Não publique tokens, senhas, arquivos `.env`, backups pessoais ou dados
-de usuários em issues públicas.
-
-Se encontrar uma falha que possa expor contas ou informações pessoais,
-evite divulgar detalhes exploráveis publicamente. Procure um canal
-privado com o mantenedor antes de compartilhar a reprodução técnica.
-
-## ✦ Aviso de saúde
-
-O Crowfit é uma ferramenta de apoio à prática de exercícios e à criação
-de hábitos. Não substitui avaliação médica, fisioterapêutica ou
-orientação individual de um profissional de educação física.
-
-Respeite seus limites, priorize a técnica e interrompa a atividade em
-caso de dor, tontura ou mal-estar. Se você possui uma condição de saúde,
-está retornando após lesão ou tem dúvidas sobre quais exercícios pode
-realizar, procure orientação profissional.
-
-## ✦ Comunidade
-
-O Crowfit nasce da ideia de que evoluir não precisa ser complicado. Cada
-pessoa começa de um ponto diferente, e cada pequena conquista merece
-espaço.
-
-Se o projeto te ajuda a se movimentar, aprender e manter a constância,
-compartilhe com alguém que também queira começar.
-
-- **Aplicativo:** https://virusdosol.github.io/crowfit/
-- **Código-fonte:** https://github.com/virusdosol/crowfit
-- **Sugestões e problemas:**
-  https://github.com/virusdosol/crowfit/issues
-
-------------------------------------------------------------------------
+---
 
 <div align="center">
 
-**CROWFIT**
-
-*Treine no seu ritmo. Evolua no seu tempo.*
-
-Feito com dedicação por **virusdosol** e por uma comunidade que acredita
-na força da constância.
+Feito por **virusdosol** para quem quer treinar em qualquer lugar, sem desculpa e sem equipamento.
 
 </div>

@@ -133,10 +133,11 @@ function mount(el, ctx) {
 }
 
 /* Pontos e ofensiva: ao completar a unidade, concede (uma única vez, por unidade) 10 por exercício + 20 de bônus
-   e marca o dia de hoje como treinado (alimenta a ofensiva existente). */
+   e marca como treinado o dia DA UNIDADE (u.date), não o dia em que o toque aconteceu (alimenta a ofensiva existente).
+   Concluir hoje a unidade de ontem registra ontem. S.last guarda a data de treino mais recente e nunca regride. */
 function award(ctx, u, ct, pr) {
   var S = ctx.S, got = 0; if (pr.p < 1) return 0;
-  S.done[ctx.today] = true; S.last = ctx.today;
+  if (u.date <= ctx.today) { S.done[u.date] = true; if (!S.last || u.date > S.last) S.last = u.date; }
   var k = "tr:" + u.key; if (S.rewards[k] !== true) { S.rewards[k] = true; got = 10 * ct.exercises.length + 20; S.points += got; }
   C.refreshStreak(S, ctx.today); return got;
 }

@@ -126,7 +126,7 @@
     view = name;
     var bare = name === 'intro' || name === 'welcome';
     root.classList.toggle('cf-bare', bare);
-    root.innerHTML = bare ? VIEWS[name](data) : '<div class="cf-wrap' + (name === 'loading' ? ' cf-center' : '') +  + '">' + VIEWS[name](data) + '</div>';
+    root.innerHTML = bare ? VIEWS[name](data) : '<div class="cf-wrap' + (name === 'loading' ? ' cf-center' : '') + '">' + VIEWS[name](data) + '</div>';
     var em = root.querySelector('[data-email]');
     if (em) em.textContent = data.email || '';
     bind(name);
