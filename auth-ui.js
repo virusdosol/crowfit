@@ -24,9 +24,15 @@
   function submit(label) { return '<button class="cf-btn cf-btn-main" type="submit" data-label="' + label + '">' + label + '</button>'; }
 
   var VIEWS = {
+    welcome: function () {
+      return '<img class="cf-mascot" src="mascot.png" alt="">' + '<div class="cf-brand">Crowfit</div>' +
+        head('Você já tem uma conta?', 'Escolha uma opção para continuar.') +
+        '<button class="cf-btn cf-btn-main" type="button" data-go="login">Já tenho conta</button>' +
+        '<button class="cf-btn cf-btn-ghost" type="button" data-go="signup">Ainda não tenho conta</button>';
+    },
     loading: function () { return '<div class="cf-spin" role="status" aria-label="Carregando"></div>'; },
     login: function () {
-      return head('Entrar', 'Entre para continuar seu treino.') + MSG +
+      return '<button class="cf-link cf-back" type="button" data-go="welcome">← Voltar</button>' + head('Entrar', 'Entre para continuar seu treino.') + MSG +
         '<form class="cf-form" novalidate data-form="login">' +
         field('email', 'E-mail', 'email', 'email') + field('password', 'Senha', 'password', 'current-password') +
         submit('Entrar') + '</form>' +
@@ -36,11 +42,13 @@
         '<button class="cf-link" type="button" data-go="forgot">Esqueci minha senha</button></div>';
     },
     signup: function () {
-      return head('Criar conta', 'Leva menos de um minuto.') + MSG +
+      return '<button class="cf-link cf-back" type="button" data-go="welcome">← Voltar</button>' + head('Criar conta', 'Leva menos de um minuto.') + MSG +
         '<form class="cf-form" novalidate data-form="signup">' +
         field('name', 'Nome', 'text', 'name') + field('email', 'E-mail', 'email', 'email') +
         field('password', 'Senha', 'password', 'new-password', 'Mínimo de 8 caracteres, com letras e números.') +
         field('confirm', 'Confirmar senha', 'password', 'new-password') + submit('Criar conta') + '</form>' +
+        '<div class="cf-or"><span>ou</span></div>' +
+        '<button class="cf-btn cf-btn-google" type="button" data-google data-label="Cadastrar com Google">' + GOOGLE_SVG + '<span>Cadastrar com Google</span></button>' +
         '<div class="cf-links"><button class="cf-link" type="button" data-go="login">Já tenho conta</button></div>';
     },
     forgot: function () {
@@ -190,7 +198,7 @@
     if (snap.user) chip.setAttribute('aria-label', 'Sair da conta ' + (snap.user.email || ''));
   }
 
-  var UNAUTH = { login: 1, signup: 1, forgot: 1, sent: 1 };
+  var UNAUTH = { welcome: 1, login: 1, signup: 1, forgot: 1, sent: 1 };
 
   function sync(snap) {
     if (!doc.body) return;
@@ -200,7 +208,7 @@
     updateChip(snap);
     var notice = snap.urlError || (snap.expired ? 'Sua sessão expirou. Entre novamente.' : '');
     if (!UNAUTH[view] || notice) {
-      renderView('login', notice ? { message: notice, kind: 'error' } : {});
+      if (notice) renderView('login', { message: notice, kind: 'error' }); else renderView('welcome');
       Auth.clearNotices();
     }
     open();
@@ -214,7 +222,7 @@
   });
 
   /* Voltar do Google pelo botão "voltar" (bfcache) não pode deixar a tela travada em "Aguarde". */
-  global.addEventListener('pageshow', function (ev) { if (ev.persisted && root) { var s = Auth.getState(); if (!s.user) { renderView(UNAUTH[view] ? view : 'login'); } } });
+  global.addEventListener('pageshow', function (ev) { if (ev.persisted && root) { var s = Auth.getState(); if (!s.user) { renderView(UNAUTH[view] ? view : 'welcome'); } } });
 
   function start() {
     ensureRoot(); renderView('loading'); open();

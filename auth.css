@@ -39,6 +39,9 @@ html.cf-auth-open, html.cf-auth-open body { overflow: hidden; }
 .cf-btn-main { background: var(--cf-a); color: var(--cf-a-ink); margin-top: 4px; box-shadow: 0 4px 0 var(--cf-a-d); }
 .cf-btn-main:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--cf-a-d); }
 .cf-btn-google { background: var(--cf-card); color: var(--cf-ink); border-color: var(--cf-line); box-shadow: 0 4px 0 var(--cf-line); }
+.cf-btn-ghost { background: var(--cf-card); color: var(--cf-ink); border-color: var(--cf-line); box-shadow: 0 4px 0 var(--cf-line); margin-top: 14px; }
+.cf-btn-ghost:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--cf-line); }
+.cf-back { align-self: flex-start; text-decoration: none; margin: 0 0 10px; }
 .cf-btn:disabled { opacity: .65; cursor: default; }
 .cf-or { display: flex; align-items: center; gap: 12px; color: var(--cf-muted); font-size: .85rem; margin: 18px 0; }
 .cf-or::before, .cf-or::after { content: ""; flex: 1; height: 1px; background: var(--cf-line); }
