@@ -88,6 +88,17 @@ h1,h2,h3{font-family:Fredoka,Nunito,sans-serif;font-weight:600;margin:0;line-hei
 .of-none{color:#B5B5C0}
 .of-rest::after{content:"";position:absolute;bottom:3px;width:4px;height:4px;border-radius:50%;background:#8E8E99}
 .of-missed{color:#17171C}
+.of-c{border:0;background:none;padding:0;cursor:pointer}
+.of-c:focus-visible i{outline:3px solid #17171C;outline-offset:2px;border-radius:50%}
+.of-active{background:#E3182D;color:#fff}
+.of-active:not(.of-jl){border-top-left-radius:20px;border-bottom-left-radius:20px}
+.of-active:not(.of-jr){border-top-right-radius:20px;border-bottom-right-radius:20px}
+.of-today i{box-shadow:inset 0 0 0 2px #17171C;border-radius:50%;width:32px;height:32px;display:grid;place-items:center}
+.of-today.of-active i{box-shadow:inset 0 0 0 2px #fff}
+.of-sel i{outline:2px solid #17171C;outline-offset:2px;border-radius:50%}
+.of-info{margin:14px 0 0;text-align:center;font:700 15px Nunito,sans-serif;color:#5E5E73}
+.of-arr:enabled{cursor:pointer}
+.of-c.of-active{background:#E3182D;color:#fff}
 .ofb{background:none;border:0;padding:0;color:inherit;cursor:pointer;font:inherit}
 .top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:18px}
 .stat{display:flex;align-items:center;gap:6px;font-family:Fredoka;font-size:20px}
@@ -324,19 +335,35 @@ function renderHome(){var li=lvlInfo(),t=today(),a=S.active,b4=S.streak+"/"+S.be
  CFT.mount($("trail"),trailCtx())}
 
 /* ---------- Ofensivas (tela própria; calendário e detalhes entram nas próximas etapas) ---------- */
-function ofCal(t){var p=t.split("-"),y=+p[0],m=+p[1]-1,MES=["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
- var off=new Date(y,m,1).getDay(),len=new Date(y,m+1,0).getDate(),pd=function(x){return ("0"+x).slice(-2)};
- var h='<div class="of-card"><div class="of-mh"><button type="button" class="of-arr" disabled aria-label="Mês anterior">‹</button><b>'+MES[m]+' de '+y+'</b><button type="button" class="of-arr" disabled aria-label="Próximo mês">›</button></div><div class="of-wk">'+["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"].map(function(x){return "<span>"+x+"</span>"}).join("")+'</div><div class="of-g">';
- for(var i=0;i<off;i++)h+='<span class="of-c"></span>';
- for(var d=1;d<=len;d++){var ds=y+"-"+pd(m+1)+"-"+pd(d),st=CF.dayStatus(S.done,S.planHistory,ds,t);h+='<span class="of-c of-'+st+'"><i>'+d+'</i></span>'}
- return h+'</div></div>'}
-function renderOfensivas(){var t=today();var b4=S.streak+"/"+S.best;CF.refreshStreak(S,t);if(b4!==S.streak+"/"+S.best)save();var n=S.streak;
+var OF=null, OF_MES=["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"], OF_LBL={active:"Treinou neste dia",rest:"Dia de descanso",pending:"Hoje ainda não treinou",missed:"Sem treino registrado",none:"Sem registro"};
+function ofPd(x){return ("0"+x).slice(-2)}
+function ofCal(t){
+ if(!OF){var p0=t.split("-");OF={y:+p0[0],m:+p0[1]-1,sel:t}}
+ var y=OF.y,m=OF.m,off=new Date(y,m,1).getDay(),len=new Date(y,m+1,0).getDate(),cells=[],i;
+ for(var d=1;d<=len;d++){var ds=y+"-"+ofPd(m+1)+"-"+ofPd(d);cells.push({d:d,ds:ds,st:CF.dayStatus(S.done,S.planHistory,ds,t),col:(off+d-1)%7})}
+ var h='<div class="of-card"><div class="of-mh"><button type="button" class="of-arr" data-nav="-1" aria-label="Mês anterior">‹</button><b>'+OF_MES[m]+' de '+y+'</b><button type="button" class="of-arr" data-nav="1" aria-label="Próximo mês">›</button></div><div class="of-wk">'+["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"].map(function(x){return "<span>"+x+"</span>"}).join("")+'</div><div class="of-g">';
+ for(i=0;i<off;i++)h+='<span class="of-c"></span>';
+ for(i=0;i<cells.length;i++){var c=cells[i],prev=cells[i-1],next=cells[i+1],act=c.st==="active",
+   jl=act&&prev&&prev.st==="active"&&c.col>0, jr=act&&next&&next.st==="active"&&c.col<6,
+   cls="of-c of-"+c.st+(jl?" of-jl":"")+(jr?" of-jr":"")+(c.ds===t?" of-today":"")+(c.ds===OF.sel?" of-sel":"");
+   h+='<button type="button" class="'+cls+'" data-ds="'+c.ds+'" aria-label="'+c.d+" de "+OF_MES[m]+", "+OF_LBL[c.st]+'"'+(c.ds===OF.sel?' aria-pressed="true"':'')+'><i>'+c.d+'</i></button>'}
+ h+='</div>';
+ var sel=OF.sel&&OF.sel.slice(0,7)===y+"-"+ofPd(m+1)?OF.sel:null;
+ if(sel){var sd=sel.split("-");h+='<p class="of-info"><b>'+(+sd[2])+" de "+OF_MES[m]+'</b> · '+OF_LBL[CF.dayStatus(S.done,S.planHistory,sel,t)]+'</p>'}
+ return h+'</div>'}
+function ofClick(e){var b=e.target.closest&&e.target.closest("[data-nav],[data-ds]");if(!b)return;
+ if(b.hasAttribute("data-nav")){var mm=OF.m+(+b.getAttribute("data-nav"));OF.y+=Math.floor(mm/12);OF.m=((mm%12)+12)%12;}
+ else OF.sel=b.getAttribute("data-ds");
+ $("of-cal").innerHTML=ofCal(today());
+ if(!b.hasAttribute("data-nav")){var n=$("of-cal").querySelector('[data-ds="'+OF.sel+'"]');if(n)n.focus({preventScroll:true})}
+ else{var nb=$("of-cal").querySelector('[data-nav="'+b.getAttribute("data-nav")+'"]');if(nb)nb.focus({preventScroll:true})}}
+function renderOfensivas(){var t=today();OF=null;var b4=S.streak+"/"+S.best;CF.refreshStreak(S,t);if(b4!==S.streak+"/"+S.best)save();var n=S.streak;
  view('<div class="of-wrap">'+
  '<div class="of-top"><button type="button" class="of-x" id="of-bk" aria-label="Voltar para a trilha"><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M3 3l16 16M19 3L3 19" stroke="#17171C" stroke-width="2.6" stroke-linecap="round"/></svg></button><img class="of-logo" src="logo-dark.png" alt="Crowfit"><span class="of-sp"></span></div>'+
  '<div class="of-hero"><div class="of-l"><div class="of-num">'+n+'</div><div class="of-txt">dias de ofensiva!</div><svg class="of-u" viewBox="0 0 300 16" preserveAspectRatio="none" aria-hidden="true"><path d="M6 10Q150 2 294 8"/></svg></div><div class="of-r"><img class="of-f" src="flame.png" alt=""><span class="of-sh" aria-hidden="true"></span></div></div>'+
  '<div class="of-tt"><svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><rect x="2" y="5" width="24" height="21" rx="4" fill="none" stroke="#17171C" stroke-width="2.4"/><path d="M2 11h24" stroke="#E3182D" stroke-width="5"/><path d="M9 2v5M19 2v5" stroke="#17171C" stroke-width="2.4" stroke-linecap="round"/><g fill="#17171C"><circle cx="8" cy="16" r="1.3"/><circle cx="14" cy="16" r="1.3"/><circle cx="20" cy="16" r="1.3"/><circle cx="8" cy="21" r="1.3"/><circle cx="14" cy="21" r="1.3"/><circle cx="20" cy="21" r="1.3"/></g></svg><h2>Calendário da ofensiva</h2></div>'+
  ofCal(t)+'</div>');
- $("of-bk").onclick=renderHome}
+ $("of-bk").onclick=renderHome;$("of-cal").onclick=ofClick}
 
 /* ---------- Configurações (renderizadas dentro do painel de perfil, categorias "Perfil de treino" e "Dados e backup") ---------- */
 function secTrain(host,a){var p=S&&S.profile;
