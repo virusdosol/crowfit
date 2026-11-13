@@ -1,179 +1,270 @@
 <div align="center">
 
-<img src="icon-512.png" alt="Crowfit" width="140">
+<img src="logo.png" alt="Crowfit" width="300">
 
-# CROWFIT
+# Treino sem equipamento, um dia de cada vez
 
-**Treino sem equipamento, um dia de cada vez.**
-Receba um plano semanal sob medida, siga a trilha, mantenha sua ofensiva e acumule pontos, como nos apps de idiomas, mas para flexões, agachamentos e abdominais.
+**Uma semana de treinos montada para você, uma trilha para seguir, uma ofensiva para não quebrar e nozes de recompensa no fim de cada semana.**
 
-[**Abrir o app**](https://virusdosol.github.io/crowfit/) · [Instalar no celular](#-instalar-no-celular) · [Seus dados](#-seus-dados) · [Sincronização](#-sincronização)
+[**Abrir o app**](https://virusdosol.github.io/crowfit/) · [Direção visual](#-direção-visual) · [Como funciona](#-como-funciona) · [Instalar](#-instalar-no-celular) · [Seus dados](#-seus-dados)
 
-![PWA](https://img.shields.io/badge/PWA-instalável-1a1a1a?style=flat-square)
-![Offline](https://img.shields.io/badge/funciona-offline-444444?style=flat-square)
-![Login](https://img.shields.io/badge/login-Supabase-E5322D?style=flat-square)
-![Mobile first](https://img.shields.io/badge/mobile-first-1a1a1a?style=flat-square)
-
-<img src="logo.png" alt="Crowfit" width="320">
+![PWA](https://img.shields.io/badge/PWA-instalável-17171C?style=flat-square)
+![Offline](https://img.shields.io/badge/funciona-offline-5E5E73?style=flat-square)
+![Mobile first](https://img.shields.io/badge/mobile-first-E3182D?style=flat-square)
+![Sem equipamento](https://img.shields.io/badge/sem-equipamento-F5B800?style=flat-square)
 
 </div>
 
 ---
 
-## O que é
+## 🧭 Em uma frase
 
-Um app de exercícios **sem nenhum equipamento**. Você responde algumas perguntas, o Crowfit monta a sua semana de treinos com dias de descanso, e o corvo mascote te acompanha. Treinar todo dia (ou quase) é o objetivo: a ofensiva e os pontos existem para isso.
+Você responde algumas perguntas, o Crowfit monta a sua semana, e o corvo te acompanha enquanto você constrói a ofensiva.
 
-Foi pensado para o celular, para treinar em casa, no quarto ou no parque.
+<div align="center">
 
-## Aparência
+<img src="mascot.png" alt="Corvo mascote do Crowfit" width="120">
 
-Identidade **clara, clean e minimalista**: fundo branco ou muito claro, cartões em tons claros, texto escuro, **vermelho** como cor de destaque e o **corvo preto** como mascote. Não há tema escuro. As telas de introdução e de boas-vindas da autenticação mantêm o logotipo e o mascote originais.
+</div>
 
-## Como o plano é montado
+---
 
-No primeiro acesso, o app pergunta nome, idade, peso, altura, experiência com exercícios e quantos dias por semana você quer treinar (de 3 a 6).
+## 🎨 Direção visual
 
-O **nível** (iniciante, intermediário ou avançado) parte da experiência declarada e define repetições, segundos e séries. Depois ele se ajusta pelo seu retorno ao fim de cada treino ("Foi difícil", "No ponto", "Foi fácil").
+O Crowfit é **branco, vermelho, preto e laranja**, com cara de app de hábitos: limpo, direto e com um toque de energia.
 
-| Dias por semana | Seg | Ter | Qua | Qui | Sex | Sáb | Dom |
-|---|---|---|---|---|---|---|---|
-| 3 | Corpo todo | Descanso | Pernas | Descanso | Peito e braços | Descanso | Descanso |
-| 4 | Peito e braços | Pernas | Descanso | Abdômen | Corpo todo | Descanso | Descanso |
-| 5 | Peito e braços | Pernas | Abdômen | Descanso | Corpo todo | Peito e braços | Descanso |
-| 6 | Peito e braços | Pernas | Abdômen | Corpo todo | Peito e braços | Pernas | Descanso |
+### Paleta
 
-## Funcionalidades
+| Papel | Cor | Hex | Onde aparece |
+|---|---|---|---|
+| Fundo | ![](https://img.shields.io/badge/-FFFFFF-FFFFFF?style=flat-square&labelColor=FFFFFF) | `#FFFFFF` | Todas as telas |
+| Cartões | ![](https://img.shields.io/badge/-F8F8FB-F8F8FB?style=flat-square) | `#F8F8FB` | Cartões e painéis |
+| Texto | ![](https://img.shields.io/badge/-17171C-17171C?style=flat-square) | `#17171C` | Títulos, texto, o corvo |
+| Destaque | ![](https://img.shields.io/badge/-E3182D-E3182D?style=flat-square) | `#E3182D` | Ofensiva, botões, dias ativos |
+| Vermelho escuro | ![](https://img.shields.io/badge/-B8121F-B8121F?style=flat-square) | `#B8121F` | Estados pressionados |
+| Dourado | ![](https://img.shields.io/badge/-F5B800-F5B800?style=flat-square) | `#F5B800` | Brilho e detalhes |
+| Laranja da chama | ![](https://img.shields.io/badge/-FF9F00-FF9F00?style=flat-square) | `#FF9F00` | Chama e nozes |
+| Linhas | ![](https://img.shields.io/badge/-E6E6EE-E6E6EE?style=flat-square) | `#E6E6EE` | Bordas e divisórias |
+| Texto secundário | ![](https://img.shields.io/badge/-5E5E73-5E5E73?style=flat-square) | `#5E5E73` | Legendas e dicas |
 
-**Trilha de progressão**
-- A tela inicial é uma trilha de unidades, uma por dia, organizadas em **semanas** de 7 dias. A cada semana muda a cor dos círculos.
-- Só o mês atual (4 semanas) fica liberado; os meses seguintes aparecem bloqueados, com cadeado.
-- Cada unidade abre **no dia dela** (a partir da meia-noite). Não dá para adiantar treinos; unidades de dias anteriores continuam disponíveis para concluir.
-- Cada unidade tem seus exercícios, com o progresso em anel. O treino guiado mostra um exercício por vez, série a série, com cronômetro para exercícios por tempo e descanso entre séries. Também é possível marcar exercícios como concluídos na lista da unidade.
+**Regra de ouro:** vermelho é o único destaque. Se algo está em vermelho, é importante: a ofensiva, um dia ativo, um botão principal.
 
-**Ofensiva**
-- Conta os dias treinados. Ao concluir uma unidade, o dia registrado é o **da própria unidade**: concluir hoje a unidade de ontem registra ontem, não hoje.
-- Os descansos previstos no plano **não quebram** a ofensiva, usando o plano que valia em cada data. Trocar a frequência não reescreve o passado.
-- Perder um dia de treino previsto zera a contagem. A **melhor ofensiva** nunca diminui.
+### Tipografia
 
-**Pontos e níveis**
-- 10 pontos por exercício concluído e 20 de bônus ao concluir a unidade. Cada recompensa é concedida **uma única vez**; reabrir ou refazer a unidade não repete pontos.
-- Um nível novo a cada 200 pontos, com barra de progresso.
-- A pontuação garante consistência, não é um sistema antifraude.
+- **Fredoka**: números grandes e títulos de destaque (o contador de ofensiva, o XP da noz).
+- **Nunito**: textos, botões e legendas.
 
-**Perfil e configurações**
-- Painel de perfil com nome de exibição, nível e XP, perfil de treino (experiência e dias por semana), dados e backup, e sair da conta.
-- Se houver um treino antigo em andamento (formato anterior à trilha), ele aparece na tela inicial para retomar ou abandonar.
+### Formas e espaçamento
+
+- Cartões com **borda de 2px** em `#E6E6EE` e **cantos de 18 a 24px**.
+- Margem lateral de **18px** e largura máxima de **480px**, pensada primeiro para o celular.
+- Dias de calendário com **pílulas**: sequências ativas viram faixas contínuas vermelhas.
+
+### Ícones e imagens: o que é fixo
+
+| Elemento | Regra |
+|---|---|
+| Logotipo | Versão **preta** (`logo-dark.png`) em fundos claros; a branca (`logo.png`) é só para fundos escuros. |
+| Chama da ofensiva | PNG original (`flame.png`), sem redesenho e sem substituição por ícone genérico. |
+| Nozes | Recortes da referência (`noz-fechada.png` e `noz-aberta.png`). |
+| Corvo | `mascot.png`, sempre com o logotipo original. |
+| Símbolos dos dias | Planetas da astrologia clássica, um por dia (veja abaixo). |
+
+### Os símbolos dos dias
+
+Cada dia da semana tem um astro, e cada astro representa um grupo de treino. A semana começa no **domingo**.
+
+| Dia | Símbolo | Astro | Grupo |
+|---|---|---|---|
+| Domingo | ☉ | Sol | Ombros |
+| Segunda | ☽ | Lua | Peito |
+| Terça | ♂ | Marte | Braços |
+| Quarta | ☿ | Mercúrio | Abdômen |
+| Quinta | ♃ | Júpiter | Pernas |
+| Sexta | ♀ | Vênus | Costas |
+| Sábado | ♄ | Saturno | **Descanso** |
+
+O descanso é sempre no **sábado** e aparece na trilha com um anel tracejado e o rótulo "descanso".
+
+---
+
+## 🧩 Como funciona
+
+Um ciclo simples, do primeiro acesso à noz:
+
+```mermaid
+flowchart LR
+    A[Responde o perfil] --> B[Recebe o plano de 3 a 6 dias]
+    B --> C[Segue a trilha: uma unidade por dia]
+    C --> D[Conclui exercícios e ganha pontos]
+    D --> E[Mantém a ofensiva]
+    C --> F[Fim da semana]
+    F --> G[Ganha uma noz fechada]
+    G --> H[Abre a noz e recebe XP]
+    H --> D
+```
+
+### 1. Seu plano
+
+No primeiro acesso, o app pergunta nome, idade, peso, altura, experiência e quantos dias por semana você quer treinar (3, 4, 5 ou 6). Os treinos são montados com base nisso, com dias de descanso já distribuídos.
+
+<div align="center">
+
+<img src="icon-512.png" alt="Ícone do Crowfit" width="96">
+
+</div>
+
+### 2. A trilha
+
+A tela inicial é uma trilha de **unidades, uma por dia**, agrupadas em **semanas de 7 dias** (de domingo a sábado). Cada semana muda a cor dos círculos.
+
+- Cada unidade abre **no dia dela**. Não dá para adiantar treinos.
+- Unidades de dias anteriores continuam disponíveis para concluir.
+- Só o mês atual (4 semanas) fica liberado. Os meses seguintes aparecem com cadeado.
+- O treino guiado mostra um exercício por vez, com cronômetro para exercícios por tempo e descanso entre as séries.
+
+### 3. A ofensiva
+
+A ofensiva conta **dias seguidos treinados**. Ela tem uma chama com pena e um calendário com faixas vermelhas.
+
+<div align="center">
+
+<img src="flame.png" alt="Chama da ofensiva" width="160">
+
+</div>
+
+- O dia registrado é o **da própria unidade**: concluir hoje a unidade de ontem registra ontem.
+- Dias de descanso **não quebram** a ofensiva.
+- Perder um dia de treino previsto zera a contagem atual. A **melhor ofensiva** nunca diminui.
+- No calendário, a faixa vermelha une os dias seguidos, a bolinha azul marca hoje (quando ainda não treinou) e o contorno preto marca o dia selecionado.
+
+> **Pendente:** a trilha usa o **sábado** como descanso, mas a regra de ofensiva ainda considera o **domingo** como descanso. Assim, um sábado sem treino pode quebrar a ofensiva mesmo sendo dia de descanso na trilha. Essa regra ainda será ajustada.
+
+### 4. As nozes
+
+No fim de cada semana (de domingo a sábado) você ganha **uma noz fechada**.
+
+- Ao tocar nela, uma tela mostra a noz aberta e um **número aleatório de XP**, proporcional ao seu nível.
+- Cada noz só pode ser aberta uma vez, e o XP fica salvo na sua conta.
+- As nozes ficam na tela de **Ofensivas**, abaixo do calendário.
+
+<div align="center">
+
+<img src="noz-fechada.png" alt="Noz fechada" width="110">&nbsp;&nbsp;&nbsp;&nbsp;➜&nbsp;&nbsp;&nbsp;&nbsp;<img src="noz-aberta.png" alt="Noz aberta" width="110">
+
+</div>
+
+### 5. Pontos e níveis
+
+| Ação | Pontos |
+|---|---|
+| Exercício concluído | +10 |
+| Unidade concluída (bônus) | +20 |
+| Noz aberta | aleatório, de 20 a 50 vezes o nível atual |
+
+- Um nível novo a cada **200 pontos**, com barra de progresso.
+- Cada recompensa é concedida **uma única vez**. Refazer uma unidade não repete pontos.
+
+---
 
 ## 📲 Instalar no celular
 
 1. Abra **https://virusdosol.github.io/crowfit/** no **Chrome** (Android) ou no **Safari** (iPhone).
 2. Toque em **Instalar app** (Chrome) ou em **Compartilhar > Adicionar à Tela de Início** (Safari).
-3. Abra pelo ícone novo. O primeiro acesso e o primeiro login precisam de internet. Depois, o app abre offline neste aparelho.
+3. Abra pelo ícone novo. O primeiro acesso e o primeiro login precisam de internet; depois, o app abre offline neste aparelho.
+
+---
 
 ## 💾 Seus dados
 
-O progresso fica **primeiro no seu aparelho**, no `localStorage`, **separado por conta**:
+O progresso fica **primeiro no seu aparelho**, separado por conta:
 
 | Chave | Conteúdo |
 |---|---|
-| `corvofit-v2:u:<UID>` | Progresso da conta (perfil de treino, pontos, recompensas, ofensiva, dias concluídos, histórico, plano e trilha). `<UID>` é o identificador da conta no Supabase; o e-mail nunca é usado como chave. |
-| `corvofit-v2:sync:<UID>` | Metadados de sincronização da conta (pendência, assinatura do último envio, sessões já enviadas, valores de recompensa). Pode ser apagada sem perder progresso: o app só reenvia. |
-| `corvofit-v1` | Chave **histórica** (dados de antes das contas). Nunca é apagada nem reescrita. Uma única conta pode adotá-la, por decisão explícita, na primeira entrada; depois disso ela não é oferecida a nenhuma outra. |
+| `corvofit-v2:u:<UID>` | Progresso da conta: perfil de treino, pontos, nozes, recompensas, ofensiva, dias concluídos, histórico, plano e trilha. O `<UID>` é o identificador da conta no Supabase; o e-mail nunca é usado como chave. |
+| `corvofit-v2:sync:<UID>` | Metadados de sincronização. Pode ser apagada sem perder progresso: o app só reenvia. |
+| `corvofit-v1` | Chave **histórica** de antes das contas. Nunca é apagada nem reescrita. |
 
-- Sair da conta **não apaga** nada. Entrar com outra conta carrega outra partição; uma conta nunca vê o progresso da outra neste aparelho.
-- Se a gravação falhar (por exemplo, armazenamento cheio), o app mostra um aviso fixo "Alterações NÃO salvas".
-- Se os dados salvos estiverem corrompidos, o app **não os apaga**: mostra uma tela de recuperação e guarda uma cópia.
-- Limpar os dados do navegador ou desinstalar o app **apaga o progresso deste aparelho**. Com a sincronização, o que já foi enviado continua na sua conta (veja abaixo).
+- Sair da conta **não apaga** nada. Outra conta vê outra partição.
+- Se a gravação falhar (por exemplo, armazenamento cheio), o app mostra o aviso **"Alterações NÃO salvas"**.
+- Se os dados estiverem corrompidos, o app **não os apaga**: mostra uma tela de recuperação e guarda uma cópia.
+- Limpar os dados do navegador ou desinstalar o app **apaga o progresso deste aparelho**.
 - **Exportar backup** e **Importar backup** (arquivo `.json`) ficam em *Perfil > Dados e backup*. A importação valida o arquivo e guarda uma cópia dos dados atuais antes de trocar.
+
+---
 
 ## 🔐 Conta e login
 
-- Cadastro e login por e-mail e senha, login com Google, recuperação e troca de senha e logout (Supabase Auth). A sessão fica salva no navegador.
-- Sem sessão, uma tela de acesso cobre o app. Se o aparelho já teve login e está sem internet (ou o SDK não carregou), o app abre mesmo assim, na partição da última conta.
-- **Perfil remoto:** o nome de exibição fica em `public.profiles` (leitura e atualização por RLS). O perfil de treino (idade, peso, altura) **não** vai ao servidor.
+- Cadastro e login por e-mail e senha, login com Google, recuperação e troca de senha, e logout (Supabase Auth). A sessão fica salva no navegador.
+- Sem sessão, uma tela de acesso cobre o app. Sem internet, o app abre na partição da última conta, se ela já tiver entrado neste aparelho.
+- **Perfil remoto:** o nome de exibição fica em `public.profiles`, com leitura e atualização por RLS. O perfil de treino (idade, peso, altura) **não** vai ao servidor.
 - O **SDK do Supabase** é carregado de `cdn.jsdelivr.net` (versão fixada) e guardado em cache pelo service worker.
 - A chave publicável em `supabase-config.js` é pública por design. Nunca coloque ali `service_role`, senhas ou o Client Secret do Google.
 
+---
+
 ## 🔄 Sincronização
 
-> **Status:** implementada no código e coberta por testes automatizados que usam um simulador das regras do SQL. **Ainda não foi validada de ponta a ponta** em navegador real contra o Supabase. Até esse teste, não trate a sincronização como confirmada em produção.
-
-### O que sincroniza
+> **Status:** implementada e coberta por testes automatizados que usam um simulador das regras do SQL. **Ainda não foi validada de ponta a ponta** em navegador real contra o Supabase.
 
 | Dado local | Tabela remota | Como |
 |---|---|---|
-| Pontos, melhor ofensiva, última data de treino, dias concluídos, histórico de plano, recompensas | `public.user_progress` | RPC `merge_my_progress` |
-| Sessões do histórico (`S.history`) | `public.workout_sessions` | RPC `upsert_my_sessions` (lotes de até 100) |
-| Conquistas | `public.achievements_unlocked` | RPC `unlock_my_achievements` (leitura pronta; veja limites) |
+| Pontos, melhor ofensiva, última data, dias concluídos, histórico de plano, recompensas | `public.user_progress` | RPC `merge_my_progress` |
+| Sessões do histórico | `public.workout_sessions` | RPC `upsert_my_sessions` (lotes de até 100) |
+| Conquistas | `public.achievements_unlocked` | RPC `unlock_my_achievements` (envio pronto, catálogo ainda não existe) |
 
-A leitura das três tabelas é por `SELECT` sob RLS: cada usuário só enxerga as próprias linhas. Toda escrita passa pelas RPCs, que usam `auth.uid()`; o app nunca envia um UID.
-
-### Reconciliação (sem perder nem duplicar)
-
-- **Pontos:** o servidor calcula `points = base_points + soma(rewards)`. O app envia `base_points = S.points − soma das recompensas enviadas`, o que preserva exatamente o total local. Recompensas sem valor seguro de derivar (chaves desconhecidas) **não** são enviadas e permanecem dentro de `base_points`.
-- **Valor de cada recompensa:** `ex:<data>:<exercício>` = 10; `sess:<data>` = 20; `tr:s<k>u<n>` = 10 × exercícios da unidade + 20. Se o valor já existe no servidor, ele prevalece.
-- **Regras de mescla (no servidor):** `base_points`, melhor ofensiva e última data ficam com o maior valor; dias concluídos e recompensas são unidos; o plano é unido por data. Nada regride.
-- **Resultado:** o app adota a linha devolvida (pontos, recompensas, dias, plano, ofensiva) sem remover nada local, e grava na partição da conta.
-- **Sessões:** só sessões finalizadas (`completed`, `interrupted`, `abandoned`) são enviadas. Sessão finalizada é imutável no servidor; só o feedback pode ser preenchido, uma vez. No login, sessões que só existem no servidor entram no histórico local.
-- **Se os pontos locais forem menores que a soma das recompensas** (estado inconsistente), a sincronização para, mostra um aviso e não envia nada.
-
-### Quando sincroniza
-
-Ao entrar na conta, ao salvar o progresso (agrupado por ~4 s, sem timers soltos), ao voltar a conexão e ao voltar para o app. Se nada relevante mudou, não há requisição.
-
-### Offline e falhas
-
-- O app abre e funciona sem a rede; o progresso continua sendo salvo localmente.
-- Sem rede, a pendência é registrada e o envio é repetido quando a conexão volta (com intervalos crescentes). Nenhum sucesso falso é mostrado.
-- Se o servidor recusar um conteúdo (erro de validação), o app não repete sozinho o mesmo conteúdo, mantém tudo local e avisa.
-- Cada rodada pertence a uma conta e a uma "geração" do app: se a conta trocar no meio de uma resposta, nada é gravado na conta errada.
+- A leitura é por `SELECT` sob RLS: cada usuário só enxerga as próprias linhas. Toda escrita passa pelas RPCs, que usam `auth.uid()`. O app nunca envia um UID.
+- **Pontos:** o servidor calcula `points = base_points + soma(recompensas)`, o que preserva o total local exato.
+- **Mescla:** `base_points`, melhor ofensiva e última data ficam com o maior valor; dias e recompensas são unidos. Nada regride.
+- **Quando sincroniza:** ao entrar, ao salvar (agrupado por ~4 s), ao voltar a conexão e ao voltar para o app.
+- **Offline:** a pendência é registrada e reenviada quando a conexão volta. Nenhum sucesso falso é mostrado.
 
 ### Limites conhecidos
 
-- **A trilha não é sincronizada** (`S.trail`: data de início, exercícios marcados, níveis congelados). O banco atual não tem coluna para isso. Em outro aparelho, pontos, dias concluídos e recompensas chegam, mas as marcações da trilha e a data de início dela começam do zero. As recompensas já registradas impedem pontos repetidos.
-- **Não sincronizam:** perfil de treino (idade, peso, altura, experiência, dias), ajuste de dificuldade e treino em andamento.
-- **Sessões:** as unidades da trilha não geram sessões; só o histórico de sessões do formato antigo é enviado.
-- **Conquistas:** o app ainda não tem catálogo nem desbloqueios locais, então nada é enviado hoje. O envio está implementado e pronto para quando existirem.
+- **A trilha não é sincronizada** (início, exercícios marcados, níveis). Em outro aparelho, pontos, dias e recompensas chegam, mas a trilha começa do zero.
+- **Não sincronizam:** perfil de treino, ajuste de dificuldade, treino em andamento e as **nozes abertas** (o XP delas já entra nos pontos, mas a lista de nozes não vai ao servidor ainda).
+
+---
 
 ## 🛠 Para quem quer mexer no código
 
-HTML, CSS e JavaScript puro, sem build e sem framework. Dependências externas: SDK do Supabase (CDN, versão fixada) e as fontes Fredoka e Nunito (Google Fonts, só visual). Todos os arquivos ficam na raiz.
+HTML, CSS e JavaScript puro, sem build e sem framework. Dependências externas: SDK do Supabase (CDN, versão fixada) e as fontes Fredoka e Nunito (Google Fonts, só visual).
 
 ```
 crowfit/
-├── index.html              # telas, estilo e lógica principal do app
-├── core.js                 # regras puras: validação, pontos, ofensiva, sessões, recompensas
-├── store.js                # armazenamento local por conta (chaves, adoção do legado)
-├── program.js              # programação dos treinos e exercícios
+├── index.html              # telas, estilo e lógica principal (inclui a tela de Ofensivas e as nozes)
+├── core.js                 # regras puras: validação, pontos, ofensiva, nozes, sessões, recompensas
+├── store.js                # armazenamento local por conta
+├── program.js              # programação dos treinos, grupos e símbolos dos dias
 ├── trail.js                # trilha: semanas, unidades, pontos e ofensiva por unidade
-├── trail.css               # estilo da trilha
+├── trail.css               # estilo da trilha (inclui o destaque do descanso)
 ├── supabase-config.js      # URL e chave publicável do Supabase
-├── auth.js                 # autenticação (cliente Supabase único)
-├── auth-ui.js              # telas de entrada, login, cadastro e recuperação
+├── auth.js, auth-ui.js     # autenticação e telas de entrada
 ├── auth.css                # estilo das telas de autenticação
-├── profile.js              # painel de perfil e perfil remoto (public.profiles)
+├── profile.js              # painel de perfil e perfil remoto
 ├── profile.css, settings.css
 ├── supabase-sync.js        # sincronização (RPCs, fila, offline, reconciliação)
 ├── sw.js                   # service worker (cache offline)
 ├── manifest.json           # PWA
-├── supabase-profiles.sql, supabase-profiles-fix.sql, supabase-profiles-verify.sql
-├── supabase-sync.sql       # tabelas, RLS e RPCs da sincronização
-└── imagens: mascot.png, logo.png, intro-logo.png, intro-mascot.png, splash.jpg, icon-*.png
+├── supabase-profiles*.sql, supabase-sync.sql
+└── imagens: logo.png, logo-dark.png, mascot.png, flame.png, noz-aberta.png,
+             noz-fechada.png, intro-logo.png, intro-mascot.png, splash.jpg, icon-*.png
 ```
 
 Ordem de carregamento no `index.html`: SDK, `supabase-config.js`, `auth.js`, `auth-ui.js`, `profile.js`, `core.js`, `store.js`, `program.js`, `trail.js`, `supabase-sync.js` e, por fim, o script do app.
 
-Para rodar localmente, sirva a pasta com um servidor estático (por exemplo `python3 -m http.server`) e abra `http://localhost:8000`. O service worker só funciona em `localhost` ou `https`.
+**Rodar localmente:** sirva a pasta com um servidor estático (por exemplo `python3 -m http.server`) e abra `http://localhost:8000`. O service worker só funciona em `localhost` ou `https`.
 
-**Atualizando o app:** depois de mudar um arquivo, aumente `CACHE_VERSION` no `sw.js` e inclua arquivos novos na lista de cache. O service worker usa a rede primeiro para HTML, JS e JSON, apaga só caches com o prefixo `crowfit-cache-` e **nunca intercepta nem guarda** requisições ao Supabase. Se trocar a versão do SDK, altere a URL no `index.html` **e** no `sw.js`.
+**Atualizando o app:** depois de mudar um arquivo, aumente `CACHE_VERSION` no `sw.js` e inclua os arquivos novos na lista de cache. O service worker usa a rede primeiro para HTML, JS e JSON, apaga só caches com o prefixo `crowfit-cache-` e **nunca intercepta nem guarda** requisições ao Supabase.
 
-## Instalação própria (seu projeto Supabase)
+---
+
+## ☁️ Instalação própria (seu projeto Supabase)
 
 O login e a sincronização só funcionam com o **seu** projeto Supabase.
 
 1. Crie o projeto e coloque a URL e a chave publicável em `supabase-config.js`.
-2. No *SQL Editor*, **revise e execute em um banco novo**, nesta ordem: `supabase-profiles.sql` (já inclui as correções) e depois `supabase-sync.sql`. Use `supabase-profiles-verify.sql` para conferir os perfis; o final de `supabase-sync.sql` traz a verificação da sincronização. (O projeto original já tem esses scripts aplicados; eles não precisam ser executados de novo nele.)
+2. No *SQL Editor*, execute em um banco novo, nesta ordem: `supabase-profiles.sql` e depois `supabase-sync.sql`. Use `supabase-profiles-verify.sql` para conferir os perfis. (O projeto original já tem esses scripts aplicados.)
 3. Em *Authentication > URL Configuration*, defina o Site URL com o endereço real do app e as Redirect URLs (com e sem `index.html`; `http://localhost:PORTA/**` para testes locais).
 4. Em *Authentication > Providers*, ative e-mail (decida sobre "Confirm email") e Google (Client ID e Secret só no painel do Supabase).
 5. No Google Cloud, autorize o URI `https://<seu-projeto>.supabase.co/auth/v1/callback`.
@@ -181,17 +272,22 @@ O login e a sincronização só funcionam com o **seu** projeto Supabase.
 
 O SMTP padrão do Supabase tem limite baixo de envios; para uso real, configure um SMTP próprio.
 
-## Ainda não tem
+---
 
-- Sincronização da trilha, do perfil de treino e do ajuste de dificuldade.
-- Conquistas (o envio ao servidor já existe; faltam o catálogo e os desbloqueios no app).
+## 🗺 Ainda não tem
+
+- Sincronização da trilha, do perfil de treino, do ajuste de dificuldade e das nozes.
+- Conquistas (o envio já existe; faltam o catálogo e os desbloqueios).
 - Tela de histórico de sessões.
 - Ilustrações ou vídeos dos exercícios.
 - Ligas, amigos e lembretes diários.
+- Ajuste da regra de descanso da ofensiva para o sábado.
 
 Sugestões e contribuições são bem-vindas: abra uma *issue* ou um *pull request*.
 
-## Observações
+---
+
+## ⚠️ Observações
 
 - O Crowfit não substitui orientação médica nem de um profissional de educação física. Se você tem alguma condição de saúde, converse com um profissional antes de começar.
 - Respeite o seu corpo: se algo doer, pare ou pule o exercício.
@@ -199,6 +295,8 @@ Sugestões e contribuições são bem-vindas: abra uma *issue* ou um *pull reque
 ---
 
 <div align="center">
+
+<img src="intro-mascot.png" alt="" width="90">
 
 Feito por **virusdosol** para quem quer treinar em qualquer lugar, sem desculpa e sem equipamento.
 
