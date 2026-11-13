@@ -62,6 +62,32 @@ html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--bg);color:var(--ink);font:700 16px/1.45 Nunito,system-ui,sans-serif;min-height:100vh}
 h1,h2,h3{font-family:Fredoka,Nunito,sans-serif;font-weight:600;margin:0;line-height:1.15}
 #app{max-width:480px;margin:0 auto;padding:16px 16px 40px}
+.of-wrap{max-width:480px;margin:0 auto;padding:0 18px 28px;background:#fff;color:#17171C}
+.of-top{display:flex;align-items:center;justify-content:space-between;height:60px}
+.of-x{background:none;border:0;padding:8px;cursor:pointer;display:grid;place-items:center}
+.of-logo{height:30px;width:auto}.of-sp{width:38px}
+.of-hero{display:flex;align-items:center;justify-content:space-between;margin-top:16px;gap:8px}
+.of-l{min-width:0;flex:1}
+.of-num{font:700 clamp(96px,30vw,128px)/.95 Fredoka,Nunito,sans-serif;color:#E3182D}
+.of-txt{font:800 clamp(22px,6.2vw,28px)/1.1 Nunito,sans-serif;color:#17171C;margin-top:2px;white-space:nowrap}
+.of-u{display:block;width:88%;height:14px;margin-top:2px}.of-u path{fill:none;stroke:#E3182D;stroke-width:5;stroke-linecap:round}
+.of-r{position:relative;width:42%;flex:none}
+.of-f{display:block;width:100%;height:auto;position:relative;z-index:1}
+.of-sh{position:absolute;left:4%;right:4%;bottom:-2%;height:14%;border-radius:50%;background:#FBCFD5}
+.of-tt{display:flex;align-items:center;gap:10px;margin:30px 0 14px}
+.of-tt h2{margin:0;font:800 clamp(19px,5.4vw,22px) Nunito,sans-serif;color:#17171C}
+.of-card{border:2px solid #E6E6EC;border-radius:24px;padding:14px 12px 16px}
+.of-mh{display:flex;align-items:center;justify-content:space-between;font:800 19px Nunito,sans-serif}
+.of-arr{background:none;border:0;font:700 28px Nunito,sans-serif;color:#17171C;padding:0 10px;cursor:default}
+.of-wk{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;margin-top:10px;font:700 13px Nunito,sans-serif;color:#8E8E99}
+.of-g{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;row-gap:4px;margin-top:6px}
+.of-c{height:40px;display:flex;align-items:center;justify-content:center;position:relative;font:700 16px Nunito,sans-serif;color:#17171C}
+.of-c i{font-style:normal;position:relative;z-index:1}
+.of-active{background:#E3182D;color:#fff}
+.of-pending i{background:#1DA1F2;color:#fff;border-radius:50%;width:32px;height:32px;display:grid;place-items:center}
+.of-none{color:#B5B5C0}
+.of-rest::after{content:"";position:absolute;bottom:3px;width:4px;height:4px;border-radius:50%;background:#8E8E99}
+.of-missed{color:#17171C}
 .ofb{background:none;border:0;padding:0;color:inherit;cursor:pointer;font:inherit}
 .top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:18px}
 .stat{display:flex;align-items:center;gap:6px;font-family:Fredoka;font-size:20px}
@@ -298,10 +324,18 @@ function renderHome(){var li=lvlInfo(),t=today(),a=S.active,b4=S.streak+"/"+S.be
  CFT.mount($("trail"),trailCtx())}
 
 /* ---------- Ofensivas (tela própria; calendário e detalhes entram nas próximas etapas) ---------- */
-function renderOfensivas(){var t=today();var b4=S.streak+"/"+S.best;CF.refreshStreak(S,t);if(b4!==S.streak+"/"+S.best)save();var n=S.streak,b=S.best;
- view('<div class="top" style="margin-bottom:8px"><button type="button" class="chip" id="of-bk" aria-label="Voltar para a trilha">✕</button><h1 style="margin:0;font-size:24px">Ofensivas</h1><span style="width:40px"></span></div>'+
- '<div class="card center" style="margin-top:12px"><div style="font-family:Fredoka;font-size:48px;color:var(--brand)">'+n+'</div><div>'+(n===1?"dia de ofensiva":"dias de ofensiva")+'</div><small style="color:var(--mute)">Melhor ofensiva: '+b+(b===1?" dia":" dias")+'</small></div>'+
- '<div id="of-cal" style="margin-top:16px"></div>');
+function ofCal(t){var p=t.split("-"),y=+p[0],m=+p[1]-1,MES=["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+ var off=new Date(y,m,1).getDay(),len=new Date(y,m+1,0).getDate(),pd=function(x){return ("0"+x).slice(-2)};
+ var h='<div class="of-card"><div class="of-mh"><button type="button" class="of-arr" disabled aria-label="Mês anterior">‹</button><b>'+MES[m]+' de '+y+'</b><button type="button" class="of-arr" disabled aria-label="Próximo mês">›</button></div><div class="of-wk">'+["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"].map(function(x){return "<span>"+x+"</span>"}).join("")+'</div><div class="of-g">';
+ for(var i=0;i<off;i++)h+='<span class="of-c"></span>';
+ for(var d=1;d<=len;d++){var ds=y+"-"+pd(m+1)+"-"+pd(d),st=CF.dayStatus(S.done,S.planHistory,ds,t);h+='<span class="of-c of-'+st+'"><i>'+d+'</i></span>'}
+ return h+'</div></div>'}
+function renderOfensivas(){var t=today();var b4=S.streak+"/"+S.best;CF.refreshStreak(S,t);if(b4!==S.streak+"/"+S.best)save();var n=S.streak;
+ view('<div class="of-wrap">'+
+ '<div class="of-top"><button type="button" class="of-x" id="of-bk" aria-label="Voltar para a trilha"><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M3 3l16 16M19 3L3 19" stroke="#17171C" stroke-width="2.6" stroke-linecap="round"/></svg></button><img class="of-logo" src="logo-dark.png" alt="Crowfit"><span class="of-sp"></span></div>'+
+ '<div class="of-hero"><div class="of-l"><div class="of-num">'+n+'</div><div class="of-txt">dias de ofensiva!</div><svg class="of-u" viewBox="0 0 300 16" preserveAspectRatio="none" aria-hidden="true"><path d="M6 10Q150 2 294 8"/></svg></div><div class="of-r"><img class="of-f" src="flame.png" alt=""><span class="of-sh" aria-hidden="true"></span></div></div>'+
+ '<div class="of-tt"><svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><rect x="2" y="5" width="24" height="21" rx="4" fill="none" stroke="#17171C" stroke-width="2.4"/><path d="M2 11h24" stroke="#E3182D" stroke-width="5"/><path d="M9 2v5M19 2v5" stroke="#17171C" stroke-width="2.4" stroke-linecap="round"/><g fill="#17171C"><circle cx="8" cy="16" r="1.3"/><circle cx="14" cy="16" r="1.3"/><circle cx="20" cy="16" r="1.3"/><circle cx="8" cy="21" r="1.3"/><circle cx="14" cy="21" r="1.3"/><circle cx="20" cy="21" r="1.3"/></g></svg><h2>Calendário da ofensiva</h2></div>'+
+ ofCal(t)+'</div>');
  $("of-bk").onclick=renderHome}
 
 /* ---------- Configurações (renderizadas dentro do painel de perfil, categorias "Perfil de treino" e "Dados e backup") ---------- */
