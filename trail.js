@@ -1,6 +1,6 @@
 /* Crowfit: trilha de progressão (semanas de 7 dias, unidades, aro vermelho e página do treino).
-   Visual: a cada 7 dias muda a semana e a cor dos círculos (grafite, vermelho, branco, preto, em ciclo).
-   Só o mês atual (4 semanas = 28 dias) fica liberado; os meses seguintes aparecem bloqueados, com cadeado.
+   Visual: a semana segue o calendário (segunda a domingo) e muda a cor dos círculos a cada semana (grafite, vermelho, branco, preto, em ciclo).
+   A primeira semana pode ser parcial (começa no dia inicial). Dia que já passou fica indisponível e apagado. Só o mês atual (4 semanas de calendário) fica liberado; os meses seguintes aparecem bloqueados, com cadeado.
    Internamente a "seção" de 3 meses continua existindo (program.js e as chaves s1u4 não mudam); só deixou de aparecer na tela.
    Depende de CF (core.js) e CFP (program.js). O progresso fica em S.trail, dentro da chave "corvofit-v1":
      S.trail = { start: "AAAA-MM-DD", ex: { "s1u4": { "ag": true } }, lv: { "1": 0 } }
@@ -50,7 +50,7 @@ function isDone(ctx, i) {
 function unlocked(ctx, i) { return C.addDays(ctx.S.trail.start, i) <= ctx.today; }
 function prog(ctx, u, ct) {
   var m = ctx.S.trail.ex[u.key] || {}, tot = ct.exercises.length, done = ct.exercises.filter(function (e) { return m[e.id] === true; }).length, p = tot ? done / tot : 0;
-  return { done: done, total: tot, p: p, map: m, st: p >= 1 ? "done" : done > 0 ? "prog" : (unlocked(ctx, u.i) ? "avail" : "fut") };
+  return { done: done, total: tot, p: p, map: m, st: p >= 1 ? "done" : u.date < ctx.today ? "miss" : done > 0 ? "prog" : (unlocked(ctx, u.i) ? "avail" : "fut") };
 }
 function ring(p) {
   return '<svg class="rg" viewBox="0 0 100 100" aria-hidden="true"><circle class="trk" cx="50" cy="50" r="46"/>' +
@@ -61,25 +61,28 @@ function pct(p) { return Math.round(p * 100); }
 
 /* Semana = 7 dias corridos a partir do início da trilha; mês liberado = 4 semanas. Só afeta a exibição. */
 var MES = 28, FRASES = ["Tenha paciência.", "Você vai chegar lá."], fi = 0, tt = 0;
-function wk(i) { return { w: Math.floor(i / 7) + 1, d: (i % 7) + 1, c: Math.floor(i / 7) % 4 }; }
-function lastOpen(ti) { return (Math.floor(ti / MES) + 1) * MES - 1; }
-function toast() {
+/* Semana de calendário (seg a dom). off = dias da primeira semana que ficaram antes da data inicial (0 se começou na segunda). */
+function off(S) { return (C.parseDate(S.trail.start).getDay() + 6) % 7; }
+function wk(S, i) { var o = off(S), j = i + o; return { w: Math.floor(j / 7) + 1, d: (j % 7) + 1 - (j < 7 ? o : 0), c: Math.floor(j / 7) % 4 }; }
+/* Último índice liberado: fim da 4ª semana de calendário do bloco atual (o mês nunca corta uma semana no meio). */
+function lastOpen(S, ti) { var o = off(S); return (Math.floor(Math.floor((ti + o) / 7) / 4) + 1) * MES - o - 1; }
+function toast(msg) {
   var el = $("t-toast");
   if (!el) { el = document.createElement("div"); el.id = "t-toast"; el.className = "t-toast"; el.setAttribute("role", "status"); document.body.appendChild(el); }
-  el.textContent = FRASES[fi++ % FRASES.length]; el.classList.add("on"); clearTimeout(tt);
+  el.textContent = msg || FRASES[fi++ % FRASES.length]; el.classList.add("on"); clearTimeout(tt);
   tt = setTimeout(function () { el.classList.remove("on"); }, 2200);
 }
 var LOCK = '<svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><rect x="11" y="21" width="26" height="19" rx="4"/><path d="M16 21v-6a8 8 0 0 1 16 0v6"/><circle cx="24" cy="30.5" r="2"/></svg>';
 
 function nodeHtml(ctx, i, locked) {
-  var u = unitAt(ctx.S, i), W = wk(i), x = Math.round(Math.sin(i * 0.85) * 62);
+  var u = unitAt(ctx.S, i), W = wk(ctx.S, i), x = Math.round(Math.sin(i * 0.85) * 62);
   if (locked) {
     return '<button class="tn st-lock" data-i="' + i + '" data-w="' + W.w + '" data-n="' + W.d + '" data-t="Treino bloqueado" style="--x:' + x + 'px" aria-label="Semana ' + W.w + ', unidade ' + W.d + ', ' + P.DIAS[u.dow] + ', bloqueada">' +
       '<span class="rb">' + ring(0) + '<span class="tn-btn">' + LOCK + '</span></span><span class="tn-lbl">U' + W.d + ' · ' + P.DIAS_ABR[u.dow] + '</span></button>';
   }
   var ct = content(ctx, u), pr = prog(ctx, u, ct), isT = u.date === ctx.today;
-  var label = "Semana " + W.w + ", unidade " + W.d + ", " + P.DIAS[u.dow] + ", " + ct.title + ", " + pr.done + " de " + pr.total + " exercícios concluídos" + (pr.st === "fut" ? ", ainda não liberado" : "");
-  return '<button class="tn wk' + W.c + ' st-' + pr.st + (isT ? " today" : "") + '" data-i="' + i + '" data-w="' + W.w + '" data-n="' + W.d + '" data-t="' + ctx.esc(ct.title) + '" data-d="' + P.DIAS_ABR[u.dow] + '" style="--x:' + x + 'px" aria-label="' + ctx.esc(label) + '">' +
+  var label = "Semana " + W.w + ", unidade " + W.d + ", " + P.DIAS[u.dow] + ", " + ct.title + ", " + pr.done + " de " + pr.total + " exercícios concluídos" + (pr.st === "fut" ? ", ainda não liberado" : pr.st === "miss" ? ", dia encerrado, indisponível" : "");
+  return '<button class="tn wk' + W.c + ' st-' + pr.st + (isT ? " today" : "") + '"' + (pr.st === "miss" ? ' aria-disabled="true"' : "") + ' data-i="' + i + '" data-w="' + W.w + '" data-n="' + W.d + '" data-t="' + ctx.esc(ct.title) + '" data-d="' + P.DIAS_ABR[u.dow] + '" style="--x:' + x + 'px" aria-label="' + ctx.esc(label) + '">' +
     (isT ? '<span class="tn-bub">' + (pr.st === "done" ? "FEITO" : pr.done ? "CONTINUAR" : "COMEÇAR") + '</span>' : "") +
     '<span class="rb">' + ring(pr.p) + '<span class="tn-btn">' + icon(ct.group) + '</span></span>' +
     (pr.st === "done" ? '<span class="tn-chk" aria-hidden="true">✓</span>' : "") +
@@ -99,6 +102,8 @@ function banner() {
   var ban = $("t-ban"); if (!ban) return;
   var nodes = document.querySelectorAll(".tn"), line = ban.getBoundingClientRect().bottom + 8, pick = nodes[0];
   for (var j = 0; j < nodes.length; j++) { pick = nodes[j]; if (nodes[j].getBoundingClientRect().bottom > line) break; }
+  var tn = document.querySelector(".tn.today");
+  if (tn) { var r = tn.getBoundingClientRect(); if (r.bottom > line && r.top < window.innerHeight) pick = tn; }
   if (!pick) return;
   $("tb-s").textContent = "SEMANA " + pick.getAttribute("data-w") + ", UNIDADE " + pick.getAttribute("data-n");
   $("tb-t").textContent = pick.getAttribute("data-t");
@@ -106,7 +111,7 @@ function banner() {
 function onScroll() { if (raf) return; raf = requestAnimationFrame(function () { raf = 0; banner(); }); }
 
 function mount(el, ctx) {
-  var S = ctx.S, tr = ensure(S, ctx.today), ti = Math.max(0, idxOf(S, ctx.today)), last = lastOpen(ti), hi = last + MES;
+  var S = ctx.S, tr = ensure(S, ctx.today), ti = Math.max(0, idxOf(S, ctx.today)), last = lastOpen(S, ti), hi = last + MES;
   if (!V || V.start !== tr.start) V = { start: tr.start, lo: Math.max(0, ti - 6), scroll: null };
   V.ctx = ctx;
   el.innerHTML = '<div class="t-ban" id="t-ban"><div class="tb-l"><small id="tb-s"></small><b id="tb-t"></b></div><button id="t-hoje" aria-label="Ir para o treino de hoje">Hoje</button></div>' +
@@ -116,6 +121,7 @@ function mount(el, ctx) {
   var path = $("t-path");
   el.onclick = function (e) {
     var t = e.target.closest && e.target.closest(".tn, .t-gate"); if (!t) return;
+    if (t.classList.contains("st-miss")) { toast("Dia encerrado."); return; }
     if (t.classList.contains("t-gate") || t.classList.contains("st-lock")) { toast(); return; }
     V.scroll = window.scrollY; openUnit(ctx, +t.getAttribute("data-i"));
   };
@@ -126,7 +132,13 @@ function mount(el, ctx) {
   };
   $("t-hoje").onclick = function () { var n = el.querySelector('[data-i="' + ti + '"]'); if (n) n.scrollIntoView({ block: "center", behavior: "smooth" }); };
   if (obs) { obs.disconnect(); obs = null; }
-  if (!bound) { window.addEventListener("scroll", onScroll, { passive: true }); bound = true; }
+  if (!bound) {
+    window.addEventListener("scroll", onScroll, { passive: true });
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "visible" && V && V.ctx && $("t-path") && C.dateKey(new Date()) !== V.ctx.today) { V.scroll = null; V.ctx.back(); }
+    });
+    bound = true;
+  }
   var n = el.querySelector('[data-i="' + ti + '"]');
   if (V.scroll != null) window.scrollTo(0, V.scroll); else if (n) n.scrollIntoView({ block: "center" });
   banner();
@@ -210,15 +222,15 @@ function runner(ctx, u, ct) {
 }
 
 function openUnit(ctx, i) {
-  var S = ctx.S, u = unitAt(S, i), W = wk(i), ct = content(ctx, u), locked = !unlocked(ctx, i), esc = ctx.esc;
+  var S = ctx.S, u = unitAt(S, i), W = wk(S, i), ct = content(ctx, u), locked = !unlocked(ctx, i), past = u.date < ctx.today, closed = locked || past, esc = ctx.esc;
   var pr = prog(ctx, u, ct), list = ct.exercises.map(function (e, k) {
     var on = pr.map[e.id] === true;
-    return '<li class="ex' + (on ? " ok" : "") + '" data-id="' + e.id + '"><button class="ex-chk" data-id="' + e.id + '" aria-pressed="' + on + '" aria-label="Marcar ' + esc(e.name) + ' como concluído"' + (locked ? " disabled" : "") + '>' + (on ? "✓" : "") + '</button><div class="ex-b"><b>' + (k + 1) + '. ' + esc(e.name) + '</b><span>' + esc(e.label) + '</span><small>' + esc(e.tip) + '</small></div></li>';
+    return '<li class="ex' + (on ? " ok" : "") + '" data-id="' + e.id + '"><button class="ex-chk" data-id="' + e.id + '" aria-pressed="' + on + '" aria-label="Marcar ' + esc(e.name) + ' como concluído"' + (closed ? " disabled" : "") + '>' + (on ? "✓" : "") + '</button><div class="ex-b"><b>' + (k + 1) + '. ' + esc(e.name) + '</b><span>' + esc(e.label) + '</span><small>' + esc(e.tip) + '</small></div></li>';
   }).join("");
   ctx.view('<div class="u-top"><button class="chip" id="u-bk" aria-label="Voltar à trilha">← Trilha</button><span>SEMANA ' + W.w + ' — UNIDADE ' + W.d + '</span></div>' +
     '<div class="u-hero"><span class="rb u-rb wk' + W.c + ' st-' + pr.st + '" id="u-rb">' + ring(pr.p) + '<span class="tn-btn">' + icon(ct.group) + '</span></span><p class="u-day">' + P.DIAS[u.dow].toUpperCase() + ' · ' + fmt(u.date) + '</p><h1>' + esc(ct.title.toUpperCase()) + '</h1></div>' +
     '<div class="card u-prog"><b id="u-pt"></b><div class="bar" style="margin-top:8px"><i id="u-pb"></i></div></div>' +
-    (locked ? '<p class="u-note">Este treino será liberado em ' + fmt(u.date) + ' (a partir da meia-noite). Você pode consultar a programação.</p>' : '<button class="btn u-go" id="u-go"></button>') +
+    (past ? '<p class="u-note">Este dia já passou (' + fmt(u.date) + '), então o treino não pode mais ser feito ou alterado. Você pode apenas consultar.</p>' : locked ? '<p class="u-note">Este treino será liberado em ' + fmt(u.date) + ' (a partir da meia-noite). Você pode consultar a programação.</p>' : '<button class="btn u-go" id="u-go"></button>') +
     '<ol class="u-list">' + list + '</ol>' +
     '<div class="card u-help"><b>Orientações</b><p>' + (ct.group === "R" ? "Hoje é dia de recuperar: mantenha tudo leve e confortável." : "Faça as séries com controle e descanse de 30 a 60 segundos entre elas. O primeiro item é cardio de aquecimento.") + ' Sentiu dor ou tontura? Pare e procure orientação profissional.</p></div>' +
     '<button class="btn sec" id="u-bk2" style="margin-top:14px">Voltar à trilha</button>');
@@ -236,7 +248,7 @@ function openUnit(ctx, i) {
   if ($("u-go")) $("u-go").onclick = function () { runner(ctx, u, ct); };
   document.querySelectorAll(".ex-chk").forEach(function (b) {
     b.onclick = function () {
-      if (locked) return;
+      if (closed) return;
       var id = b.getAttribute("data-id"), m = S.trail.ex[u.key];
       if (!ct.exercises.some(function (e) { return e.id === id; })) return;
       if (m && m[id]) { delete m[id]; if (!Object.keys(m).length) delete S.trail.ex[u.key]; } else { if (!m) m = S.trail.ex[u.key] = {}; m[id] = true; }

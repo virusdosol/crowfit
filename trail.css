@@ -39,7 +39,9 @@
 .t-toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translate(-50%,12px);max-width:calc(100% - 32px);background:#17171C;color:#fff;border-radius:16px;padding:12px 22px;font:700 16px Nunito,system-ui,sans-serif;text-align:center;opacity:0;pointer-events:none;z-index:50}
 .t-toast.on{opacity:1;transform:translate(-50%,0)}
 @media (prefers-reduced-motion:no-preference){.t-toast{transition:opacity .2s,transform .2s}}
-.st-fut{opacity:.5}.st-fut .rg .trk{stroke:var(--line)}
+.st-fut{opacity:.5}
+/* Dia que já passou sem treino completo: indisponível e apagado */
+.st-miss{opacity:.4;filter:grayscale(1);cursor:not-allowed}.st-miss .rg .arc{stroke:#8E8E99}.st-miss .tn-btn{transition:none}.st-fut .rg .trk{stroke:var(--line)}
 .tn-lbl{font:800 12px Nunito,sans-serif;color:var(--mute)}.tn.today .tn-lbl{color:var(--ink)}
 .tn-chk{position:absolute;top:-2px;right:calc(50% - 50px);width:26px;height:26px;border-radius:50%;background:#E3182D;color:#fff;border:2px solid #fff;display:grid;place-items:center;font:900 15px Nunito,sans-serif;box-shadow:0 2px 0 rgba(0,0,0,.35)}
 .tn-bub{position:absolute;top:-34px;left:50%;transform:translateX(-50%);background:#fff;border:2px solid #E6E6EE;border-radius:12px;padding:2px 10px;color:#D92332;font:800 14px Nunito,sans-serif;white-space:nowrap}
