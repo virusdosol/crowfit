@@ -170,6 +170,14 @@ function computeStreak(done, ph, today) {
   }
   return n;
 }
+/* Situação de um dia da ofensiva, com as mesmas regras de computeStreak: "active" (treinou),
+   "rest" (descanso do plano), "pending" (hoje, ainda sem treino), "missed" (dia de treino sem registro), "none" (antes de qualquer plano). */
+function dayStatus(done, ph, d, today) {
+  if (done[d]) return "active";
+  var dias = planFor(ph, d); if (dias === null) return "none";
+  if (isRestDay(dias, d)) return "rest";
+  return d === today ? "pending" : (d > today ? "none" : "missed");
+}
 function refreshStreak(S, today) { var c = computeStreak(S.done, S.planHistory, today); S.streak = c; S.best = Math.max(S.best, c); return c; }
 
 /* ---- cronômetro (baseado em horários, sobrevive a abas em segundo plano) ---- */
@@ -240,7 +248,7 @@ function abandonSession(S, ses, now) {
 return { PAT: PAT, EXP: EXP, escText: escText, escAttr: escAttr, safeClass: safeClass, safeUrl: safeUrl, cssVal: cssVal, num: num, isInt: isInt,
   dateKey: dateKey, parseDate: parseDate, addDays: addDays, emptyState: emptyState, validateProfile: validateProfile, validateState: validateState,
   makeBackup: makeBackup, parseBackup: parseBackup, setPlan: setPlan, planFor: planFor, isRestDay: isRestDay, levelFor: levelFor, applyFeedback: applyFeedback,
-  computeStreak: computeStreak, refreshStreak: refreshStreak, timerStart: timerStart, timerPause: timerPause, timerResume: timerResume, timerTick: timerTick,
+  computeStreak: computeStreak, refreshStreak: refreshStreak, dayStatus: dayStatus, timerStart: timerStart, timerPause: timerPause, timerResume: timerResume, timerTick: timerTick,
   timerSecs: timerSecs, newSession: newSession, syncStatus: syncStatus, completeSet: completeSet, skipExercise: skipExercise, advance: advance,
   grantExercise: grantExercise, grantSessionBonus: grantSessionBonus, finishSession: finishSession, abandonSession: abandonSession };
 });

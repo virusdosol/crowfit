@@ -298,7 +298,7 @@ function renderHome(){var li=lvlInfo(),t=today(),a=S.active,b4=S.streak+"/"+S.be
  CFT.mount($("trail"),trailCtx())}
 
 /* ---------- Ofensivas (tela própria; calendário e detalhes entram nas próximas etapas) ---------- */
-function renderOfensivas(){var n=S.streak,b=S.best;
+function renderOfensivas(){var t=today();var b4=S.streak+"/"+S.best;CF.refreshStreak(S,t);if(b4!==S.streak+"/"+S.best)save();var n=S.streak,b=S.best;
  view('<div class="top" style="margin-bottom:8px"><button type="button" class="chip" id="of-bk" aria-label="Voltar para a trilha">✕</button><h1 style="margin:0;font-size:24px">Ofensivas</h1><span style="width:40px"></span></div>'+
  '<div class="card center" style="margin-top:12px"><div style="font-family:Fredoka;font-size:48px;color:var(--brand)">'+n+'</div><div>'+(n===1?"dia de ofensiva":"dias de ofensiva")+'</div><small style="color:var(--mute)">Melhor ofensiva: '+b+(b===1?" dia":" dias")+'</small></div>'+
  '<div id="of-cal" style="margin-top:16px"></div>');
