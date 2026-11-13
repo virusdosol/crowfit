@@ -24,7 +24,7 @@ function parseDate(s) { return new Date(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.s
 function addDays(s, n) { var d = parseDate(s); d.setDate(d.getDate() + n); return dateKey(d); }
 
 /* ---- estado e validação ---- */
-function emptyState() { return { version: 2, profile: null, points: 0, streak: 0, best: 0, last: "", done: {}, rewards: {}, history: [], planHistory: [], adjust: 0, easyStreak: 0, active: null, trail: { start: "", ex: {}, lv: {} } }; }
+function emptyState() { return { version: 2, profile: null, points: 0, streak: 0, best: 0, last: "", done: {}, rewards: {}, nozes: {}, history: [], planHistory: [], adjust: 0, easyStreak: 0, active: null, trail: { start: "", ex: {}, lv: {} } }; }
 function validateProfile(p) {
   var e = [];
   if (!p || typeof p !== "object") return { ok: false, errors: ["Perfil inválido"] };
@@ -104,6 +104,12 @@ function validateState(raw) {
   }
   obj("done", 20000, function (k) { return DATE_RE.test(k); });
   obj("rewards", 20000, function (k) { return k.length <= 80; });
+  if (raw.nozes !== undefined) {
+    if (raw.nozes && typeof raw.nozes === "object" && !Array.isArray(raw.nozes)) {
+      var nk = Object.keys(raw.nozes); if (nk.length > 5000) nk = [];
+      nk.forEach(function (k) { if (DATE_RE.test(k) && isInt(raw.nozes[k], 1, 1000000)) st.nozes[k] = raw.nozes[k]; else er.push("Noz inválida foi ignorada"); });
+    } else er.push("Campo inválido: nozes");
+  }
   if (raw.history !== undefined) {
     if (!Array.isArray(raw.history) || raw.history.length > 2000) er.push("Histórico inválido");
     else raw.history.forEach(function (s) { fixed += sanitizeTimers(s); if (validSession(s)) st.history.push(s); else er.push("Sessão inválida no histórico"); });
@@ -180,6 +186,26 @@ function dayStatus(done, ph, d, today) {
 }
 function refreshStreak(S, today) { var c = computeStreak(S.done, S.planHistory, today); S.streak = c; S.best = Math.max(S.best, c); return c; }
 
+/* ---- nozes semanais ----
+   Uma noz por semana de calendário (domingo a sábado) já encerrada, a partir da semana do início da trilha.
+   Identificada pelo sábado da semana. Fechada = sem registro em S.nozes; aberta = XP obtido guardado em S.nozes. */
+function dowOf(k) { return new Date(+k.slice(0, 4), +k.slice(5, 7) - 1, +k.slice(8, 10)).getDay(); }
+function nozWeeks(S, today) {
+  var out = [], st = S.trail && S.trail.start;
+  if (!st || !DATE_RE.test(st)) return out;
+  var sat = addDays(st, (6 - dowOf(st) + 7) % 7), n = 0;
+  while (sat < today && n < 520) { out.push(sat); sat = addDays(sat, 7); n++; }
+  return out;
+}
+function nozOpened(S, sat) { return typeof S.nozes[sat] === "number"; }
+function levelOf(points) { return Math.floor(points / 200) + 1; }
+/* XP aleatório entre 20 e 50 vezes o nível atual. Só abre noz fechada de semana já encerrada. */
+function openNoz(S, sat, today) {
+  if (nozWeeks(S, today).indexOf(sat) < 0 || nozOpened(S, sat)) return 0;
+  var l = levelOf(S.points), xp = 20 * l + Math.floor(Math.random() * (30 * l + 1));
+  S.nozes[sat] = xp; S.points += xp; return xp;
+}
+
 /* ---- cronômetro (baseado em horários, sobrevive a abas em segundo plano) ---- */
 function timerStart(sec, kind, now) { return { kind: kind, state: "running", total: sec, remaining: sec * 1000, endAt: now + sec * 1000 }; }
 function timerPause(t, now) { if (t && t.state === "running") { t.remaining = Math.max(0, t.endAt - now); t.state = "paused"; t.endAt = null; } return t; }
@@ -248,7 +274,7 @@ function abandonSession(S, ses, now) {
 return { PAT: PAT, EXP: EXP, escText: escText, escAttr: escAttr, safeClass: safeClass, safeUrl: safeUrl, cssVal: cssVal, num: num, isInt: isInt,
   dateKey: dateKey, parseDate: parseDate, addDays: addDays, emptyState: emptyState, validateProfile: validateProfile, validateState: validateState,
   makeBackup: makeBackup, parseBackup: parseBackup, setPlan: setPlan, planFor: planFor, isRestDay: isRestDay, levelFor: levelFor, applyFeedback: applyFeedback,
-  computeStreak: computeStreak, refreshStreak: refreshStreak, dayStatus: dayStatus, timerStart: timerStart, timerPause: timerPause, timerResume: timerResume, timerTick: timerTick,
+  computeStreak: computeStreak, refreshStreak: refreshStreak, dayStatus: dayStatus, nozWeeks: nozWeeks, nozOpened: nozOpened, openNoz: openNoz, levelOf: levelOf, timerStart: timerStart, timerPause: timerPause, timerResume: timerResume, timerTick: timerTick,
   timerSecs: timerSecs, newSession: newSession, syncStatus: syncStatus, completeSet: completeSet, skipExercise: skipExercise, advance: advance,
   grantExercise: grantExercise, grantSessionBonus: grantSessionBonus, finishSession: finishSession, abandonSession: abandonSession };
 });
