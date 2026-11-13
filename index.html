@@ -362,7 +362,7 @@ function renderOfensivas(){var t=today();OF=null;var b4=S.streak+"/"+S.best;CF.r
  '<div class="of-top"><button type="button" class="of-x" id="of-bk" aria-label="Voltar para a trilha"><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M3 3l16 16M19 3L3 19" stroke="#17171C" stroke-width="2.6" stroke-linecap="round"/></svg></button><img class="of-logo" src="logo-dark.png" alt="Crowfit"><span class="of-sp"></span></div>'+
  '<div class="of-hero"><div class="of-l"><div class="of-num">'+n+'</div><div class="of-txt">dias de ofensiva!</div><svg class="of-u" viewBox="0 0 300 16" preserveAspectRatio="none" aria-hidden="true"><path d="M6 10Q150 2 294 8"/></svg></div><div class="of-r"><img class="of-f" src="flame.png" alt=""><span class="of-sh" aria-hidden="true"></span></div></div>'+
  '<div class="of-tt"><svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><rect x="2" y="5" width="24" height="21" rx="4" fill="none" stroke="#17171C" stroke-width="2.4"/><path d="M2 11h24" stroke="#E3182D" stroke-width="5"/><path d="M9 2v5M19 2v5" stroke="#17171C" stroke-width="2.4" stroke-linecap="round"/><g fill="#17171C"><circle cx="8" cy="16" r="1.3"/><circle cx="14" cy="16" r="1.3"/><circle cx="20" cy="16" r="1.3"/><circle cx="8" cy="21" r="1.3"/><circle cx="14" cy="21" r="1.3"/><circle cx="20" cy="21" r="1.3"/></g></svg><h2>Calendário da ofensiva</h2></div>'+
- ofCal(t)+'</div>');
+ '<div id="of-cal">'+ofCal(t)+'</div></div>');
  $("of-bk").onclick=renderHome;$("of-cal").onclick=ofClick}
 
 /* ---------- Configurações (renderizadas dentro do painel de perfil, categorias "Perfil de treino" e "Dados e backup") ---------- */
