@@ -62,6 +62,7 @@ html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--bg);color:var(--ink);font:700 16px/1.45 Nunito,system-ui,sans-serif;min-height:100vh}
 h1,h2,h3{font-family:Fredoka,Nunito,sans-serif;font-weight:600;margin:0;line-height:1.15}
 #app{max-width:480px;margin:0 auto;padding:16px 16px 40px}
+.ofb{background:none;border:0;padding:0;color:inherit;cursor:pointer;font:inherit}
 .top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:18px}
 .stat{display:flex;align-items:center;gap:6px;font-family:Fredoka;font-size:20px}
 .btn{display:block;width:100%;border:0;border-radius:16px;padding:14px;font:800 16px Nunito;background:var(--brand);color:var(--onbrand);box-shadow:0 4px 0 var(--brand-d);cursor:pointer}
@@ -286,14 +287,22 @@ function weekDates(){var n=new Date(),i=(n.getDay()+6)%7,m=new Date(n.getFullYea
 /* O save do contexto só vale para a conta que estava ativa quando a tela foi montada. */
 function trailCtx(){var g=gen;return{S:S,save:function(){return g===gen?save():false},say:say,esc:esc,today:today(),mascote:mascote,view:view,back:renderHome}}
 function renderHome(){var li=lvlInfo(),t=today(),a=S.active,b4=S.streak+"/"+S.best;CF.refreshStreak(S,t);if(b4!==S.streak+"/"+S.best)save();
- var h='<div class="top" style="margin-bottom:8px"><div class="stat" title="Ofensiva atual">🔥 '+S.streak+'</div><div class="stat" title="Nível"><button type="button" class="pf" id="pf" aria-label="Abrir meu perfil">'+mascote(36)+'</button> Nv '+li.l+'</div><div class="stat" title="Pontos">⭐ '+S.points+'</div></div><div class="bar" role="img" aria-label="Progresso do nível"><i style="width:'+li.pct+'%;background:var(--gold)"></i></div><small style="color:var(--mute)">'+(200-S.points%200)+' pontos para o nível '+(li.l+1)+' · Melhor ofensiva: '+S.best+(S.best===1?" dia":" dias")+'</small>';
+ var h='<div class="top" style="margin-bottom:8px"><button type="button" class="stat ofb" id="of" aria-label="Ver ofensivas" title="Ofensiva atual">🔥 '+S.streak+'</button><div class="stat" title="Nível"><button type="button" class="pf" id="pf" aria-label="Abrir meu perfil">'+mascote(36)+'</button> Nv '+li.l+'</div><div class="stat" title="Pontos">⭐ '+S.points+'</div></div><div class="bar" role="img" aria-label="Progresso do nível"><i style="width:'+li.pct+'%;background:var(--gold)"></i></div><small style="color:var(--mute)">'+(200-S.points%200)+' pontos para o nível '+(li.l+1)+' · Melhor ofensiva: '+S.best+(S.best===1?" dia":" dias")+'</small>';
  if(a)h+='<div class="card" style="margin-top:12px"><b>Treino antigo em andamento</b><div>'+esc(SES[a.type].n)+' · exercício '+Math.min(a.exIdx+1,a.exercises.length)+' de '+a.exercises.length+'</div><div class="row"><button class="btn" id="rs">Retomar</button><button class="btn sec" id="ab">Abandonar</button></div></div>';
  h+='<div id="trail"></div>';
  view(h);
  if($("rs"))$("rs").onclick=function(){S.active.status="in_progress";renderEx()};
  if($("ab"))$("ab").onclick=function(){if(confirm("Abandonar este treino? As séries feitas ficam no histórico, mas sem bônus de conclusão.")){CF.abandonSession(S,S.active,Date.now());S.active=null;save();renderHome()}};
  if($("pf"))$("pf").onclick=function(){if(window.CrowfitProfile)CrowfitProfile.open($("pf"))};
+ if($("of"))$("of").onclick=renderOfensivas;
  CFT.mount($("trail"),trailCtx())}
+
+/* ---------- Ofensivas (tela própria; calendário e detalhes entram nas próximas etapas) ---------- */
+function renderOfensivas(){var n=S.streak,b=S.best;
+ view('<div class="top" style="margin-bottom:8px"><button type="button" class="chip" id="of-bk" aria-label="Voltar para a trilha">✕</button><h1 style="margin:0;font-size:24px">Ofensivas</h1><span style="width:40px"></span></div>'+
+ '<div class="card center" style="margin-top:12px"><div style="font-family:Fredoka;font-size:48px;color:var(--brand)">'+n+'</div><div>'+(n===1?"dia de ofensiva":"dias de ofensiva")+'</div><small style="color:var(--mute)">Melhor ofensiva: '+b+(b===1?" dia":" dias")+'</small></div>'+
+ '<div id="of-cal" style="margin-top:16px"></div>');
+ $("of-bk").onclick=renderHome}
 
 /* ---------- Configurações (renderizadas dentro do painel de perfil, categorias "Perfil de treino" e "Dados e backup") ---------- */
 function secTrain(host,a){var p=S&&S.profile;
