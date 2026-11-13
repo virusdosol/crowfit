@@ -11,23 +11,23 @@ function secTitle(k) { return SECTIONS[k - 1] ? SECTIONS[k - 1].t : "Nova fase "
 
 var DIAS = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
 var DIAS_ABR = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-/* getDay(): 0 = domingo ... 6 = sábado. A semana começa no domingo. */
-var BYDOW = ["R", "P", "B", "A", "L", "C", "O"];
+/* getDay(): 0 = domingo ... 6 = sábado. A semana começa no domingo. Descanso (R) é sempre sábado. */
+var BYDOW = ["O", "P", "B", "A", "L", "C", "R"];
 var GROUPS = {
   P: { n: "Peito", t: "Treino de peito" }, B: { n: "Braços", t: "Treino de braços" }, A: { n: "Abdômen", t: "Treino de abdômen" },
   L: { n: "Pernas", t: "Treino de pernas" }, C: { n: "Costas", t: "Treino de costas" }, O: { n: "Ombros", t: "Treino de ombros" },
   R: { n: "Recuperação", t: "Dia de recuperação" } };
 
-/* Símbolos planetários (traço, viewBox 48). Cada grupo corresponde a um astro, na ordem dos dias da semana (domingo = Sol):
-   R Sol (dom), P Lua (seg), B Marte (ter), A Mercúrio (qua), L Júpiter (qui), C Vênus (sex), O Saturno (sáb). */
+/* Símbolos planetários (traço, viewBox 48), um por dia da semana:
+   Dom O Sol | Seg P Lua | Ter B Marte | Qua A Mercúrio | Qui L Júpiter | Sex C Vênus | Sáb R Saturno (descanso). */
 var ICON = {
-  R: '<circle cx="24" cy="24" r="10"/><path d="M24 23.6v.8"/>',
+  O: '<circle cx="24" cy="24" r="10"/><path d="M24 23.6v.8"/>',
   P: '<path d="M31 8a17 17 0 1 0 0 32A13 13 0 0 1 31 8z"/>',
   B: '<circle cx="20" cy="28" r="8"/><path d="M26 22l10-10M29 12h7v7"/>',
   A: '<circle cx="24" cy="19" r="6"/><path d="M24 25v11M18 36h12M17 9c2 3 12 3 14 0"/>',
-  L: '<path d="M9 17h14M16 9v27M24 25c0-4 3-7 7-7s6 2 6 5-3 5-6 5"/>',
+  L: '<path d="M11 16h18M20 8v32M20 25c3-6 12-7 13-1s-5 9-9 6"/>',
   C: '<circle cx="24" cy="18" r="8"/><path d="M24 26v12M18 33h12"/>',
-  O: '<path d="M18 8v26c0 3 3 4 6 4s6-1 6-4M12 16h12"/>' };
+  R: '<path d="M10 16h16M18 8v27c0 4 3 6 7 5s5-3 5-6"/>' };
 
 /* Biblioteca: id -> [nome, tipo ("r" repetições | "s" segundos), valor base, orientação]. IDs: minúsculas, números e "_" (até 24). */
 var LIB = {
