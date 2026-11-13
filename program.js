@@ -11,22 +11,23 @@ function secTitle(k) { return SECTIONS[k - 1] ? SECTIONS[k - 1].t : "Nova fase "
 
 var DIAS = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
 var DIAS_ABR = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-/* getDay(): 0 = domingo ... 6 = sábado */
+/* getDay(): 0 = domingo ... 6 = sábado. A semana começa no domingo. */
 var BYDOW = ["R", "P", "B", "A", "L", "C", "O"];
 var GROUPS = {
   P: { n: "Peito", t: "Treino de peito" }, B: { n: "Braços", t: "Treino de braços" }, A: { n: "Abdômen", t: "Treino de abdômen" },
   L: { n: "Pernas", t: "Treino de pernas" }, C: { n: "Costas", t: "Treino de costas" }, O: { n: "Ombros", t: "Treino de ombros" },
   R: { n: "Recuperação", t: "Dia de recuperação" } };
 
-/* Símbolos anatômicos (traço branco, viewBox 48). Primeira versão: troque os caminhos quando tiver os ícones finais. */
+/* Símbolos planetários (traço, viewBox 48). Cada grupo corresponde a um astro, na ordem dos dias da semana (domingo = Sol):
+   R Sol (dom), P Lua (seg), B Marte (ter), A Mercúrio (qua), L Júpiter (qui), C Vênus (sex), O Saturno (sáb). */
 var ICON = {
-  P: '<path d="M8 17c5-4 11-4 16-1 5-3 11-3 16 1l-2 13c-5 3-10 3-14 0-4 3-9 3-14 0z"/><path d="M24 16v14"/>',
-  B: '<path d="M9 35c-1-9 4-17 12-19l8-3c3 0 5 3 3 6l-5 2c3 1 6 3 8 7-5 7-18 9-26 7z"/><path d="M20 31c3-3 7-3 10 0"/>',
-  A: '<rect x="14" y="8" width="20" height="32" rx="7"/><path d="M24 8v32M14 18h20M14 26h20M14 34h20"/>',
-  L: '<path d="M20 5c-4 9-5 19-1 28l-1 10M30 5c2 9 2 17-1 25"/><path d="M24 14c-2 6-1 12 1 17"/>',
-  C: '<path d="M8 20c3-6 9-9 16-9s13 3 16 9"/><path d="M24 11v30M16 20c-1 7 1 13 5 17M32 20c1 7-1 13-5 17"/>',
-  O: '<path d="M6 30c0-9 6-15 15-17M42 30c0-9-6-15-15-17"/><path d="M16 22c2-1 4-1 6 0M32 22c-2-1-4-1-6 0"/>',
-  R: '<path d="M32 8a17 17 0 1 0 8 26A14 14 0 0 1 32 8z"/>' };
+  R: '<circle cx="24" cy="24" r="10"/><path d="M24 23.6v.8"/>',
+  P: '<path d="M31 8a17 17 0 1 0 0 32A13 13 0 0 1 31 8z"/>',
+  B: '<circle cx="20" cy="28" r="8"/><path d="M26 22l10-10M29 12h7v7"/>',
+  A: '<circle cx="24" cy="19" r="6"/><path d="M24 25v11M18 36h12M17 9c2 3 12 3 14 0"/>',
+  L: '<path d="M9 17h14M16 9v27M24 25c0-4 3-7 7-7s6 2 6 5-3 5-6 5"/>',
+  C: '<circle cx="24" cy="18" r="8"/><path d="M24 26v12M18 33h12"/>',
+  O: '<path d="M18 8v26c0 3 3 4 6 4s6-1 6-4M12 16h12"/>' };
 
 /* Biblioteca: id -> [nome, tipo ("r" repetições | "s" segundos), valor base, orientação]. IDs: minúsculas, números e "_" (até 24). */
 var LIB = {

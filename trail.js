@@ -1,5 +1,5 @@
 /* Crowfit: trilha de progressão (semanas de 7 dias, unidades, aro vermelho e página do treino).
-   Visual: a semana segue o calendário (segunda a domingo) e muda a cor dos círculos a cada semana (grafite, vermelho, branco, preto, em ciclo).
+   Visual: a semana segue o calendário (domingo a sábado) e muda a cor dos círculos a cada semana (grafite, vermelho, branco, preto, em ciclo).
    A primeira semana pode ser parcial (começa no dia inicial). Dia que já passou fica indisponível e apagado. Só o mês atual (4 semanas de calendário) fica liberado; os meses seguintes aparecem bloqueados, com cadeado.
    Internamente a "seção" de 3 meses continua existindo (program.js e as chaves s1u4 não mudam); só deixou de aparecer na tela.
    Depende de CF (core.js) e CFP (program.js). O progresso fica em S.trail, dentro da chave "corvofit-v1":
@@ -61,8 +61,8 @@ function pct(p) { return Math.round(p * 100); }
 
 /* Semana = 7 dias corridos a partir do início da trilha; mês liberado = 4 semanas. Só afeta a exibição. */
 var MES = 28, FRASES = ["Tenha paciência.", "Você vai chegar lá."], fi = 0, tt = 0;
-/* Semana de calendário (seg a dom). off = dias da primeira semana que ficaram antes da data inicial (0 se começou na segunda). */
-function off(S) { return (C.parseDate(S.trail.start).getDay() + 6) % 7; }
+/* Semana de calendário (dom a sáb). off = dias da primeira semana que ficaram antes da data inicial (0 se começou no domingo). */
+function off(S) { return C.parseDate(S.trail.start).getDay(); }
 function wk(S, i) { var o = off(S), j = i + o; return { w: Math.floor(j / 7) + 1, d: (j % 7) + 1 - (j < 7 ? o : 0), c: Math.floor(j / 7) % 4 }; }
 /* Último índice liberado: fim da 4ª semana de calendário do bloco atual (o mês nunca corta uma semana no meio). */
 function lastOpen(S, ti) { var o = off(S); return (Math.floor(Math.floor((ti + o) / 7) / 4) + 1) * MES - o - 1; }
@@ -82,7 +82,7 @@ function nodeHtml(ctx, i, locked) {
   }
   var ct = content(ctx, u), pr = prog(ctx, u, ct), isT = u.date === ctx.today;
   var label = "Semana " + W.w + ", unidade " + W.d + ", " + P.DIAS[u.dow] + ", " + ct.title + ", " + pr.done + " de " + pr.total + " exercícios concluídos" + (pr.st === "fut" ? ", ainda não liberado" : pr.st === "miss" ? ", dia encerrado, indisponível" : "");
-  return '<button class="tn wk' + W.c + ' st-' + pr.st + (isT ? " today" : "") + '"' + (pr.st === "miss" ? ' aria-disabled="true"' : "") + ' data-i="' + i + '" data-w="' + W.w + '" data-n="' + W.d + '" data-t="' + ctx.esc(ct.title) + '" data-d="' + P.DIAS_ABR[u.dow] + '" style="--x:' + x + 'px" aria-label="' + ctx.esc(label) + '">' +
+  return '<button class="tn wk' + W.c + ' st-' + pr.st + (isT ? " today" : "") + (ct.group === "R" ? " rest" : "") + '"' + (pr.st === "miss" ? ' aria-disabled="true"' : "") + ' data-i="' + i + '" data-w="' + W.w + '" data-n="' + W.d + '" data-t="' + ctx.esc(ct.title) + '" data-d="' + P.DIAS_ABR[u.dow] + '" style="--x:' + x + 'px" aria-label="' + ctx.esc(label) + '">' +
     (isT ? '<span class="tn-bub">' + (pr.st === "done" ? "FEITO" : pr.done ? "CONTINUAR" : "COMEÇAR") + '</span>' : "") +
     '<span class="rb">' + ring(pr.p) + '<span class="tn-btn">' + icon(ct.group) + '</span></span>' +
     (pr.st === "done" ? '<span class="tn-chk" aria-hidden="true">✓</span>' : "") +

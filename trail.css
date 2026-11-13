@@ -65,3 +65,8 @@
 @media (prefers-reduced-motion:no-preference){.rg .arc{transition:stroke-dasharray .3s}}
 .u-go{margin:14px 0}.u-go[hidden]{display:none}
 .more{margin:12px 0 4px}.more summary{cursor:pointer;color:var(--mute);font-weight:800;padding:6px 0}
+
+/* Dia de descanso: indicação discreta (anel tracejado fino e rótulo "descanso") */
+.tn.rest .rb::after{content:"";position:absolute;inset:-7px;border-radius:50%;border:1.5px dashed rgba(143,143,153,.55);pointer-events:none}
+.tn.rest .tn-lbl::after{content:" · descanso";font-weight:700;opacity:.8}
+.tn.rest.st-done .rb::after{border-color:rgba(227,24,45,.45)}
