@@ -140,12 +140,12 @@ function gate() {
 function range(ctx, lo, hi, last) {
   var h = "", zone = false;
   for (var i = lo; i <= hi; i++) {
-    if (i === last + 1) { h += '<div class="t-zone">'; zone = true; }
+    if (i === last + 1) { h += nextCard(ctx, last) + '<div class="t-zone">'; zone = true; }
     if (i <= last) h += weekHead(ctx, i);
     h += nodeHtml(ctx, i, i > last);
     if (i <= last && C.parseDate(unitAt(ctx.S, i).date).getDay() === 6) h += chestHtml(ctx, i, unitAt(ctx.S, i));
   }
-  return h + (zone ? "</div>" : "") + (hi > last ? nextCard(ctx, last) : "");
+  return h + (zone ? "</div>" : "");
 }
 function flush(ctx) { if (dirty) { dirty = false; ctx.save(); } }
 

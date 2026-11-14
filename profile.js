@@ -332,7 +332,7 @@
       h = '<div class="cf-wrap cf-set"><h1 class="cf-title" tabindex="-1">Conta e perfil</h1><p class="cf-sub"><span class="cf-acct" data-acct></span></p>' + body + LOGOUT + BACK_MENU + '</div>';
     } else if (st === 'ready' && extrasFn && (function () { try { extraHtml = extrasFn(state); return true; } catch (e) { console.error('Crowfit: perfil (visão geral)', e); reportErr(e); return false; } })()) {
       mode = 'profile';
-      h = '<div class="cf-wrap">' + BAR + extraHtml + LOGOUT + '</div>';
+      h = '<div class="cf-wrap">' + BAR + extraHtml + '</div>';
     } else if (st === 'ready') {
       mode = 'profile';
       h = '<div class="cf-wrap">' + BAR +
@@ -340,7 +340,7 @@
         '<p class="cf-sub"><span class="cf-acct" data-acct></span></p>' +
         '<div class="cf-stats"><div class="cf-stat"><span class="cf-stat-v" data-level>–</span><span class="cf-stat-l">Nível</span></div>' +
         '<div class="cf-stat"><span class="cf-stat-v" data-xp>–</span><span class="cf-stat-l">XP total</span></div></div>' +
-        CLOSE + LOGOUT + '</div>';
+        CLOSE + '</div>';
     } else if (st === 'error') {
       mode = 'error';
       var retry = state.errorKind === 'session' ? '' : '<button class="cf-btn cf-btn-main" type="button" data-prof-retry>Tentar de novo</button>';
