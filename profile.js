@@ -291,6 +291,7 @@
   var CLOSE = '<button class="cf-btn cf-btn-ghost" type="button" data-prof-close>Fechar</button>';
   var LOGOUT = '<button class="cf-btn cf-btn-ghost cf-btn-danger" type="button" data-crowfit-logout>Sair da conta</button>';
   var BACK_MENU = '<button class="cf-btn cf-btn-ghost" type="button" data-prof-menu>Voltar às configurações</button>';
+  function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   var MESES_BR = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
   function fmtDate(iso) { var d = new Date(iso); return d.getDate() + ' de ' + MESES_BR[d.getMonth()] + ' de ' + d.getFullYear(); }
   /* Janela de troca: só começa na primeira troca (handle_changed_at nulo = nunca trocou). */
