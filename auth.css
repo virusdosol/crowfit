@@ -93,3 +93,15 @@ html.cf-auth-open, html.cf-auth-open body { overflow: hidden; }
 .cf-prog { margin: 0 0 6px; font: 800 13px Nunito, sans-serif; color: #303036; letter-spacing: .4px; text-transform: uppercase; }
 .cf-chips { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 12px 0 16px; }
 .cf-pq-crow { display: block; height: clamp(90px, 18vh, 140px); width: auto; margin: 4px auto 8px; }
+
+/* ---- Onboarding do Crow (ajustes de estética) ---- */
+.cf-back-ico { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 14px); left: 14px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; padding: 0; border: 0; border-radius: 14px; background: none; color: #17171C; cursor: pointer; z-index: 2; }
+.cf-back-ico:focus-visible { outline: 3px solid #E3182D; outline-offset: 2px; }
+.cf-auth .cf-wrap { position: relative; }
+.cf-pq { padding-top: calc(env(safe-area-inset-top, 0px) + 64px); }
+.cf-pq .cf-pq-crow { height: clamp(110px, 20vh, 160px); margin: 8px auto 28px; }
+.cf-pq .cf-dots { margin: 0 0 22px; justify-content: flex-start; }
+.cf-pq .cf-hint { text-align: center; margin-top: 12px; }
+.cf-pq .cf-form { margin-top: 8px; }
+.cf-crow { padding-top: 12vh; }
+.cf-crow .cf-crow-img { height: clamp(130px, 24vh, 190px); margin: 56px auto 0; }

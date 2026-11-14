@@ -18,9 +18,9 @@
   /* Perguntas do perfil de treino antes da conta. Mesmas chaves e regras de QS (index.html). Ficam só na sessão da aba: se o app for fechado, o onboarding recomeça do zero. */
   var K_DRAFT = 'crowfit-onboard-draft';
   /* Variantes do Crow para as telas de fala (se alternam). O Crow com lápis e prancheta fica só nas perguntas. */
-  var CROW_IMGS = ['crow-1.png', 'crow-2.png', 'crow-3.png'];
+  var CROW_IMGS = ['crow.png', 'crow.png', 'crow.png'];
   var PQ = [
-    { k: 'nome', q: 'Como podemos te chamar?', type: 'text', ph: 'Seu nome', hint: 'Esse nome só aparece para você. Seu ID é o que os amigos veem.' },
+    { k: 'nome', q: 'Como podemos te chamar?', type: 'text', ph: 'Seu nome', hint: 'Esse nome só aparece para você.' },
     { k: 'idade', q: 'Quantos anos você tem?', type: 'number', ph: 'Idade', min: 12, max: 90, inputmode: 'numeric' },
     { k: 'peso', q: 'Quanto você pesa (kg)?', type: 'number', ph: 'Peso em kg', min: 30, max: 250, inputmode: 'decimal' },
     { k: 'altura', q: 'Qual é a sua altura (cm)?', type: 'number', ph: 'Altura em cm', min: 120, max: 230, inputmode: 'decimal' },
@@ -39,6 +39,17 @@
       '<input id="cf-' + id + '" name="' + id + '" type="' + type + '" autocomplete="' + auto + '" required>' +
       (hint ? '<p class="cf-hint">' + hint + '</p>' : '') + '</div>';
   }
+  function dotsHtml(cur) {
+    var n = PQ.length, h = '<div class="in-dots cf-dots" role="progressbar" aria-label="Progresso" aria-valuemin="1" aria-valuemax="' + n + '" aria-valuenow="' + (cur + 1) + '">';
+    for (var i = 0; i < n; i++) h += '<i class="' + (i < cur ? 'done' : i === cur ? 'on' : '') + '"></i>';
+    return h + '</div>';
+  }
+  var BACK_SVG = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
+  /* Troca o botão "← Voltar" por uma seta minimalista no canto superior esquerdo. */
+  function polish(html) {
+    return html.replace(/<button class="cf-link cf-back" type="button" data-go="([^"]+)">← Voltar<\/button>/g,
+      function (_, go) { return '<button class="cf-back-ico" type="button" data-go="' + go + '" aria-label="Voltar">' + BACK_SVG + '</button>'; });
+  }
   function head(title, sub) { return '<h1 class="cf-title">' + title + '</h1>' + (sub ? '<p class="cf-sub">' + sub + '</p>' : ''); }
   var MSG = '<p class="cf-msg" role="status" aria-live="polite" data-msg hidden></p>';
   function submit(label) { return '<button class="cf-btn cf-btn-main" type="submit" data-label="' + label + '">' + label + '</button>'; }
@@ -55,7 +66,7 @@
     /* 2ª tela: já tem conta? */
     welcome: function () {
       return '<div class="in-wrap cf-w"><img class="cf-w-mascot" src="mascot.png" alt="Crowfit, o corvo mascote">' +
-        '<img class="cf-w-logo" src="intro-logo.png" alt="Crowfit"><p>Treine, evolua e seja mais forte!</p>' +
+        '<img class="cf-w-logo" src="logo-dark.png" alt="Crowfit"><p>Treine, evolua e seja mais forte!</p>' +
         '<div class="cf-w-btns"><button class="in-cta" type="button" data-go="crowStart">Começar agora</button>' +
         '<button class="cf-cta2" type="button" data-go="login">Já tenho uma conta</button></div></div>';
     },
@@ -74,9 +85,9 @@
         : field('v', '', q.type === 'number' ? 'text' : 'text', 'off', q.hint || '').replace('<label for="cf-v"></label>', '')
           .replace('type="text" autocomplete="off" required>', 'type="text" inputmode="' + (q.inputmode || 'text') + '" placeholder="' + q.ph + '" maxlength="40" value="' + (cur == null ? '' : String(cur).replace(/"/g, '&quot;')) + '" autocomplete="off" required>');
       var back = d.i > 0 ? 'pq' + (d.i - 1) : 'crowQ';
-      return '<div class="cf-wrap"><button class="cf-link cf-back" type="button" data-go="' + back + '">← Voltar</button>' +
+      return '<div class="cf-wrap cf-pq"><button class="cf-link cf-back" type="button" data-go="' + back + '">← Voltar</button>' +
         '<img class="cf-pq-crow" src="crow.png" alt="Crow">' +
-        '<p class="cf-prog">' + (d.i + 1) + ' de ' + PQ.length + '</p>' + head(q.q, '') + MSG +
+        dotsHtml(d.i) + head(q.q, '') + MSG +
         '<form class="cf-form" novalidate data-form="pq" data-i="' + d.i + '">' + body +
         submit('Continuar') + '</form></div>';
     },
@@ -177,7 +188,7 @@
     view = name;
     var bare = name === 'intro' || name === 'welcome' || name === 'crowStart' || name === 'crowQ' || name === 'crowAccount';
     root.classList.toggle('cf-bare', bare);
-    root.innerHTML = bare ? VIEWS[name](data) : '<div class="cf-wrap' + (name === 'loading' ? ' cf-center' : '') + '">' + VIEWS[name](data) + '</div>';
+    root.innerHTML = polish(bare ? VIEWS[name](data) : '<div class="cf-wrap' + (name === 'loading' ? ' cf-center' : '') + '">' + VIEWS[name](data) + '</div>');
     if (name === 'pq') { var fi = root.querySelector('input[name=v]'); if (fi) try { fi.focus(); } catch (e) {} }
     var em = root.querySelector('[data-email]');
     if (em) em.textContent = data.email || '';
