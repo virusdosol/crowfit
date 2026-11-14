@@ -255,3 +255,77 @@ describe("11. recusa do servidor em caixa não bloqueia a sincronização", () =
     assert.equal(JSON.parse(d.store.get("corvofit-v2:sync:" + H.UID)).pending, true, "falha real continua pendente");
   });
 });
+
+describe("12. eventos de dia (fase 1)", () => {
+  const ev = (id, day) => ({ id, day, kind: "done", at: day + "T12:00:00.000Z" });
+  function withRpc(base, fn) {
+    return { calls: base.calls, from: base.from, rpc: async (name, args) => (name === "record_day_events" ? fn(args) : base.rpc(name, args)) };
+  }
+
+  test("aceitos, duplicados e recusados saem do aparelho; pending=false", async () => {
+    const db = makeServer();
+    const base = serverClient(db);
+    const seen = [];
+    const client = withRpc(base, (args) => {
+      seen.push(args.p.events.map((e) => e.id));
+      return { data: args.p.events.map((e, i) => ({ id: e.id, status: i === 0 ? "accepted" : i === 1 ? "duplicate" : "rejected", reason: null })), error: null };
+    });
+    const S = freshState({ points: 30 });
+    S.dayLog = [ev("ea1", "2026-11-10"), ev("ea2", "2026-11-11"), ev("ea3", "2026-11-12")];
+    const d = makeDevice({ S, client });
+    await d.run(true); await d.idle();
+    assert.deepEqual(seen[0], ["ea1", "ea2", "ea3"]);
+    assert.equal(S.dayLog.length, 0, "nenhum evento ficou no aparelho");
+    assert.equal(JSON.parse(d.store.get("corvofit-v2:sync:" + H.UID)).pending, false);
+  });
+
+  test("falha de rede mantém os eventos e marca pendência", async () => {
+    const db = makeServer();
+    const client = withRpc(serverClient(db), () => ({ data: null, error: { message: "Failed to fetch" } }));
+    const S = freshState({ points: 30 });
+    S.dayLog = [ev("eb1", "2026-11-10")];
+    const d = makeDevice({ S, client });
+    await d.run(true); await d.idle();
+    assert.equal(S.dayLog.length, 1, "evento preservado");
+    assert.equal(JSON.parse(d.store.get("corvofit-v2:sync:" + H.UID)).pending, true);
+  });
+
+  test("erro inesperado mantém os eventos e marca pendência", async () => {
+    const db = makeServer();
+    const client = withRpc(serverClient(db), () => ({ data: null, error: { message: "erro_inesperado_dias" } }));
+    const S = freshState({ points: 30 });
+    S.dayLog = [ev("ec1", "2026-11-10")];
+    const d = makeDevice({ S, client });
+    await d.run(true); await d.idle();
+    assert.equal(S.dayLog.length, 1);
+    assert.equal(JSON.parse(d.store.get("corvofit-v2:sync:" + H.UID)).pending, true);
+  });
+
+  test("lote maior que o limite: envia em rodadas até zerar", async () => {
+    const db = makeServer();
+    const base = serverClient(db);
+    const sizes = [];
+    const client = withRpc(base, (args) => {
+      sizes.push(args.p.events.length);
+      return { data: args.p.events.map((e) => ({ id: e.id, status: "accepted", reason: null })), error: null };
+    });
+    const S = freshState({ points: 30 });
+    S.dayLog = Array.from({ length: 201 }, (_, i) => ev("ed" + i, "2026-11-10"));
+    const d = makeDevice({ S, client });
+    await d.run(true); await d.idle();
+    assert.equal(sizes[0], 200, "primeiro lote de 200");
+    assert.equal(S.dayLog.length, 1, "um evento restante");
+    await d.run(false); await d.idle();
+    assert.equal(S.dayLog.length, 0, "rodada seguinte zera a fila");
+  });
+
+  test("core: logDay registra evento válido e rejeita tipo inválido", () => {
+    const S = { points: 0 };
+    const e = H.CF.logDay(S, "done", "2026-11-10", "2026-11-10T12:00:00.000Z");
+    assert.ok(e && /^[a-z0-9]{1,40}$/.test(e.id));
+    assert.equal(S.dayLog.length, 1);
+    assert.equal(H.CF.logDay(S, "x", "2026-11-10", "2026-11-10T12:00:00.000Z"), null);
+    assert.equal(H.CF.dayEventOk({ id: "ok1", day: "2026-11-10", kind: "undone", at: "2026-11-10T12:00:00.000Z" }), true);
+    assert.equal(H.CF.dayEventOk({ id: "BAD ID", day: "2026-11-10", kind: "done", at: "2026-11-10T12:00:00.000Z" }), false);
+  });
+});

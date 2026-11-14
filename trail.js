@@ -237,11 +237,11 @@ function award(ctx, u, ct, pr) {
   var S = ctx.S, got = 0;
   if (pr.p < 1) {
     /* Unidade incompleta não pode continuar concluída (trilha, histórico e ofensiva). O XP já concedido permanece: a recompensa é irrevogável. */
-    if (S.done[u.date] === true && !hasFreeDone(S, u.date)) { delete S.done[u.date]; syncLast(S); }
+    if (S.done[u.date] === true && !hasFreeDone(S, u.date)) { C.logDay(S, "undone", u.date, new Date().toISOString()); delete S.done[u.date]; syncLast(S); }
     C.refreshStreak(S, ctx.today);
     return 0;
   }
-  if (u.date <= ctx.today) { S.done[u.date] = true; if (!S.last || u.date > S.last) S.last = u.date; }
+  if (u.date <= ctx.today) { if (S.done[u.date] !== true) C.logDay(S, "done", u.date, new Date().toISOString()); S.done[u.date] = true; if (!S.last || u.date > S.last) S.last = u.date; }
   var k = "tr:" + u.key; if (S.rewards[k] !== true) { S.rewards[k] = true; got = 10 * ct.exercises.length + 20; S.points += got; }
   C.refreshStreak(S, ctx.today); return got;
 }

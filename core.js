@@ -160,6 +160,16 @@ function validateState(raw) {
       });
     } else wr.push("Fila de notificações inválida foi descartada");
   }
+  /* Registro de eventos de dia (fase 1): eventos ainda não confirmados pelo servidor. Entrada inválida é descartada. */
+  st.dayLog = [];
+  if (raw.dayLog !== undefined) {
+    if (Array.isArray(raw.dayLog)) {
+      raw.dayLog.forEach(function (ev) {
+        if (dayEventOk(ev)) st.dayLog.push({ id: ev.id, day: ev.day, kind: ev.kind, at: ev.at });
+        else wr.push("Evento de dia inválido foi descartado");
+      });
+    } else wr.push("Registro de dias inválido foi descartado");
+  }
   /* Caixas mensais e coleção (campos opcionais). Entrada inválida é descartada com aviso. */
   if (raw.boxes !== undefined) {
     if (raw.boxes && typeof raw.boxes === "object" && !Array.isArray(raw.boxes)) {
@@ -350,12 +360,26 @@ function grantExercise(S, ses, ex) {
   var g = grant(S, ses, "ex:" + ses.date + ":" + ex.exerciseId, 10); if (g) ex.points = g; return g;
 }
 function grantSessionBonus(S, ses) { return ses.status === "completed" ? grant(S, ses, "sess:" + ses.date, 20) : 0; }
+/* Registro de eventos de dia (fase 1). Cada mudança real de S.done vira um evento com id único.
+   O servidor deriva o estado do dia a partir dos eventos; o cliente nunca envia conjuntos de dias para o critério. */
+function newEventId() { return "e" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+function dayEventOk(ev) {
+  return !!ev && typeof ev === "object" && !Array.isArray(ev) && /^[a-z0-9]{1,40}$/.test(ev.id) &&
+    DATE_RE.test(ev.day) && (ev.kind === "done" || ev.kind === "undone") && typeof ev.at === "string" && !isNaN(Date.parse(ev.at));
+}
+function logDay(S, kind, day, atIso) {
+  if (!S || (kind !== "done" && kind !== "undone") || !DATE_RE.test(day) || typeof atIso !== "string") return null;
+  if (!S.dayLog) S.dayLog = [];
+  var ev = { id: newEventId(), day: day, kind: kind, at: atIso };
+  S.dayLog.push(ev);
+  return ev;
+}
 function finishSession(S, ses, now, todayStr) {
   if (ses.status !== "in_progress") return ses.status;
   var req = ses.exercises.filter(function (e) { return !e.optional; });
   ses.status = req.every(function (e) { return e.status === "completed"; }) ? "completed" : "interrupted";
   ses.endedAt = new Date(now).toISOString(); ses.duration = Math.max(0, Math.round((now - Date.parse(ses.startedAt)) / 1000));
-  if (ses.status === "completed") { ses.completedAt = ses.endedAt; grantSessionBonus(S, ses); S.done[ses.date] = true; S.last = ses.date; }
+  if (ses.status === "completed") { ses.completedAt = ses.endedAt; grantSessionBonus(S, ses); if (S.done[ses.date] !== true) logDay(S, "done", ses.date, ses.endedAt); S.done[ses.date] = true; S.last = ses.date; }
   S.history.push(ses); if (S.history.length > 1000) S.history = S.history.slice(-1000);
   refreshStreak(S, todayStr); return ses.status;
 }
@@ -720,6 +744,6 @@ return { PAT: PAT, EXP: EXP, escText: escText, escAttr: escAttr, safeClass: safe
   computeStreak: computeStreak, refreshStreak: refreshStreak, dayStatus: dayStatus, nozWeeks: nozWeeks, nozOpened: nozOpened, openNoz: openNoz, levelOf: levelOf, timerStart: timerStart, timerPause: timerPause, timerResume: timerResume, timerTick: timerTick,
   timerSecs: timerSecs, newSession: newSession, syncStatus: syncStatus, completeSet: completeSet, skipExercise: skipExercise, advance: advance,
   grant: grant, grantExercise: grantExercise, grantSessionBonus: grantSessionBonus, finishSession: finishSession, abandonSession: abandonSession,
-  ACH: ACH, checkAchCatalog: checkAchCatalog, unlockAchievements: unlockAchievements, achCatalog: achCatalog, achMerge: achMerge, achMet: achMet, BOX: BOX, ITENS: ITENS, RARIDADE_ORDEM: RARIDADE_ORDEM, pickItem: pickItem, xpSubstituto: xpSubstituto, itensReservados: itensReservados, aparenciaEquipada: aparenciaEquipada, equipar: equipar, desequipar: desequipar, itemsMerge: itemsMerge, toggleDestaque: toggleDestaque, RARIDADES: RARIDADES, ITENS: ITENS, prng: prng, pickRarity: pickRarity, rollBox: rollBox, monthCriterionMet: monthCriterionMet, grantMonthly: grantMonthly, openBox: openBox, boxHistory: boxHistory, boxesMerge: boxesMerge,  achTop: achTop, trophyTop: trophyTop, achPendingEvents: achPendingEvents, achAck: achAck, 
+  logDay: logDay, dayEventOk: dayEventOk, newEventId: newEventId, ACH: ACH, checkAchCatalog: checkAchCatalog, unlockAchievements: unlockAchievements, achCatalog: achCatalog, achMerge: achMerge, achMet: achMet, BOX: BOX, ITENS: ITENS, RARIDADE_ORDEM: RARIDADE_ORDEM, pickItem: pickItem, xpSubstituto: xpSubstituto, itensReservados: itensReservados, aparenciaEquipada: aparenciaEquipada, equipar: equipar, desequipar: desequipar, itemsMerge: itemsMerge, toggleDestaque: toggleDestaque, RARIDADES: RARIDADES, ITENS: ITENS, prng: prng, pickRarity: pickRarity, rollBox: rollBox, monthCriterionMet: monthCriterionMet, grantMonthly: grantMonthly, openBox: openBox, boxHistory: boxHistory, boxesMerge: boxesMerge,  achTop: achTop, trophyTop: trophyTop, achPendingEvents: achPendingEvents, achAck: achAck, 
   TROPHY: TROPHY, checkTrophyConfig: checkTrophyConfig, trophyAll: trophyAll, trophyCount: trophyCount, trophyStage: trophyStage, trophyCatalog: trophyCatalog };
 });

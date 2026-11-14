@@ -35,7 +35,9 @@ function isoOk(v) { /* mesma janela de cf_ts: 2020-01-01 até agora + 2 dias */
 /* ---------- valor (em XP) de cada recompensa, a partir do identificador ---------- */
 /* ex:<data>:<exercício> = 10 | sess:<data> = 20 | tr:s<k>u<n> = 10 x exercícios da unidade + 20 (derivado da trilha congelada). */
 /* Recusas de grant_my_box que não são falha de sincronização (ver bloco de caixas). */
-var BOX_REJECT_RE = /^(criterion_not_defined|criterion_not_met|future_month|invalid_box|invalid_items)$/;
+var BOX_REJECT_RE = /^(criterion_not_defined|criterion_not_met|future_month|invalid_box|invalid_items|before_cutoff)$/;
+/* Tamanho do lote de eventos de dia por rodada (o servidor aceita até 500). */
+var DAY_BATCH = 200;
 function trailAmount(E, S, k, n) {
   try {
     var tr = S.trail; if (!tr || !DATE_RE.test(tr.start) || !tr.lv || typeof tr.lv[k] !== "number" || !E.CFT || !E.CFP) return null;
@@ -377,6 +379,33 @@ function create(envIn) {
         if (r2.error) throw r2.error;
         part.forEach(function (x) { meta.sess[x.id] = x.fb ? 1 : 0; }); saveMeta(uid, meta);
       }
+      /* Eventos de dia (fase 1): envio idempotente em lotes. Aceitos, duplicados e recusados por regra saem do
+         aparelho; falha de rede/sessão/inesperada mantém os eventos e marca pendência. */
+      var dayFail = false;
+      try {
+        var allD = Array.isArray(S0.dayLog) ? S0.dayLog : [];
+        var dl = allD.slice(0, DAY_BATCH);
+        if (dl.length) {
+          if (!sameUser()) return;
+          var rd = await client.rpc("record_day_events", { p: { events: dl } }); if (!alive()) return;
+          if (rd.error) throw rd.error;
+          var acks = {};
+          (Array.isArray(rd.data) ? rd.data : []).forEach(function (x) {
+            if (x && typeof x.id === "string" && (x.status === "accepted" || x.status === "duplicate" || x.status === "rejected")) acks[x.id] = x.status;
+          });
+          var keptD = [];
+          allD.forEach(function (ev) {
+            if (acks[ev.id] === undefined) keptD.push(ev);
+            else if (acks[ev.id] === "rejected") meta.dayRejected = (meta.dayRejected || 0) + 1;
+          });
+          S0.dayLog = keptD;
+          dayFail = dl.some(function (ev) { return acks[ev.id] === undefined; }) || keptD.length > 0;
+        }
+      } catch (eD) {
+        var kD = classify(eD);
+        if (kD.kind === "net" || kD.kind === "auth") throw eD;
+        dayFail = true;
+      }
       var v2ch = false, v2ok = false, v2fail = false;
       if (v2need && v2.trail.payload && meta.v2blocked !== v2.sig) {
         try {
@@ -486,6 +515,7 @@ function create(envIn) {
       var failed = [];
       if (v2fail) failed.push("trilha, configurações, nozes, caixas ou inventário");
       if (achFail) failed.push("conquistas");
+      if (dayFail) failed.push("registro de dias");
       meta.pending = mutCount !== mut0 || failed.length > 0; meta.blocked = ""; meta.last = new Date().toISOString(); info.pending = meta.pending; info.last = meta.last; retryN = 0;
       saveMeta(uid, meta);
       if (failed.length) { emit("partial", "Sincronizado parcialmente. Pendente: " + failed.join("; ") + ". Seus dados continuam salvos neste aparelho."); scheduleRetry(); }
