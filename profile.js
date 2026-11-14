@@ -191,7 +191,7 @@
   }
 
   /* ---------- interface (reaproveita as classes cf-* de auth.css) ---------- */
-  var panel = null, panelOpen = false, screen = 'profile', draft = null, uiMsg = null, opener = null, statsFn = null, sectionsFn = null, onCloseFn = null;
+  var panel = null, panelOpen = false, screen = 'profile', draft = null, uiMsg = null, opener = null, statsFn = null, sectionsFn = null, onCloseFn = null, extrasFn = null;
   var SCREENS = { account: 1, train: 1, data: 1 };
   var TITLES = { train: 'Perfil de treino', data: 'Dados e backup' };
 
@@ -328,6 +328,9 @@
       var retryA = (st === 'error' && state.errorKind !== 'session') ? '<button class="cf-btn cf-btn-main" type="button" data-prof-retry>Tentar de novo</button>' : '';
       var body = st === 'loading' ? '<div class="cf-spin" role="status" aria-label="Carregando"></div>' : '<p class="cf-msg error" role="alert" data-err></p>' + retryA;
       h = '<div class="cf-wrap cf-set"><h1 class="cf-title" tabindex="-1">Conta e perfil</h1><p class="cf-sub"><span class="cf-acct" data-acct></span></p>' + body + LOGOUT + BACK_MENU + '</div>';
+    } else if (st === 'ready' && extrasFn) {
+      mode = 'profile';
+      h = '<div class="cf-wrap">' + BAR + extrasFn(state) + LOGOUT + '</div>';
     } else if (st === 'ready') {
       mode = 'profile';
       h = '<div class="cf-wrap">' + BAR +
@@ -430,6 +433,8 @@
       renderPanel(true);
     },
     setStats: function (fn) { statsFn = typeof fn === 'function' ? fn : null; },
+    /* fn(estado) devolve o HTML da página de perfil (visão geral, troféus e conquistas). */
+    setExtras: function (fn) { extrasFn = typeof fn === 'function' ? fn : null; if (panelOpen) renderPanel(false); },
     /* fn(nome, elementoHospedeiro, api) desenha as categorias "train" e "data". */
     setSections: function (fn) { sectionsFn = typeof fn === 'function' ? fn : null; },
     /* fn() é chamada quando o usuário fecha o painel (não em troca de conta nem logout). */

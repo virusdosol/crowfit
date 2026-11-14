@@ -121,3 +121,18 @@ describe("equipar e desequipar", () => {
     assert.equal(CF.aparenciaEquipada(back), "ap_com_01");
   });
 });
+
+describe("destaques do perfil", () => {
+  test("no máximo 4 troféus em destaque, alternando por toque", () => {
+    const S = CF.emptyState();
+    ["a1","b2","c3","d4"].forEach((id) => assert.equal(CF.toggleDestaque(S, id), true));
+    assert.equal(CF.toggleDestaque(S, "e5"), false);
+    assert.equal(CF.toggleDestaque(S, "a1"), true);
+    assert.deepEqual(S.showTro, ["b2","c3","d4"]);
+  });
+  test("loader descarta destaques inválidos", () => {
+    const S = CF.emptyState(); S.showTro = ["ok_id", "Bad-Id", 7];
+    const r = CF.validateState(JSON.parse(JSON.stringify(S)));
+    assert.deepEqual(r.state.showTro, ["ok_id"]);
+  });
+});

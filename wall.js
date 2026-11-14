@@ -1,21 +1,27 @@
-/* Crowfit: barra inferior e páginas do Award System.
-   A barra só aparece na tela inicial. Trilha, Conquistas, Aparências, Troféus e Caixas trocam apenas a área da trilha:
-   o topo (mascote, nível, ofensivas) não muda. Nível abre uma página própria em tela cheia.
-   Lê window.S, window.CF, window.CFT, window.CFP. Não cria dados. Arte provisória marcada como TEMP. */
+/* Crowfit: barra inferior, páginas independentes em tela cheia, balões dos ícones, nível e visão do perfil.
+   Conquistas, nozes e troféus aparecem como ícones; ao tocar, um balão mostra o que é.
+   Lê window.S, window.CF, window.CFT, window.CFP e window.CrowfitProfile. Não cria dados. Arte provisória marcada como TEMP. */
 (function (root, f) { root.CrowWall = f(root); })(typeof self !== "undefined" ? self : this, function (root) {
 "use strict";
 var doc = root.document, RAR = { comum: "Comum", epica: "Épica", rara: "Rara", lendaria: "Lendária" };
-var PENA = "<svg viewBox=\"0 0 24 24\" width=\"22\" height=\"22\" aria-hidden=\"true\"><path fill=\"currentColor\" d=\"M20.5 3.5C13 3.2 7.4 6.6 5.6 13.2L4 19.5l.6.6 6.3-1.6C18.4 16.9 21.2 11.4 20.5 3.5z\"/><path d=\"M4.5 19.5 14 10\" stroke=\"#F5F5F5\" stroke-width=\"1.4\" stroke-linecap=\"round\" fill=\"none\"/></svg>";
-var TABS = [["home", "Trilha"], ["ach", "Conquistas"], ["app", "Aparências"], ["tro", "Troféus"], ["cx", "Caixas"]];
-var LABEL = { ach: "Conquistas", app: "Aparências", tro: "Troféus", cx: "Caixas" };
+var I = {
+  home: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
+  medal: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><circle cx="12" cy="9" r="6"/><path d="M8.5 14.2 7 21l5-2.5 5 2.5-1.5-6.8"/></svg>',
+  grid: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>',
+  // noz descascada: casca aberta com a semente à mostra
+  noz: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M12 2.8c-4.6 0-7.6 3.6-7.6 8.2 0 3.9 2.3 6.9 4.7 8.4.8.5 1.6.5 2.3 0 .5-.3 1-.3 1.5 0 .7.5 1.5.5 2.3 0 2.4-1.5 4.8-4.5 4.8-8.4 0-4.6-3-8.2-7.9-8.2z"/><path d="M8.6 9.2c1.3 1.1 1.4 3.6.2 5.2M15.4 9.2c-1.3 1.1-1.4 3.6-.2 5.2"/></svg>',
+  trophy: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/><path d="M12 14v4M8 20h8M9 18h6"/></svg>',
+  crow: '<img src="mascot.png" alt="Crow">'
+};
+var TABS = [["home", "home", "Trilha"], ["ach", "medal", "Conquistas"], ["app", "grid", "Aparências"], ["noz", "noz", "Nozes"]];
 var CROW = {
-  vazio_ach: "Nenhuma conquista. Não é pra olhar, é pra fazer.",
+  vazio_ach: "Nenhuma conquista ainda. Não é pra olhar, é pra fazer.",
   vazio_tro: "Nenhum troféu. Treinar também é uma opção.",
-  vazio_cx: "Nenhuma caixa ainda. Cumpra o combinado primeiro.",
+  vazio_noz: "Nenhuma noz ainda. Cumpra o combinado primeiro.",
   nivel: ["Nível subiu. Não se acostume.", "Mais um nível. Agora mantenha.", "Subiu. Ainda falta muito.", "Nível novo. Quero ver repetir."]
 };
-var page = null, sel = null, queue = [], showing = false, shownAch = [];
-var lastLevel = null, lastS = null, seenPending = {}, lastTro = -1;
+var curPage = null, sel = null, queue = [], showing = false, shownAch = [];
+var lastLevel = null, lastS = null, seenPending = {}, lastTro = -1, cel = null;
 
 function esc(v) { return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
 function S() { return root.S; }
@@ -23,154 +29,191 @@ function CF() { return root.CF; }
 function plural(n, a, b) { return n + " " + (n === 1 ? a : b); }
 function today() { return typeof root.today === "function" ? root.today() : new Date().toISOString().slice(0, 10); }
 function save() { if (typeof root.save === "function") root.save(); }
-function trailEl() { return doc.getElementById("trail"); }
 function cat() { return (CF() && CF().ITENS) || []; }
 function byItem(id) { return cat().filter(function (x) { return x.id === id; })[0] || null; }
 function gotAch(id) { var s = S(); return !!(s && s.achievements && Object.prototype.hasOwnProperty.call(s.achievements, id)); }
 function owned(id) { var s = S(); return !!(s && s.collection && s.collection[id]); }
 function equipped() { try { return CF().aparenciaEquipada(S()); } catch (e) { return null; } }
-function trophyTotal() { try { return CF().trophyCount(root.CFT.trophyRecords(root.trailCtx())); } catch (e) { return 0; } }
+function trophyRecs() { try { return root.CFT.trophyRecords(root.trailCtx()); } catch (e) { return []; } }
+function trophyRows() { var names = (root.CFP && root.CFP.LIB) || {}; try { return CF().trophyCatalog(trophyRecs(), Object.keys(names)).map(function (r) { r.name = names[r.id] ? names[r.id][0] : r.id; return r; }); } catch (e) { return []; } }
+function trophyTotal() { try { return CF().trophyCount(trophyRecs()); } catch (e) { return 0; } }
+function nozCount() { return Object.keys((S() && S().nozes) || {}).length; }
+function achList() { return (CF().ACH || []); }
+function unlockedAch() { var s = S(); return Object.keys((s && s.achievements) || {}).map(function (id) { return { id: id, info: s.achievements[id] }; }).sort(function (a, b) { return String(b.info.at).localeCompare(String(a.info.at)); }); }
 function lineFor(n) { return CROW.nivel[n % CROW.nivel.length]; }
 
-/* ---------- barra inferior: só na tela inicial ---------- */
-var ICONS = {
-  home: '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
-  ach: '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>',
-  app: '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>',
-  tro: '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" stroke="#B57F00" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path fill="#F5B301" d="M7 4h10v5a5 5 0 0 1-10 0z"/><path fill="none" d="M7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/><path fill="#F5B301" stroke="#B57F00" d="M10.5 14h3v4h-3z"/><path fill="none" d="M8 20h8"/></svg>',
-  cx: '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M5 12v8h14v-8M12 8v12"/><path d="M12 8c-2-3-5-3-5-1s3 1 5 1c2 0 5 1 5-1s-3-2-5 1"/></svg>'
-};
+/* Ícone do nível: só o número dentro de um anel, sem texto. */
+function lvIco(n) {
+  var fs = String(n).length > 2 ? 11 : 15;
+  return '<svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15.5" fill="none" stroke="currentColor" stroke-width="2.2"/><text x="18" y="23.5" text-anchor="middle" font-size="' + fs + '" font-weight="800" font-family="Nunito,system-ui,sans-serif" fill="currentColor">' + esc(n) + '</text></svg>';
+}
+
+/* ---------- barra inferior: só ícones ---------- */
 function bar() {
   var b = doc.createElement("nav"); b.className = "cw-bar"; b.setAttribute("aria-label", "Navegação principal");
   b.innerHTML = TABS.map(function (t) {
-    var cls = t[0] === "tro" ? "cw-tab cw-tro" : "cw-tab";
-    return '<button type="button" class="' + cls + '" data-tab="' + t[0] + '" aria-label="' + t[1] + '">' +
-      '<span class="cw-ico">' + ICONS[t[0]] + (t[0] === "tro" ? '<b class="cw-badge" data-badge>0</b>' : '') + '</span><span class="cw-lbl">' + t[1] + '</span></button>';
+    return '<button type="button" class="cw-tab" data-tab="' + t[0] + '" aria-label="' + t[2] + '" title="' + t[2] + '"><span class="cw-ico">' + I[t[1]] + '</span></button>';
   }).join("");
   doc.body.appendChild(b);
 }
 function syncBar() {
-  var home = !!trailEl(); doc.body.classList.toggle("cw-home", home);
-  if (!home) { page = null; return; }
-  var n = trophyTotal();
-  if (n !== lastTro) { lastTro = n; var bd = doc.querySelector("[data-badge]"); if (bd) bd.textContent = String(n); }
-  var cur = page || "home";
+  var home = !!doc.getElementById("trail"); doc.body.classList.toggle("cw-home", home);
+  var cur = curPage || (home ? "home" : "");
   doc.querySelectorAll(".cw-bar [data-tab]").forEach(function (t) { t.setAttribute("aria-current", t.getAttribute("data-tab") === cur ? "page" : "false"); });
 }
 
-/* ---------- páginas dentro da área da trilha ---------- */
-function go(t) {
-  if (t === "home") { page = null; sel = null; if (typeof root.renderHome === "function") root.renderHome(); return; }
-  page = t; sel = null; renderPage();
+/* ---------- páginas independentes (tela cheia; a trilha não aparece por baixo) ---------- */
+function closePage() { if (curPage && curPage.el) curPage.el.remove(); curPage = null; sel = null; syncBar(); }
+function openPage(kind) {
+  if (kind === "home") { closePage(); if (typeof root.renderHome === "function") root.renderHome(); return; }
+  closePage();
+  var el = doc.createElement("div"); el.className = "cw-full"; el.setAttribute("role", "dialog");
+  el.innerHTML = '<div class="cf-bar cf-topbar"><button type="button" class="cf-back" data-full-close>← Voltar</button></div><div class="cw-pagebody"></div>';
+  doc.body.appendChild(el);
+  curPage = { kind: kind, el: el };
+  el.querySelector("[data-full-close]").addEventListener("click", function () { if (typeof root.renderHome === "function") root.renderHome(); closePage(); });
+  renderPage();
+  syncBar();
 }
 function renderPage() {
-  var el = trailEl(); if (!el || !page || !S()) return;
-  var body = page === "ach" ? viewAch() : page === "app" ? viewApp() : page === "tro" ? viewTro() : viewCx();
-  el.innerHTML = '<section class="cw-page" aria-label="' + LABEL[page] + '">' + body + '<div class="cw-detail" hidden></div></section>';
-  syncBar();
-  if (sel) detail(sel.kind, sel.id);
+  if (!curPage || !S()) return;
+  var k = curPage.kind, body = curPage.el.querySelector(".cw-pagebody");
+  var html = k === "ach" ? pageAch() : k === "app" ? pageApp() : k === "tro" ? pageTro() : k === "noz" ? pageNoz() : pageLevel();
+  body.innerHTML = html;
+  if (sel && sel.kind === "app") detailApp(sel.id);
 }
-function viewAch() {
-  var list = (CF().ACH || []), n = list.filter(function (a) { return gotAch(a.id); }).length;
+function cell(inner, label, bubble, extraCls) {
+  return '<div class="cw-cell"><button type="button" class="cw-ibtn ' + (extraCls || "") + '" data-bub aria-label="' + esc(label) + '">' + inner + '</button>' +
+    '<div class="cw-bub" hidden>' + bubble + '</div></div>';
+}
+function pageAch() {
+  var list = achList(), n = list.filter(function (a) { return gotAch(a.id); }).length;
   return '<div class="cw-head"><h2>Conquistas</h2><span>' + n + ' de ' + list.length + '</span></div>' +
-    (list.length ? '<div class="cw-grid">' + list.map(function (a) {
+    (list.length ? '<div class="cw-icons">' + list.map(function (a) {
       var got = gotAch(a.id);
-      return '<button type="button" class="cw-card' + (got ? "" : " cw-locked") + '" data-kind="ach" data-id="' + esc(a.id) + '">' +
-        '<span class="cw-art">' + (got ? "★" : "?") + '</span><span class="cw-name">' + (got ? esc(a.name) : "???") + '</span>' +
-        '<small>' + (got ? "Desbloqueada" : "Bloqueada") + '</small></button>';
+      var bub = got ? '<b>' + esc(a.name) + '</b><span>' + esc(a.how) + '.</span>' : '<b>Bloqueada</b><span>' + esc(a.how) + '.</span>';
+      return cell('<span class="cw-glyph' + (got ? " on" : " off") + '">' + I.medal + '</span>', (got ? a.name : "Conquista bloqueada"), bub);
     }).join("") + '</div>' : '<p class="cw-empty">' + esc(CROW.vazio_ach) + '</p>');
 }
-function viewApp() {
+function pageNoz() {
+  var hist = [];
+  try { hist = CF().boxHistory(S(), today()); } catch (e) { hist = []; }
+  if (!hist.length) return '<div class="cw-head"><h2>Nozes</h2></div><p class="cw-empty">' + esc(CROW.vazio_noz) + '</p>';
+  return '<div class="cw-head"><h2>Nozes</h2><span>' + nozCount() + ' abertas</span></div><div class="cw-icons">' + hist.map(function (h) {
+    var aberta = h.status === "aberta", semanal = h.tipo === "semanal";
+    var nome = semanal ? "Noz da semana de " + h.data : "Caixa mensal de " + h.data.slice(0, 7);
+    var st = aberta ? "Aberta" : "Pronta para abrir";
+    var act = aberta ? "" : '<button type="button" class="cw-btn cw-primary cw-bbtn" data-act="' + (semanal ? "noz" : "box") + '" data-box="' + esc(h.id) + '">Abrir</button>';
+    return cell('<span class="cw-glyph' + (aberta ? " on" : " off") + '">' + I.noz + '</span>', nome, '<b>' + esc(nome) + '</b><span>' + esc(st) + (h.xp != null ? " · " + plural(h.xp, "XP", "XP") : "") + '</span>' + act);
+  }).join("") + '</div>';
+}
+function pageTro() {
+  var rows = trophyRows().sort(function (a, b) { return b.exercises - a.exercises; });
+  var pinned = (S().showTro || []);
+  return '<div class="cw-head"><h2>Troféus</h2><span>' + trophyTotal() + ' no total</span></div>' +
+    (!rows.some(function (r) { return r.exercises > 0; }) ? '<p class="cw-empty">' + esc(CROW.vazio_tro) + '</p>' : '') +
+    '<div class="cw-icons">' + rows.map(function (r) {
+      var on = pinned.indexOf(r.id) >= 0;
+      var bub = '<b>' + esc(r.name) + '</b><span>' + esc(plural(r.exercises, "vez", "vezes")) + ' · nível ' + r.stage + (r.next ? ' · próximo marco: ' + r.next : ' · marcos completos') + '</span>' +
+        '<button type="button" class="cw-btn cw-bbtn ' + (on ? "" : "cw-primary") + '" data-act="destaque" data-id="' + esc(r.id) + '">' + (on ? "Tirar do perfil" : "Mostrar no perfil") + '</button>';
+      return cell('<span class="cw-glyph trophy s' + Math.min(r.stage, 3) + (on ? " on" : "") + '">' + I.trophy + '</span>', r.name, bub);
+    }).join("") + '</div><p class="cw-hint">Até 4 troféus aparecem no seu perfil.</p>';
+}
+function pageApp() {
   var s = S(), n = Object.keys(s.collection || {}).length, eq = equipped(), it = eq && byItem(eq);
   return '<div class="cw-head"><h2>Aparências</h2><span>' + n + ' de ' + cat().length + '</span></div>' +
-    '<div class="cw-preview"><div class="cw-crow"><img src="mascot.png" alt="Crow">' +
-    (it ? '<span class="cw-ap">' + esc(it.nome) + ' · TEMP</span>' : '') + '</div>' +
+    '<div class="cw-preview"><div class="cw-crow"><img src="mascot.png" alt="Crow">' + (it ? '<span class="cw-ap">' + esc(it.nome) + ' · TEMP</span>' : '') + '</div>' +
     '<p>' + (it ? "Equipada: " + esc(it.nome) : "Nenhuma aparência equipada. Eu continuo igual, e você também.") + '</p></div>' +
     '<div class="cw-grid">' + cat().map(function (x) {
       var has = owned(x.id), e = eq === x.id;
       return '<button type="button" class="cw-card cw-' + esc(x.raridade) + (has ? "" : " cw-locked") + '" data-kind="app" data-id="' + esc(x.id) + '">' +
         '<span class="cw-swatch"></span><span class="cw-name">' + (has ? esc(x.nome) : "???") + '</span>' +
         '<small>' + esc(RAR[x.raridade] || x.raridade) + (e ? " · equipada" : "") + '</small></button>';
-    }).join("") + '</div>';
+    }).join("") + '</div><div class="cw-detail" hidden></div>';
 }
-function viewTro() {
-  var names = (root.CFP && root.CFP.LIB) || {}, ids = Object.keys(names), recs = [];
-  try { recs = root.CFT.trophyRecords(root.trailCtx()); } catch (e) { recs = []; }
-  var rows = CF().trophyCatalog(recs, ids).sort(function (a, b) { return b.exercises - a.exercises; });
-  var any = rows.some(function (r) { return r.exercises > 0; });
-  return '<div class="cw-head"><h2>Troféus</h2><span>' + trophyTotal() + ' no total</span></div>' +
-    (!any ? '<p class="cw-empty">' + esc(CROW.vazio_tro) + '</p>' : '') +
-    '<ul class="cw-list">' + rows.map(function (r) {
-      return '<li><span class="cw-li-name">' + esc(names[r.id] ? names[r.id][0] : r.id) + '</span>' +
-        '<span class="cw-li-val">' + esc(plural(r.exercises, "vez", "vezes")) + ' · nível ' + r.stage + (r.next ? ' · próximo marco: ' + r.next : ' · marcos completos') + '</span></li>';
-    }).join("") + '</ul>';
-}
-function viewCx() {
-  var hist = [];
-  try { hist = CF().boxHistory(S(), today()); } catch (e) { hist = []; }
-  if (!hist.length) return '<div class="cw-head"><h2>Caixas</h2></div><p class="cw-empty">' + esc(CROW.vazio_cx) + '</p>';
-  return '<div class="cw-head"><h2>Caixas</h2><span>' + hist.length + '</span></div><ul class="cw-list">' + hist.map(function (h) {
-    var nome = h.tipo === "semanal" ? "Noz da semana de " + h.data : "Caixa mensal de " + h.data.slice(0, 7);
-    var st = h.status === "aberta" ? "Aberta" : "Pronta para abrir";
-    var btn = h.status === "aberta" ? "" : '<button type="button" class="cw-btn cw-primary" data-act="' + (h.tipo === "semanal" ? "noz" : "box") + '" data-box="' + esc(h.id) + '">Abrir</button>';
-    return '<li class="cw-cx"><span><b>' + esc(nome) + '</b><small>' + esc(st) + (h.xp != null ? " · " + plural(h.xp, "XP", "XP") : "") + '</small></span>' + btn + '</li>';
-  }).join("") + '</ul>';
-}
-function detail(kind, id) {
-  sel = { kind: kind, id: id };
-  var el = trailEl(); if (!el) return; var box = el.querySelector(".cw-detail"); if (!box) return;
-  box.hidden = false;
-  if (kind === "ach") {
-    var a = (CF().ACH || []).filter(function (x) { return x.id === id; })[0]; if (!a) { box.hidden = true; return; }
-    var got = gotAch(id), info = got ? S().achievements[id] : null;
-    box.innerHTML = '<div class="cw-dcard"><div class="cw-dart' + (got ? "" : " cw-locked") + '">' + (got ? "★" : "?") + '</div>' +
-      '<b>' + esc(got ? a.name : "???") + '</b><small>Ilustração provisória (TEMP)</small>' +
-      (got ? '<p><b>Como foi desbloqueada:</b> ' + esc(info.reason || a.how) + '</p><p class="cw-crowq">“' + esc(a.line) + '”</p><small>Desbloqueada em ' + esc(info.day) + '</small>'
-           : '<p><b>Requisito:</b> ' + esc(a.how) + '.</p><p class="cw-crowq">Ainda não. Não me faça esperar.</p>') +
-      '<div class="cw-acts"><button type="button" class="cw-btn" data-act="closed">Fechar</button></div></div>';
-    return;
-  }
+function detailApp(id) {
+  var box = curPage && curPage.el.querySelector(".cw-detail"); if (!box) return;
   var it = byItem(id); if (!it) { box.hidden = true; return; }
   var has = owned(id), e = equipped() === id;
   var act2 = !has ? "" : e ? '<button type="button" class="cw-btn" data-act="unequip">Desequipar</button>' : '<button type="button" class="cw-btn cw-primary" data-act="equip" data-id="' + esc(id) + '">Equipar</button>';
+  box.hidden = false;
   box.innerHTML = '<div class="cw-dcard cw-' + esc(it.raridade) + '"><b>' + esc(has ? it.nome : "???") + '</b>' +
     '<small>' + esc(RAR[it.raridade] || it.raridade) + ' · arte provisória (TEMP)</small>' +
     '<p>' + (has ? "Obtida em caixa mensal." : "Bloqueada. Só sai de caixa mensal, e não duplica.") + '</p>' +
-    '<div class="cw-acts">' + act2 + '<button type="button" class="cw-btn" data-act="closed">Fechar</button></div></div>';
+    '<div class="cw-acts">' + act2 + '</div></div>';
 }
+function pageLevel() {
+  var li = root.lvlInfo(), pct = li.need ? Math.min(100, li.into / li.need * 100) : 0;
+  return '<section class="cw-level"><div class="cw-pena">' + lvIco(li.l) + '</div>' +
+    '<p class="cw-title">' + esc(li.title || "") + '</p><p><b>' + S().points + '</b> XP no total</p>' +
+    '<div class="cw-lvbar" role="img" aria-label="Progresso do nível"><i style="width:' + pct.toFixed(1) + '%"></i></div>' +
+    '<small>Faltam ' + (li.need - li.into) + ' XP para o nível ' + (li.l + 1) + '</small></section>';
+}
+function openLevel() { if (S() && typeof root.lvlInfo === "function") { openPage("nivel"); } }
+
+/* ---------- perfil: visão geral (preenche a página de perfil, abaixo do avatar) ---------- */
+function since(iso) {
+  var t = Date.parse(iso); if (!isFinite(t)) return "";
+  var d = Math.floor((Date.now() - t) / 86400000);
+  if (d < 1) return "Cadastrado hoje";
+  if (d < 30) return "Cadastrado há " + plural(d, "dia", "dias");
+  if (d < 365) return "Cadastrado há " + plural(Math.floor(d / 30), "mês", "meses");
+  return "Cadastrado há " + plural(Math.floor(d / 365), "ano", "anos");
+}
+function profileHtml(p) {
+  var s = S(), prof = (p && p.profile) || {}, name = prof.displayName || "", s2 = since(prof.createdAt);
+  var li = s && root.lvlInfo ? root.lvlInfo() : { l: 0 };
+  var pinned = (s && s.showTro) || [], names = (root.CFP && root.CFP.LIB) || {};
+  var rows = trophyRows(), byId = {}; rows.forEach(function (r) { byId[r.id] = r; });
+  var troH = pinned.length ? pinned.map(function (id) {
+    var r = byId[id]; if (!r) return "";
+    return cell('<span class="cw-glyph trophy s' + Math.min(r.stage, 3) + ' on">' + I.trophy + '</span>', r.name, '<b>' + esc(r.name) + '</b><span>' + esc(plural(r.exercises, "vez", "vezes")) + ' · nível ' + r.stage + '</span>');
+  }).join("") : '<p class="cw-hint">Escolha até 4 troféus no menu de troféus para exibir aqui.</p>';
+  var achH = unlockedAch().slice(0, 4).map(function (u) {
+    var a = achList().filter(function (x) { return x.id === u.id; })[0]; if (!a) return "";
+    return cell('<span class="cw-glyph on">' + I.medal + '</span>', a.name, '<b>' + esc(a.name) + '</b><span>' + esc(u.info.day || "") + '</span>');
+  }).join("");
+  return '<section class="cw-pf">' +
+    '<div class="cw-pf-avatar"><img src="mascot.png" alt="Crow"></div>' +
+    '<h1 class="cf-title cw-pf-name" tabindex="-1">' + esc(name) + '</h1>' +
+    (s2 ? '<p class="cw-pf-since">' + esc(s2) + '</p>' : '') +
+    '<div class="cw-ov-grid">' +
+      '<div class="cw-ov"><span class="cw-ov-ico">' + lvIco(li.l) + '</span><b>' + (s ? s.points : 0) + '</b><small>XP total</small></div>' +
+      '<div class="cw-ov"><span class="cw-ov-ico">' + I.trophy + '</span><b>' + trophyTotal() + '</b><small>Troféus</small></div>' +
+      '<div class="cw-ov"><span class="cw-ov-ico">' + I.noz + '</span><b>' + nozCount() + '</b><small>Nozes</small></div>' +
+      '<div class="cw-ov"><span class="cw-ov-ico">' + I.medal + '</span><b>' + unlockedAch().length + '</b><small>Conquistas</small></div>' +
+    '</div>' +
+    '<h2 class="cw-sec">Troféus em destaque</h2><div class="cw-icons cw-four">' + troH + '</div>' +
+    '<h2 class="cw-sec">Últimas conquistas</h2><div class="cw-icons cw-four">' + (achH || '<p class="cw-hint">Nenhuma conquista ainda.</p>') + '</div>' +
+  '</section>';
+}
+
+/* ---------- balões: um por vez, fecha ao tocar fora ---------- */
+function bubbleToggle(btn) {
+  var cellEl = btn.closest(".cw-cell"); if (!cellEl) return;
+  var b = cellEl.querySelector(".cw-bub"); var open = b.hidden;
+  doc.querySelectorAll(".cw-bub").forEach(function (x) { x.hidden = true; });
+  b.hidden = !open;
+}
+
+/* ---------- ações ---------- */
 function act(kind, el) {
-  if (kind === "closed") { sel = null; var b = trailEl() && trailEl().querySelector(".cw-detail"); if (b) b.hidden = true; return; }
-  if (kind === "equip" && el) { CF().equipar(S(), el.getAttribute("data-id"), new Date().toISOString()); save(); return renderPage(); }
+  if (kind === "equip") { CF().equipar(S(), el.getAttribute("data-id"), new Date().toISOString()); save(); return renderPage(); }
   if (kind === "unequip") { CF().desequipar(S(), new Date().toISOString()); save(); return renderPage(); }
-  if (kind === "box" && el) return openBoxNow(el.getAttribute("data-box"));
-  if (kind === "noz" && el) return openNozNow(el.getAttribute("data-box"));
+  if (kind === "destaque") { if (!CF().toggleDestaque(S(), el.getAttribute("data-id"))) { root.alert && root.alert("Até 4 troféus no perfil."); return; } save(); return renderPage(); }
+  if (kind === "box") return openBoxNow(el.getAttribute("data-box"));
+  if (kind === "noz") { var k = String(el.getAttribute("data-box")).replace(/^noz:/, ""); closePage(); if (typeof root.openNozScreen === "function") root.openNozScreen(k); }
 }
 function openBoxNow(id) {
-  var s = S(); var res = CF().openBox(s, id, new Date().toISOString());
+  var res = CF().openBox(S(), id, new Date().toISOString());
   if (!res) return; save();
   var names = res.items.map(function (i) { var it = byItem(i); return it ? it.nome : i; });
   celebrate({ title: "Caixa aberta", name: plural(res.xp, "XP", "XP") + (names.length ? " e " + names.join(", ") : ""), line: names.length ? "Não é grande coisa. Mas é seu." : "Só XP desta vez. Trate de treinar mais." });
   renderPage();
 }
-function openNozNow(id) { var k = String(id).replace(/^noz:/, ""); if (typeof root.openNozScreen === "function") root.openNozScreen(k); }
-
-/* ---------- nível: página própria, tela cheia ---------- */
-function openLevel() {
-  if (!S() || typeof root.lvlInfo !== "function") return;
-  var li = root.lvlInfo(), pct = li.need ? Math.min(100, li.into / li.need * 100) : 0;
-  var f = doc.createElement("div"); f.className = "cw-full"; f.setAttribute("role", "dialog"); f.setAttribute("aria-label", "Nível");
-  f.innerHTML = '<div class="cf-bar cf-topbar"><button type="button" class="cf-back" data-full-close>← Voltar</button></div>' +
-    '<section class="cw-level"><div class="cw-pena">' + PENA + '</div><b class="cw-lvnum">Nível ' + li.l + '</b>' +
-    '<p class="cw-title">' + esc(li.title || "") + '</p><p><b>' + S().points + '</b> XP no total</p>' +
-    '<div class="cw-lvbar" role="img" aria-label="Progresso do nível"><i style="width:' + pct.toFixed(1) + '%"></i></div>' +
-    '<small>Faltam ' + (li.need - li.into) + ' XP para o nível ' + (li.l + 1) + '</small></section>';
-  doc.body.appendChild(f);
-  f.querySelector("[data-full-close]").addEventListener("click", function () { f.remove(); });
-}
 
 /* ---------- feedback: conquista nova e subida de nível ---------- */
 function celebrate(item) { queue.push(item); if (!showing) next(); }
-var cel = null;
 function next() {
   var item = queue.shift(); if (!item) { showing = false; return; }
   showing = true;
@@ -196,7 +239,7 @@ function afterSave() {
     seenPending[e.id] = true; shownAch.push(e.id);
     celebrate({ title: "Conquista desbloqueada", name: e.name, line: e.line });
   });
-  if (page) renderPage();
+  if (curPage) renderPage();
   syncBar();
 }
 function onAchievement(events) {
@@ -216,11 +259,11 @@ function hookSave() {
 function init() {
   bar();
   doc.addEventListener("click", function (e) {
-    var tb = e.target.closest && e.target.closest(".cw-bar [data-tab]");
-    if (tb) return go(tb.getAttribute("data-tab"));
-    var inPage = e.target.closest && e.target.closest("#trail .cw-page"); if (!inPage) return;
-    var a = e.target.closest("[data-act]"); if (a) return act(a.getAttribute("data-act"), a);
-    var c = e.target.closest("[data-kind]"); if (c) return detail(c.getAttribute("data-kind"), c.getAttribute("data-id"));
+    var t = e.target.closest && e.target.closest(".cw-bar [data-tab]"); if (t) return openPage(t.getAttribute("data-tab"));
+    var bub = e.target.closest && e.target.closest("[data-bub]"); if (bub) return bubbleToggle(bub);
+    if (!e.target.closest || !e.target.closest(".cw-bub")) doc.querySelectorAll(".cw-bub").forEach(function (x) { x.hidden = true; });
+    var a = e.target.closest && e.target.closest(".cw-full [data-act]"); if (a) return act(a.getAttribute("data-act"), a);
+    var c = e.target.closest && e.target.closest(".cw-full [data-kind]"); if (c) { sel = { kind: c.getAttribute("data-kind"), id: c.getAttribute("data-id") }; renderPage(); }
   });
   root.onAchievement = onAchievement;
   setInterval(syncBar, 400);
@@ -228,7 +271,8 @@ function init() {
     tries++;
     if (hookSave() || tries > 100) { clearInterval(t); if (S()) { lastS = S(); lastLevel = CF().levelOf(S().points); } }
   }, 100);
+  if (root.CrowfitProfile && typeof root.CrowfitProfile.setExtras === "function") root.CrowfitProfile.setExtras(profileHtml);
 }
 if (doc) { if (doc.readyState === "loading") doc.addEventListener("DOMContentLoaded", init); else init(); }
-return { go: go, openLevel: openLevel, onAchievement: onAchievement, celebrate: celebrate };
+return { openPage: openPage, openLevel: openLevel, go: openPage, onAchievement: onAchievement, celebrate: celebrate, lvIco: lvIco, profileHtml: profileHtml };
 });

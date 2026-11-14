@@ -172,6 +172,7 @@ function validateState(raw) {
   }
   if (typeof raw.equipped === "string" && ACH_ID.test(raw.equipped)) st.equipped = raw.equipped;
   if (typeof raw.equippedAt === "string" && raw.equippedAt.length <= 40) st.equippedAt = raw.equippedAt;
+  if (Array.isArray(raw.showTro)) st.showTro = raw.showTro.filter(function (x) { return typeof x === "string" && ACH_ID.test(x); }).slice(0, 4);
   if (raw.collection !== undefined) {
     if (raw.collection && typeof raw.collection === "object" && !Array.isArray(raw.collection)) {
       Object.keys(raw.collection).forEach(function (k) {
@@ -664,6 +665,13 @@ function equipar(S, id, nowIso) {
   if (!it || it.tipo !== "aparencia") return null;
   S.equipped = id; S.equippedAt = nowIso; return id;
 }
+/* Troféus em destaque no perfil (máximo 4). Devolve false se já estiver cheio. */
+function toggleDestaque(S, id) {
+  var a = Array.isArray(S.showTro) ? S.showTro.slice() : [];
+  var i = a.indexOf(id);
+  if (i >= 0) a.splice(i, 1); else { if (a.length >= 4) return false; a.push(id); }
+  S.showTro = a; return true;
+}
 function desequipar(S, nowIso) {
   if (typeof nowIso !== "string") return false;
   S.equipped = null; S.equippedAt = nowIso; return true;
@@ -712,6 +720,6 @@ return { PAT: PAT, EXP: EXP, escText: escText, escAttr: escAttr, safeClass: safe
   computeStreak: computeStreak, refreshStreak: refreshStreak, dayStatus: dayStatus, nozWeeks: nozWeeks, nozOpened: nozOpened, openNoz: openNoz, levelOf: levelOf, timerStart: timerStart, timerPause: timerPause, timerResume: timerResume, timerTick: timerTick,
   timerSecs: timerSecs, newSession: newSession, syncStatus: syncStatus, completeSet: completeSet, skipExercise: skipExercise, advance: advance,
   grant: grant, grantExercise: grantExercise, grantSessionBonus: grantSessionBonus, finishSession: finishSession, abandonSession: abandonSession,
-  ACH: ACH, checkAchCatalog: checkAchCatalog, unlockAchievements: unlockAchievements, achCatalog: achCatalog, achMerge: achMerge, achMet: achMet, BOX: BOX, ITENS: ITENS, RARIDADE_ORDEM: RARIDADE_ORDEM, pickItem: pickItem, xpSubstituto: xpSubstituto, itensReservados: itensReservados, aparenciaEquipada: aparenciaEquipada, equipar: equipar, desequipar: desequipar, itemsMerge: itemsMerge, RARIDADES: RARIDADES, ITENS: ITENS, prng: prng, pickRarity: pickRarity, rollBox: rollBox, monthCriterionMet: monthCriterionMet, grantMonthly: grantMonthly, openBox: openBox, boxHistory: boxHistory, boxesMerge: boxesMerge,  achTop: achTop, trophyTop: trophyTop, achPendingEvents: achPendingEvents, achAck: achAck, 
+  ACH: ACH, checkAchCatalog: checkAchCatalog, unlockAchievements: unlockAchievements, achCatalog: achCatalog, achMerge: achMerge, achMet: achMet, BOX: BOX, ITENS: ITENS, RARIDADE_ORDEM: RARIDADE_ORDEM, pickItem: pickItem, xpSubstituto: xpSubstituto, itensReservados: itensReservados, aparenciaEquipada: aparenciaEquipada, equipar: equipar, desequipar: desequipar, itemsMerge: itemsMerge, toggleDestaque: toggleDestaque, RARIDADES: RARIDADES, ITENS: ITENS, prng: prng, pickRarity: pickRarity, rollBox: rollBox, monthCriterionMet: monthCriterionMet, grantMonthly: grantMonthly, openBox: openBox, boxHistory: boxHistory, boxesMerge: boxesMerge,  achTop: achTop, trophyTop: trophyTop, achPendingEvents: achPendingEvents, achAck: achAck, 
   TROPHY: TROPHY, checkTrophyConfig: checkTrophyConfig, trophyAll: trophyAll, trophyCount: trophyCount, trophyStage: trophyStage, trophyCatalog: trophyCatalog };
 });
