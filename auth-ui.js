@@ -15,7 +15,7 @@
   var ART = '<svg viewBox="0 0 1040 760" aria-hidden="true" focusable="false"><g fill="#F1F2F7"><ellipse cx="225" cy="255" rx="165" ry="160"/><ellipse cx="125" cy="470" rx="120" ry="100"/><ellipse cx="190" cy="440" rx="150" ry="110"/><ellipse cx="850" cy="390" rx="175" ry="165"/><ellipse cx="840" cy="520" rx="195" ry="125"/></g><ellipse cx="520" cy="722" rx="422" ry="28" fill="#E9E9F1"/><ellipse cx="520" cy="716" rx="250" ry="14" fill="#E2E3EC"/><g fill="#D9DAE6" transform="translate(170,700)"><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(-34) scale(.9)"/><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(-4)"/><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(28) scale(.8)"/></g><g fill="#D9DAE6" transform="translate(870,700)"><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(34) scale(.9)"/><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(4)"/><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(-28) scale(.8)"/></g></svg>';
   var ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15"/><path d="M13 6l6 6-6 6"/></svg>';
   var root = null, chip = null, toastEl = null, toastTimer = 0, view = 'loading';
-  /* Perguntas do perfil de treino antes da conta. Mesmas chaves e regras de QS (index.html). Ficam no aparelho até a conta existir. */
+  /* Perguntas do perfil de treino antes da conta. Mesmas chaves e regras de QS (index.html). Ficam só na sessão da aba: se o app for fechado, o onboarding recomeça do zero. */
   var K_DRAFT = 'crowfit-onboard-draft';
   var PQ = [
     { k: 'nome', q: 'Como podemos te chamar?', type: 'text', ph: 'Seu nome', hint: 'Esse nome só aparece para você. Seu ID é o que os amigos veem.' },
@@ -25,8 +25,8 @@
     { k: 'exp', q: 'Qual é a sua experiência com exercícios?', type: 'chips', o: ['Nunca treinei', 'Treino às vezes', 'Treino sempre'] },
     { k: 'dias', q: 'Quantos dias por semana quer treinar?', type: 'chips', o: ['3', '4', '5', '6'] }
   ];
-  function readDraft() { try { return JSON.parse(global.localStorage.getItem(K_DRAFT)) || {}; } catch (e) { return {}; } }
-  function writeDraft(d) { try { global.localStorage.setItem(K_DRAFT, JSON.stringify(d)); } catch (e) {} }
+  function readDraft() { try { return JSON.parse(global.sessionStorage.getItem(K_DRAFT)) || {}; } catch (e) { return {}; } }
+  function writeDraft(d) { try { global.sessionStorage.setItem(K_DRAFT, JSON.stringify(d)); } catch (e) {} }
   function hasDraft() { var d = readDraft(); return !!(d && d.nome); }
 
   var GOOGLE_SVG = '<svg viewBox="0 0 18 18" width="18" height="18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.97 10.72A5.41 5.41 0 0 1 3.68 9c0-.6.1-1.18.29-1.72V4.95H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.05l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/></svg>';
@@ -59,7 +59,7 @@
     },
     crow: function (d) {
       return '<div class="in-wrap cf-w cf-crow"><div class="cf-bubble">' + d.text + '</div>' +
-        '<img class="cf-crow-img" src="mascot.png" alt="Crow">' +
+        '<img class="cf-crow-img" src="crow.png" alt="Crow">' +
         '<div class="cf-w-btns"><button class="in-cta" type="button" data-go="' + d.next + '">Continuar</button></div></div>';
     },
     pq: function (d) {
