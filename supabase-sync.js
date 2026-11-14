@@ -311,8 +311,10 @@ function create(envIn) {
         plan();
       }
       if (b.error) { meta.pending = true; info.pending = true; saveMeta(uid, meta); emit("error", b.message); return; }
-      var need = first || sg !== meta.sig;
-      var v2need = first || v2.sig !== meta.v2sig;
+      /* puxar: ao voltar para o app, ao reconectar e nas novas tentativas, mesmo sem mudança local (outro aparelho pode ter alterado a conta) */
+      var pull = first || reason === "visible" || reason === "online" || reason === "retry";
+      var need = pull || sg !== meta.sig;
+      var v2need = pull || v2.sig !== meta.v2sig;
       var mut0 = mutCount, points0 = S0.points, row = null;
       if (need) {
         if (!sameUser()) return;
@@ -416,7 +418,7 @@ function create(envIn) {
     if (bound || typeof root.addEventListener !== "function") return; bound = true;
     root.addEventListener("online", function () { kick("online", false); });
     if (root.document && root.document.addEventListener) root.document.addEventListener("visibilitychange", function () {
-      if (root.document.visibilityState === "visible" && host) { var c = host.state(); if (c && loadMeta(c.uid).pending) kick("visible", false); }
+      if (root.document.visibilityState === "visible" && host) { var c = host.state(); if (c) kick("visible", false); }   /* ao voltar para o app: envia o pendente e puxa mudanças de outros aparelhos */
     });
   }
 
@@ -436,7 +438,7 @@ function create(envIn) {
 
   return { attach: attach, notify: notify, reset: reset,
     remoteSettings: function () { var c = host && host.state && host.state(); return c ? (loadMeta(c.uid).remoteSettings || null) : null; }, status: function () { return { state: info.state, message: info.message, pending: info.pending, last: info.last, skippedSessions: info.skippedSessions }; },
-    achievements: function () { return remoteAch.slice(); }, unlockAchievements: unlockAchievements, _run: function (full) { return run("test", !!full); }, _waitIdle: function () { return running || Promise.resolve(); } };
+    achievements: function () { return remoteAch.slice(); }, unlockAchievements: unlockAchievements, _run: function (full, reason) { return run(reason || "test", !!full); }, _waitIdle: function () { return running || Promise.resolve(); } };
 }
 
 var instance = typeof root.document !== "undefined" || typeof root.CF !== "undefined" ? create(null) : null;
