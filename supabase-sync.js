@@ -34,6 +34,8 @@ function isoOk(v) { /* mesma janela de cf_ts: 2020-01-01 até agora + 2 dias */
 
 /* ---------- valor (em XP) de cada recompensa, a partir do identificador ---------- */
 /* ex:<data>:<exercício> = 10 | sess:<data> = 20 | tr:s<k>u<n> = 10 x exercícios da unidade + 20 (derivado da trilha congelada). */
+/* Recusas de grant_my_box que não são falha de sincronização (ver bloco de caixas). */
+var BOX_REJECT_RE = /^(criterion_not_defined|criterion_not_met|future_month|invalid_box|invalid_items)$/;
 function trailAmount(E, S, k, n) {
   try {
     var tr = S.trail; if (!tr || !DATE_RE.test(tr.start) || !tr.lv || typeof tr.lv[k] !== "number" || !E.CFT || !E.CFP) return null;
@@ -415,7 +417,14 @@ function create(envIn) {
           for (var bi = 0; bi < v2.boxes.list.length; bi++) {
             var bxi = v2.boxes.list[bi];
             var gr = await client.rpc("grant_my_box", { p: bxi.grant }); if (!alive()) return;
-            if (gr.error) throw gr.error;
+            if (gr.error) {
+              /* Recusa de regra do servidor (critério não atendido/ativo, mês futuro, itens inválidos):
+                 a caixa fica local, sem marcar pendência; a próxima sincronização tenta de novo.
+                 Rede, sessão e erros inesperados continuam bloqueando, como antes. */
+              var kg = classify(gr.error);
+              if (kg.kind === "net" || kg.kind === "auth" || !BOX_REJECT_RE.test(kg.code || "")) throw gr.error;
+              continue;
+            }
             if (adoptBox(S0, gr.data)) v2ch = true;
             if (bxi.opened) {
               meta.boxSent = meta.boxSent || {};

@@ -229,3 +229,29 @@ describe("limites e validação dos payloads", () => {
 });
 
 function TODAY_ISO() { return "2026-11-13"; }
+
+describe("11. recusa do servidor em caixa não bloqueia a sincronização", () => {
+  test("criterion_not_defined: caixa fica local, progresso sincroniza, pending=false", async () => {
+    const db = makeServer();
+    const base = serverClient(db);
+    const client = { calls: base.calls, from: base.from, rpc: async (name, args) => (name === "grant_my_box" ? { data: null, error: { message: "criterion_not_defined" } } : base.rpc(name, args)) };
+    const S = freshState({ points: 30 });
+    S.boxes = { "mensal:2026-10": { id: "mensal:2026-10", kind: "mensal", month: "2026-10", xp: 40, items: [], granted: "2026-11-01", opened: null } };
+    const d = makeDevice({ S, client });
+    await d.run(true); await d.idle();
+    assert.equal(db.progress.base_points, 30, "progresso sincronizado");
+    assert.ok(S.boxes["mensal:2026-10"], "caixa continua no aparelho");
+    assert.equal(JSON.parse(d.store.get("corvofit-v2:sync:" + H.UID)).pending, false, "sem pendência");
+  });
+
+  test("erro inesperado de grant_my_box continua bloqueando (pending=true)", async () => {
+    const db = makeServer();
+    const base = serverClient(db);
+    const client = { calls: base.calls, from: base.from, rpc: async (name, args) => (name === "grant_my_box" ? { data: null, error: { message: "erro_inesperado_xyz" } } : base.rpc(name, args)) };
+    const S = freshState({ points: 30 });
+    S.boxes = { "mensal:2026-10": { id: "mensal:2026-10", kind: "mensal", month: "2026-10", xp: 40, items: [], granted: "2026-11-01", opened: null } };
+    const d = makeDevice({ S, client });
+    await d.run(true); await d.idle();
+    assert.equal(JSON.parse(d.store.get("corvofit-v2:sync:" + H.UID)).pending, true, "falha real continua pendente");
+  });
+});
