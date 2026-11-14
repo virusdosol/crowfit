@@ -321,10 +321,52 @@ function abandonSession(S, ses, now) {
   ses.status = "abandoned"; ses.endedAt = new Date(now).toISOString(); S.history.push(ses); if (S.history.length > 1000) S.history = S.history.slice(-1000);
 }
 
+/* ---- troféus: contagem atual por exercício ----
+   Não há armazenamento próprio: a contagem é calculada a cada vez a partir dos exercícios concluídos
+   AGORA na trilha (trail.js monta os registros). Por isso desmarcar tira a contagem e marcar de novo a devolve,
+   e a sincronização da trilha (merge_my_trail) já leva tudo para os outros aparelhos.
+   Registro de entrada: { ex, kind: "r"|"s", sets, val }  (um por exercício concluído)
+   * quantidade = número de registros do exercício
+   * séries = soma de sets; repetições = soma de sets*val (só kind "r"); segundos = soma de sets*val (só kind "s")
+   * marcos PROVISÓRIOS: quantas vezes o exercício precisa ser feito para cada estágio */
+var TROPHY = { marks: [5, 25, 50, 100, 250] }; /* PROVISÓRIO: não são limites definitivos */
+function checkTrophyConfig(cfg) {
+  var m = cfg && cfg.marks;
+  if (!Array.isArray(m) || !m.length) throw new Error("troféus: marcos ausentes");
+  m.forEach(function (v, i) { if (!isInt(v, 1, 1000000) || (i && v <= m[i - 1])) throw new Error("troféus: marcos devem ser inteiros positivos e crescentes"); });
+  return true;
+}
+checkTrophyConfig(TROPHY);
+/* Totais por exercício. Objeto sem protótipo: nomes como "constructor" não colidem. */
+function trophyAll(records) {
+  var out = Object.create(null);
+  (records || []).forEach(function (r) {
+    var t = out[r.ex] || (out[r.ex] = { exercises: 0, series: 0, reps: 0, secs: 0 });
+    t.exercises++; t.series += r.sets;
+    if (r.kind === "r") t.reps += r.sets * r.val; else t.secs += r.sets * r.val;
+  });
+  return out;
+}
+/* Estágio: quantos marcos foram atingidos e qual é o próximo (null se nenhum). */
+function trophyStage(count) {
+  var stage = 0, next = null;
+  TROPHY.marks.forEach(function (m, i) { if (count >= m) stage = i + 1; else if (next === null) next = m; });
+  return { stage: stage, next: next };
+}
+/* Catálogo para exibição futura: um item por exercício pedido, mesmo sem registros (zeros). */
+function trophyCatalog(records, ids) {
+  var all = trophyAll(records);
+  return ids.map(function (id) {
+    var t = all[id] || { exercises: 0, series: 0, reps: 0, secs: 0 }, st = trophyStage(t.exercises);
+    return { id: id, exercises: t.exercises, series: t.series, reps: t.reps, secs: t.secs, stage: st.stage, next: st.next };
+  });
+}
+
 return { PAT: PAT, EXP: EXP, escText: escText, escAttr: escAttr, safeClass: safeClass, safeUrl: safeUrl, cssVal: cssVal, num: num, isInt: isInt,
   dateKey: dateKey, parseDate: parseDate, addDays: addDays, emptyState: emptyState, validateProfile: validateProfile, validateState: validateState,
   makeBackup: makeBackup, parseBackup: parseBackup, setPlan: setPlan, planFor: planFor, isRestDay: isRestDay, levelFor: levelFor, xpLevelOf: xpLevelOf, xpLevelInfo: xpLevelInfo, titleOf: titleOf, levelUpEvents: levelUpEvents, XP_LEVEL: XP_LEVEL, xpNeed: xpNeed, xpStart: xpStart, checkXpConfig: checkXpConfig, applyFeedback: applyFeedback,
   computeStreak: computeStreak, refreshStreak: refreshStreak, dayStatus: dayStatus, nozWeeks: nozWeeks, nozOpened: nozOpened, openNoz: openNoz, levelOf: levelOf, timerStart: timerStart, timerPause: timerPause, timerResume: timerResume, timerTick: timerTick,
   timerSecs: timerSecs, newSession: newSession, syncStatus: syncStatus, completeSet: completeSet, skipExercise: skipExercise, advance: advance,
-  grant: grant, grantExercise: grantExercise, grantSessionBonus: grantSessionBonus, finishSession: finishSession, abandonSession: abandonSession };
+  grant: grant, grantExercise: grantExercise, grantSessionBonus: grantSessionBonus, finishSession: finishSession, abandonSession: abandonSession,
+  TROPHY: TROPHY, checkTrophyConfig: checkTrophyConfig, trophyAll: trophyAll, trophyStage: trophyStage, trophyCatalog: trophyCatalog };
 });

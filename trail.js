@@ -161,6 +161,25 @@ function banner() {
 }
 function onScroll() { if (raf) return; raf = requestAnimationFrame(function () { raf = 0; banner(); }); }
 
+/* Troféus: exercícios concluídos AGORA na trilha, um registro por exercício. Só leitura; nada é gravado. */
+/* Nível de uma seção SEM gravar nada (o congelamento continua sendo feito só pela trilha ao abrir a seção). */
+function levelPeek(ctx, k) {
+  var S = ctx.S, lv = S.trail.lv[k];
+  if (lv !== undefined) return lv;
+  return S.profile ? C.levelFor(S.profile, S.adjust) : 0;
+}
+function trophyRecords(ctx) {
+  var S = ctx.S, out = [];
+  Object.keys(S.trail.ex || {}).forEach(function (key) {
+    var m = S.trail.ex[key], mm = /^s(\d{1,3})u(\d{1,3})$/.exec(key);
+    if (!mm || !m) return;
+    var date = C.addDays(secStart(S, +mm[1]), +mm[2] - 1), i = idxOf(S, date);
+    if (i < 0) return;
+    var u = unitAt(S, i); if (u.key !== key) return;
+    P.build(u.sec, u.n, u.dow, levelPeek(ctx, u.sec)).exercises.forEach(function (e) { if (m[e.id] === true) out.push({ ex: e.id, kind: e.kind, sets: e.sets, val: e.val }); });
+  });
+  return out;
+}
 function mount(el, ctx) {
   var S = ctx.S, tr = ensure(S, ctx.today), ti = Math.max(0, idxOf(S, ctx.today)), last = lastOpen(S, ti), hi = last + PREVIA;
   if (!V || V.start !== tr.start) V = { start: tr.start, lo: Math.max(0, ti - 6), scroll: null };
@@ -312,6 +331,6 @@ function openUnit(ctx, i) {
   $("u-bk").onclick = $("u-bk2").onclick = ctx.back;
 }
 
-T.mount = mount; T.openUnit = openUnit; T.unitAt = unitAt; T.secStart = secStart; T.week = wk; T.idxOf = idxOf;
+T.mount = mount; T.openUnit = openUnit; T.trophyRecords = trophyRecords; T.unitAt = unitAt; T.secStart = secStart; T.week = wk; T.idxOf = idxOf;
 root.CFT = T;
 })(typeof self !== "undefined" ? self : this);
