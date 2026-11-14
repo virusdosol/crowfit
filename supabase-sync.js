@@ -234,6 +234,36 @@ function adoptNozes(S, res) {
   return ch;
 }
 
+/* Caixas mensais: envia cada caixa (grant_my_box, a primeira gravação vence) e registra a abertura (open_my_box).
+   O XP da caixa NÃO vai por aqui: entra pela base do progresso (merge_my_progress), que nunca dobra. */
+var BOX_RE = /^mensal:\d{4}-\d{2}$/;
+function buildBoxes(E, S) {
+  var b = S.boxes || {};
+  var list = Object.keys(b).filter(function (k) { return BOX_RE.test(k) && b[k] && b[k].id === k; }).sort().slice(-50)
+    .map(function (k) { var x = b[k]; return { id: k, grant: { id: k, month: x.month, xp: x.xp, items: (x.items || []).slice(), granted: x.granted }, opened: x.opened !== null }; });
+  return { list: list, sig: hash(JSON.stringify(list.map(function (x) { return [x.id, x.grant, x.opened]; }))) };
+}
+/* Resposta de grant_my_box: se o servidor já tinha a caixa, o conteúdo dele vale (se ainda não foi aberta aqui). */
+function adoptBox(S, res) {
+  if (!res || typeof res.id !== "string" || !BOX_RE.test(res.id) || !S.boxes || !S.boxes[res.id]) return false;
+  var cur = S.boxes[res.id], ch = false;
+  if (res.opened && cur.opened === null) { cur.opened = res.opened_at ? new Date(res.opened_at).toISOString() : new Date().toISOString(); ch = true; }
+  if (cur.opened === null && isInt(res.xp, 0, 1e7) && Array.isArray(res.items) && (cur.xp !== res.xp || JSON.stringify(cur.items) !== JSON.stringify(res.items))) {
+    cur.xp = res.xp; cur.items = res.items.slice(); ch = true;
+  }
+  return ch;
+}
+/* Linhas de user_boxes (RLS) no formato que CF.boxesMerge entende. */
+function adoptRemoteBoxes(rows) {
+  var out = {};
+  (Array.isArray(rows) ? rows : []).forEach(function (r) {
+    if (!r || typeof r.box_id !== "string" || !BOX_RE.test(r.box_id)) return;
+    out[r.box_id] = { id: r.box_id, kind: "mensal", month: r.box_id.slice(7), xp: r.xp, items: Array.isArray(r.items) ? r.items : [],
+      granted: String(r.granted || "").slice(0, 10), opened: r.opened_at ? new Date(r.opened_at).toISOString() : null };
+  });
+  return out;
+}
+
 /* ---------- instância (rede, fila, offline) ---------- */
 function create(envIn) {
   var host = null, deb = 0, retryT = 0, retryN = 0, running = null, again = false, againFull = false, adopting = false, mutCount = 0, cache = null, bound = false;
@@ -296,8 +326,8 @@ function create(envIn) {
       var remote = null, first = full || !meta.seeded, b, ps;
       function plan() { b = buildProgress(E, S0, meta.amounts, today); ps = pendingSessions(E, S0, meta, today); info.skippedSessions = ps.skipped;
         if (b.error) return; sg = hash(JSON.stringify(b.payload)); key = sg + "|" + hash(ps.items.map(function (i) { return i.id + (i.fb ? "f" : ""); }).join(",")); }
-      function v2plan() { var now = new Date().toISOString(), t = buildTrail(E, S0, meta, now), st = buildSettings(E, S0, meta), nz = buildNozes(E, S0);
-        return { trail: t, settings: st, nozes: nz, sig: hash([t.sig, st ? st.sig : "-", nz.sig].join("|")) }; }
+      function v2plan() { var now = new Date().toISOString(), t = buildTrail(E, S0, meta, now), st = buildSettings(E, S0, meta), nz = buildNozes(E, S0), bx = buildBoxes(E, S0);
+        return { trail: t, settings: st, nozes: nz, boxes: bx, sig: hash([t.sig, st ? st.sig : "-", nz.sig, bx.sig].join("|")) }; }
       var v2 = v2plan();
       plan();
       /* conteúdo que o servidor já recusou: não repete sozinho (só no login ou quando o conteúdo mudar) */
@@ -343,6 +373,10 @@ function create(envIn) {
             var nsel = await client.from("user_nozes").select("week_start,xp").eq("user_id", uid).limit(1000); if (!alive()) return;
             if (nsel.error) throw nsel.error;
             v2ch = adoptNozes(S0, nsel.data || []) || v2ch;
+            var bsel = await client.from("user_boxes").select("box_id,month,xp,items,granted,opened_at").eq("user_id", uid).limit(100); if (!alive()) return;
+            if (bsel.error) throw bsel.error;
+            var rbx = adoptRemoteBoxes(bsel.data || []);
+            if (Object.keys(rbx).length && E.CF.boxesMerge(S0, rbx)) v2ch = true;
           }
           var rt = await client.rpc("merge_my_trail", { p: v2.trail.payload }); if (!alive()) return;
           if (rt.error) throw rt.error;
@@ -361,6 +395,20 @@ function create(envIn) {
             var rn = await client.rpc("merge_my_nozes", { p: v2.nozes.list }); if (!alive()) return;
             if (rn.error) throw rn.error;
             v2ch = adoptNozes(S0, rn.data) || v2ch;
+          }
+          for (var bi = 0; bi < v2.boxes.list.length; bi++) {
+            var bxi = v2.boxes.list[bi];
+            var gr = await client.rpc("grant_my_box", { p: bxi.grant }); if (!alive()) return;
+            if (gr.error) throw gr.error;
+            if (adoptBox(S0, gr.data)) v2ch = true;
+            if (bxi.opened) {
+              meta.boxSent = meta.boxSent || {};
+              if (!meta.boxSent[bxi.id]) {
+                var orr = await client.rpc("open_my_box", { p: { id: bxi.id } }); if (!alive()) return;
+                if (orr.error) throw orr.error;
+                meta.boxSent[bxi.id] = 1; saveMeta(uid, meta);
+              }
+            }
           }
           meta.v2blocked = ""; v2ok = true;
         } catch (e2) {
@@ -444,5 +492,5 @@ function create(envIn) {
 var instance = typeof root.document !== "undefined" || typeof root.CF !== "undefined" ? create(null) : null;
 return { instance: instance, create: create, buildProgress: buildProgress, amountFor: amountFor, toRemoteSession: toRemoteSession, pendingSessions: pendingSessions,
   adoptProgress: adoptProgress, adoptSessions: adoptSessions, fromRemoteSession: fromRemoteSession,
-  buildTrail: buildTrail, adoptTrail: adoptTrail, buildSettings: buildSettings, adoptSettings: adoptSettings, buildNozes: buildNozes, adoptNozes: adoptNozes };
+  buildTrail: buildTrail, adoptTrail: adoptTrail, buildSettings: buildSettings, adoptSettings: adoptSettings, buildNozes: buildNozes, adoptNozes: adoptNozes, buildBoxes: buildBoxes, adoptBox: adoptBox, adoptRemoteBoxes: adoptRemoteBoxes };
 });

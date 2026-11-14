@@ -21,7 +21,7 @@ const sum = (o) => Object.values(o).reduce((a, b) => a + b, 0);
 function makeServer(init) {
   return Object.assign({
     progress: { base_points: 0, points: 0, rewards: {}, done_dates: [], best_streak: 0, last_workout_date: null, plan_history: [], revision: 0 },
-    trail: { start: null, levels: {}, ex: {} }, settings: null, nozes: {}, sessions: 0,
+    trail: { start: null, levels: {}, ex: {} }, settings: null, nozes: {}, boxes: {}, sessions: 0,
   }, init || {});
 }
 function serverClient(db, hooks) {
@@ -30,6 +30,7 @@ function serverClient(db, hooks) {
   function rows(t) {
     if (t === "training_settings") return db.settings ? [{ exp: db.settings.exp, dias: db.settings.dias, adjust: db.settings.adjust, easy_streak: db.settings.easy_streak, settings_at: db.settings.at }] : [];
     if (t === "user_nozes") return Object.keys(db.nozes).map((k) => ({ week_start: k, xp: db.nozes[k] }));
+    if (t === "user_boxes") return Object.keys(db.boxes).map((k) => Object.assign({ box_id: k }, db.boxes[k]));
     return [];
   }
   function builder(t) {
@@ -76,6 +77,20 @@ function serverClient(db, hooks) {
       if (name === "merge_my_nozes") {
         p.forEach((r) => { if (db.nozes[r.week_start] === undefined) db.nozes[r.week_start] = r.xp; });
         return { data: Object.keys(db.nozes).sort().map((k) => ({ week_start: k, xp: db.nozes[k] })), error: null };
+      }
+      if (name === "grant_my_box") {
+        const id = p.id, cur = db.boxes[id];
+        if (cur) return { data: { id, xp: cur.xp, items: cur.items, granted: cur.granted, opened: cur.opened_at !== null, opened_at: cur.opened_at }, error: null };
+        const L = CF.levelOf(db.progress.points), lo = 30 * L, hi = 90 * L;
+        if (!Number.isInteger(p.xp) || p.xp < lo || p.xp > hi) return { data: null, error: { message: "invalid_xp" } };
+        db.boxes[id] = { month: p.month, xp: p.xp, items: p.items.slice(), granted: p.granted, opened_at: null };
+        return { data: { id, xp: p.xp, items: p.items, granted: p.granted, opened: false, opened_at: null }, error: null };
+      }
+      if (name === "open_my_box") {
+        const cur = db.boxes[p.id];
+        if (!cur) return { data: null, error: { message: "box_not_granted" } };
+        if (cur.opened_at === null) { cur.opened_at = new Date().toISOString(); return { data: { id: p.id, already: false, opened_at: cur.opened_at }, error: null }; }
+        return { data: { id: p.id, already: true, opened_at: cur.opened_at }, error: null };
       }
       return { data: null, error: { message: "function " + name + " does not exist" } };
     },
