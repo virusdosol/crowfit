@@ -374,11 +374,12 @@
       try { if (sectionsFn) sectionsFn(screen, host, api); } catch (e) { host.textContent = MSG.generic; reportErr(e); }
       if (focus) { var th = panel.querySelector('.cf-title'); if (th) th.focus(); }
     } else if (mode === 'profile') {
-      panel.querySelector('[data-name]').textContent = state.profile.displayName; /* sempre via textContent */
+      /* Visão geral (extrasFn) não tem estes campos: cada atribuição é protegida pela existência do elemento. */
+      var nmEl = panel.querySelector('[data-name]'); if (nmEl) nmEl.textContent = state.profile.displayName; /* sempre via textContent */
       var s = readStats();
       if (s) {
-        panel.querySelector('[data-level]').textContent = String(s.level);
-        panel.querySelector('[data-xp]').textContent = String(s.points);
+        var lvEl = panel.querySelector('[data-level]'); if (lvEl) lvEl.textContent = String(s.level);
+        var xpEl = panel.querySelector('[data-xp]'); if (xpEl) xpEl.textContent = String(s.points);
       }
       if (focus) { var t = panel.querySelector('.cf-title'); if (t) t.focus(); }
     } else {
