@@ -482,7 +482,7 @@ if(window.CrowfitProfile){
  CrowfitProfile.setOnClose(function(){if(homeStale&&S&&S.profile){homeStale=false;renderHome()}})}
 /* Sincronização (supabase-sync.js): só lê/grava a conta ativa; respostas atrasadas de outra conta são descartadas pela geração (gen). */
 if(window.CFSync)CFSync.attach({state:function(){return S&&curUid&&!blocked?{S:S,uid:curUid,gen:gen}:null},save:save,today:today,
- changed:function(){if($("t-path"))renderHome()},
+ changed:function(){if(S&&!S.profile&&ob&&window.CFSync&&CFSync.remoteSettings){var rs=CFSync.remoteSettings();if(rs){if(ob.d.exp===undefined)ob.d.exp=rs.exp;if(ob.d.dias===undefined)ob.d.dias=String(rs.dias);if(ob.started&&QS[ob.step]&&QS[ob.step].type==="chips")renderOb()}}if($("t-path"))renderHome()},
  status:function(s){if(s&&s.state==="error"){say("Sincronização: "+s.message);banner("Sincronização: "+s.message)}}});
 if(window.CrowfitAuth){CrowfitAuth.onChange(boot);CrowfitAuth.init().then(function(){boot(CrowfitAuth.getState())})}
 else view('<div class="hero"><h1>Não foi possível iniciar</h1><p>O módulo de acesso não carregou. Recarregue a página.</p></div>');

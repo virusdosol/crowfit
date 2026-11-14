@@ -178,9 +178,13 @@ function buildTrail(E, S, meta, now) {
 }
 function adoptTrail(E, S, meta, res) {
   var ch = false, tr = S.trail; if (!tr || typeof tr !== "object") return false;
-  if (!tr.start && res && DATE_RE.test(res.start || "")) { tr.start = res.start; ch = true; }
+  /* aparelho sem nenhuma marca local (início automático de hoje, níveis calculados pelo perfil local):
+     o que a conta já tem prevalece. Não há progresso local a perder. */
+  var fresh = Object.keys(tr.ex || {}).length === 0;
+  if ((!tr.start || (fresh && tr.start !== res.start)) && res && DATE_RE.test(res.start || "")) { if (tr.start !== res.start) { tr.start = res.start; ch = true; } }
   if (res && res.levels && typeof res.levels === "object") Object.keys(res.levels).forEach(function (k) {
-    if (/^\d{1,3}$/.test(k) && isInt(res.levels[k], 0, 2) && tr.lv[k] === undefined) { tr.lv[k] = res.levels[k]; ch = true; }
+    if (!/^\d{1,3}$/.test(k) || !isInt(res.levels[k], 0, 2)) return;
+    if (tr.lv[k] === undefined || (fresh && tr.lv[k] !== res.levels[k])) { tr.lv[k] = res.levels[k]; ch = true; }
   });
   ((res && Array.isArray(res.exercises)) ? res.exercises : []).forEach(function (r) {
     if (!r || !TRAIL_UNIT.test(r.unit) || !EX_ID.test(r.ex) || typeof r.done !== "boolean" || typeof r.at !== "string") return;
@@ -199,10 +203,12 @@ function buildSettings(E, S, meta) {
   var adj = isInt(S.adjust, -1, 1) ? S.adjust : 0, easy = isInt(S.easyStreak, 0, 10) ? S.easyStreak : 0;
   var sig = hash(JSON.stringify([p.exp, p.dias, adj, easy]));
   if (meta.setSig && meta.setSig !== sig) meta.setAt = new Date().toISOString();   /* mudança local: marca o momento */
+  else if (!meta.setSig) meta.setAt = new Date().toISOString();   /* perfil local que nunca sincronizou: prevalece (não há horário confiável para comparar) */
   meta.setSig = sig;
   return { exp: p.exp, dias: p.dias, adjust: adj, easy_streak: easy, at: meta.setAt || EPOCH, sig: sig };
 }
 function adoptSettings(E, S, meta, res) {
+  if (res && typeof res.at === "string") meta.remoteSettings = { exp: res.exp, dias: res.dias, adjust: res.adjust, easy_streak: res.easy_streak, at: res.at };
   if (!res || typeof res.at !== "string" || res.at <= (meta.setAt || EPOCH)) return false;
   var p = S.profile; if (!p || E.CF.EXP.indexOf(res.exp) < 0 || !isInt(res.dias, 3, 6)) return false;
   var adj = isInt(res.adjust, -1, 1) ? res.adjust : 0, easy = isInt(res.easy_streak, 0, 10) ? res.easy_streak : 0;
@@ -251,6 +257,7 @@ function create(envIn) {
     if (!m.exState || typeof m.exState !== "object") m.exState = {};
     m.setSig = typeof m.setSig === "string" ? m.setSig : ""; m.setAt = typeof m.setAt === "string" ? m.setAt : "";
     m.v2sig = typeof m.v2sig === "string" ? m.v2sig : ""; m.v2blocked = typeof m.v2blocked === "string" ? m.v2blocked : "";
+    if (!m.remoteSettings || typeof m.remoteSettings !== "object") m.remoteSettings = null;
     cache = { uid: uid, meta: m }; return m;
   }
   function saveMeta(uid, m) { try { var ls = env().LS(); if (ls) ls.setItem(META_NS + uid, JSON.stringify(m)); } catch (e) { /* sem espaço: a sincronização continua, só perde o cache */ } }
@@ -323,6 +330,18 @@ function create(envIn) {
       var v2ch = false, v2ok = false;
       if (v2need && v2.trail.payload && meta.v2blocked !== v2.sig) {
         try {
+          if (first) {   /* recuperação de outro aparelho: leitura direta (RLS) de configurações e nozes */
+            var rsel = await client.from("training_settings").select("exp,dias,adjust,easy_streak,settings_at").eq("user_id", uid).maybeSingle(); if (!alive()) return;
+            if (rsel.error) throw rsel.error;
+            if (rsel.data && rsel.data.settings_at) {
+              var rr = { exp: rsel.data.exp, dias: rsel.data.dias, adjust: rsel.data.adjust, easy_streak: rsel.data.easy_streak, at: new Date(rsel.data.settings_at).toISOString() };
+              var before = JSON.stringify(meta.remoteSettings); meta.remoteSettings = rr;
+              if (before !== JSON.stringify(meta.remoteSettings)) v2ch = true;
+            }
+            var nsel = await client.from("user_nozes").select("week_start,xp").eq("user_id", uid).limit(1000); if (!alive()) return;
+            if (nsel.error) throw nsel.error;
+            v2ch = adoptNozes(S0, nsel.data || []) || v2ch;
+          }
           var rt = await client.rpc("merge_my_trail", { p: v2.trail.payload }); if (!alive()) return;
           if (rt.error) throw rt.error;
           v2.trail.items.forEach(function (x) { meta.exState[x.key] = { d: x.done, at: x.at }; });
@@ -332,7 +351,9 @@ function create(envIn) {
           if (v2.settings && !v2.settings.error) {
             var rs = await client.rpc("merge_my_settings", { p: { exp: v2.settings.exp, dias: v2.settings.dias, adjust: v2.settings.adjust, easy_streak: v2.settings.easy_streak, at: v2.settings.at } }); if (!alive()) return;
             if (rs.error) throw rs.error;
+            var rsBefore = JSON.stringify(meta.remoteSettings);
             v2ch = adoptSettings(E, S0, meta, rs.data) || v2ch;
+            if (JSON.stringify(meta.remoteSettings) !== rsBefore) v2ch = true;
           }
           if (v2.nozes.list.length) {
             var rn = await client.rpc("merge_my_nozes", { p: v2.nozes.list }); if (!alive()) return;
@@ -413,7 +434,8 @@ function create(envIn) {
     return { ok: true };
   }
 
-  return { attach: attach, notify: notify, reset: reset, status: function () { return { state: info.state, message: info.message, pending: info.pending, last: info.last, skippedSessions: info.skippedSessions }; },
+  return { attach: attach, notify: notify, reset: reset,
+    remoteSettings: function () { var c = host && host.state && host.state(); return c ? (loadMeta(c.uid).remoteSettings || null) : null; }, status: function () { return { state: info.state, message: info.message, pending: info.pending, last: info.last, skippedSessions: info.skippedSessions }; },
     achievements: function () { return remoteAch.slice(); }, unlockAchievements: unlockAchievements, _run: function (full) { return run("test", !!full); }, _waitIdle: function () { return running || Promise.resolve(); } };
 }
 
