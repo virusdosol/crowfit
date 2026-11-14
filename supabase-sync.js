@@ -1,5 +1,7 @@
 /* Crowfit: sincronização do progresso com o Supabase (RPCs de supabase-sync.sql).
-   Contrato: merge_my_progress, upsert_my_sessions, unlock_my_achievements. Leitura só por SELECT (RLS).
+   Contrato: merge_my_progress, upsert_my_sessions, unlock_my_achievements (v1) e merge_my_trail,
+   merge_my_settings, merge_my_nozes (v2, de supabase-sync-v2.sql). Leitura só por SELECT (RLS).
+   Dados v2 (trilha, configurações, nozes) têm assinatura própria (v2sig) e falhas isoladas: nunca travam o progresso.
    - Usa o cliente já criado por auth.js (CrowfitAuth.getClient()). Nunca cria outro cliente e nunca usa chave administrativa.
    - Toda escrita remota passa pelas RPCs; o servidor usa auth.uid(), então nenhum UID é enviado.
    - O app abre e funciona sem rede: este módulo nunca bloqueia a interface e nunca apaga dado local.
@@ -147,6 +149,85 @@ function adoptSessions(E, S, remote, meta) {
   return ch;
 }
 
+/* ---------- v2: trilha, configurações e nozes ---------- */
+var TRAIL_UNIT = /^s\d{1,3}u\d{1,3}$/, EX_ID = /^[a-z0-9_]{1,24}$/, EPOCH = "2020-01-01T00:00:00.000Z", MISSING_RE = /could not find the function|does not exist|PGRST202|42883/i;
+var V2_SIG_KEY = "v2";
+
+/* Trilha: início, níveis e diferenças de exercícios desde o último envio bem-sucedido.
+   meta.exState[unidade|exercício] = { d: marcado?, at: última mudança conhecida (ISO) }. */
+function buildTrail(E, S, meta, now) {
+  var tr = S.trail || {}, lim = E.CF.addDays(now.slice(0, 10), 1);
+  var start = DATE_RE.test(tr.start || "") && tr.start >= MIN_DATE && tr.start <= lim ? tr.start : null;
+  var lv = {}; Object.keys(tr.lv || {}).forEach(function (k) { if (/^\d{1,3}$/.test(k) && isInt(tr.lv[k], 0, 2)) lv[k] = tr.lv[k]; });
+  var items = [], seen = {}, ex = meta.exState;
+  Object.keys(tr.ex || {}).forEach(function (u) {
+    if (!TRAIL_UNIT.test(u) || !tr.ex[u] || typeof tr.ex[u] !== "object") return;
+    Object.keys(tr.ex[u]).forEach(function (id) {
+      if (!EX_ID.test(id) || tr.ex[u][id] !== true) return;
+      var key = u + "|" + id; seen[key] = 1;
+      if (!ex[key] || ex[key].d !== true) items.push({ unit: u, ex: id, done: true, at: now, key: key });
+    });
+  });
+  Object.keys(ex).forEach(function (key) {
+    if (ex[key] && ex[key].d === true && !seen[key]) { var c = key.split("|"); items.push({ unit: c[0], ex: c[1], done: false, at: now, key: key }); }
+  });
+  var sendNow = items.slice(0, 500), rest = items.length - sendNow.length;
+  var st = JSON.stringify({ start: start, lv: lv, ex: tr.ex || {} });
+  return { start: start, levels: lv, items: sendNow, rest: rest, sig: hash(st),
+    payload: { start: start, levels: lv, exercises: sendNow.map(function (x) { return { unit: x.unit, ex: x.ex, done: x.done, at: x.at }; }) } };
+}
+function adoptTrail(E, S, meta, res) {
+  var ch = false, tr = S.trail; if (!tr || typeof tr !== "object") return false;
+  if (!tr.start && res && DATE_RE.test(res.start || "")) { tr.start = res.start; ch = true; }
+  if (res && res.levels && typeof res.levels === "object") Object.keys(res.levels).forEach(function (k) {
+    if (/^\d{1,3}$/.test(k) && isInt(res.levels[k], 0, 2) && tr.lv[k] === undefined) { tr.lv[k] = res.levels[k]; ch = true; }
+  });
+  ((res && Array.isArray(res.exercises)) ? res.exercises : []).forEach(function (r) {
+    if (!r || !TRAIL_UNIT.test(r.unit) || !EX_ID.test(r.ex) || typeof r.done !== "boolean" || typeof r.at !== "string") return;
+    var key = r.unit + "|" + r.ex, loc = meta.exState[key];
+    if (loc && loc.at >= r.at) return;            /* o local já é igual ou mais recente */
+    meta.exState[key] = { d: r.done, at: r.at };
+    if (r.done) { tr.ex[r.unit] = tr.ex[r.unit] || {}; if (tr.ex[r.unit][r.ex] !== true) { tr.ex[r.unit][r.ex] = true; ch = true; } }
+    else if (tr.ex[r.unit] && tr.ex[r.unit][r.ex]) { delete tr.ex[r.unit][r.ex]; if (!Object.keys(tr.ex[r.unit]).length) delete tr.ex[r.unit]; ch = true; }
+  });
+  return ch;
+}
+
+/* Configurações sincronizáveis: experiência, dias, ajuste e sequência de feedback fácil. Nunca idade, peso ou altura. */
+function buildSettings(E, S, meta) {
+  var p = S.profile; if (!p || E.CF.EXP.indexOf(p.exp) < 0 || !isInt(p.dias, 3, 6)) return null;
+  var adj = isInt(S.adjust, -1, 1) ? S.adjust : 0, easy = isInt(S.easyStreak, 0, 10) ? S.easyStreak : 0;
+  var sig = hash(JSON.stringify([p.exp, p.dias, adj, easy]));
+  if (meta.setSig && meta.setSig !== sig) meta.setAt = new Date().toISOString();   /* mudança local: marca o momento */
+  meta.setSig = sig;
+  return { exp: p.exp, dias: p.dias, adjust: adj, easy_streak: easy, at: meta.setAt || EPOCH, sig: sig };
+}
+function adoptSettings(E, S, meta, res) {
+  if (!res || typeof res.at !== "string" || res.at <= (meta.setAt || EPOCH)) return false;
+  var p = S.profile; if (!p || E.CF.EXP.indexOf(res.exp) < 0 || !isInt(res.dias, 3, 6)) return false;
+  var adj = isInt(res.adjust, -1, 1) ? res.adjust : 0, easy = isInt(res.easy_streak, 0, 10) ? res.easy_streak : 0;
+  var ch = p.exp !== res.exp || p.dias !== res.dias || S.adjust !== adj || S.easyStreak !== easy;
+  p.exp = res.exp; p.dias = res.dias; S.adjust = adj; S.easyStreak = easy;
+  meta.setAt = res.at; meta.setSig = hash(JSON.stringify([p.exp, p.dias, adj, easy]));
+  return ch;
+}
+
+/* Nozes abertas: semanas (sábados) com XP. Só registro: o XP já vai em base_points pelo progresso. */
+function buildNozes(E, S) {
+  var n = S.nozes || {};
+  var list = Object.keys(n).filter(function (k) {
+    return DATE_RE.test(k) && k >= MIN_DATE && isInt(n[k], 1, 1e7) && E.CF.parseDate(k).getDay() === 6;
+  }).sort().slice(-200).map(function (k) { return { week_start: k, xp: n[k] }; });
+  return { list: list, sig: hash(JSON.stringify(list)) };
+}
+function adoptNozes(S, res) {
+  var ch = false; S.nozes = S.nozes || {};
+  (Array.isArray(res) ? res : []).forEach(function (r) {
+    if (r && DATE_RE.test(r.week_start) && isInt(r.xp, 1, 1e7) && !isInt(S.nozes[r.week_start], 1, 1e7)) { S.nozes[r.week_start] = r.xp; ch = true; }
+  });
+  return ch;
+}
+
 /* ---------- instância (rede, fila, offline) ---------- */
 function create(envIn) {
   var host = null, deb = 0, retryT = 0, retryN = 0, running = null, again = false, againFull = false, adopting = false, mutCount = 0, cache = null, bound = false;
@@ -167,6 +248,9 @@ function create(envIn) {
     if (!m || typeof m !== "object" || m.v !== 1) m = { v: 1 };
     m.sig = typeof m.sig === "string" ? m.sig : ""; m.blocked = typeof m.blocked === "string" ? m.blocked : ""; m.pending = !!m.pending; m.seeded = !!m.seeded; m.last = typeof m.last === "string" ? m.last : "";
     if (!m.amounts || typeof m.amounts !== "object") m.amounts = {}; if (!m.sess || typeof m.sess !== "object") m.sess = {};
+    if (!m.exState || typeof m.exState !== "object") m.exState = {};
+    m.setSig = typeof m.setSig === "string" ? m.setSig : ""; m.setAt = typeof m.setAt === "string" ? m.setAt : "";
+    m.v2sig = typeof m.v2sig === "string" ? m.v2sig : ""; m.v2blocked = typeof m.v2blocked === "string" ? m.v2blocked : "";
     cache = { uid: uid, meta: m }; return m;
   }
   function saveMeta(uid, m) { try { var ls = env().LS(); if (ls) ls.setItem(META_NS + uid, JSON.stringify(m)); } catch (e) { /* sem espaço: a sincronização continua, só perde o cache */ } }
@@ -205,6 +289,9 @@ function create(envIn) {
       var remote = null, first = full || !meta.seeded, b, ps;
       function plan() { b = buildProgress(E, S0, meta.amounts, today); ps = pendingSessions(E, S0, meta, today); info.skippedSessions = ps.skipped;
         if (b.error) return; sg = hash(JSON.stringify(b.payload)); key = sg + "|" + hash(ps.items.map(function (i) { return i.id + (i.fb ? "f" : ""); }).join(",")); }
+      function v2plan() { var now = new Date().toISOString(), t = buildTrail(E, S0, meta, now), st = buildSettings(E, S0, meta), nz = buildNozes(E, S0);
+        return { trail: t, settings: st, nozes: nz, sig: hash([t.sig, st ? st.sig : "-", nz.sig].join("|")) }; }
+      var v2 = v2plan();
       plan();
       /* conteúdo que o servidor já recusou: não repete sozinho (só no login ou quando o conteúdo mudar) */
       if (!full && !b.error && meta.blocked && meta.blocked === key) { emit("error", "O servidor recusou estes dados antes. Eles continuam salvos neste aparelho."); return; }
@@ -218,6 +305,7 @@ function create(envIn) {
       }
       if (b.error) { meta.pending = true; info.pending = true; saveMeta(uid, meta); emit("error", b.message); return; }
       var need = first || sg !== meta.sig;
+      var v2need = first || v2.sig !== meta.v2sig;
       var mut0 = mutCount, points0 = S0.points, row = null;
       if (need) {
         if (!sameUser()) return;
@@ -232,17 +320,47 @@ function create(envIn) {
         if (r2.error) throw r2.error;
         part.forEach(function (x) { meta.sess[x.id] = x.fb ? 1 : 0; }); saveMeta(uid, meta);
       }
+      var v2ch = false, v2ok = false;
+      if (v2need && v2.trail.payload && meta.v2blocked !== v2.sig) {
+        try {
+          var rt = await client.rpc("merge_my_trail", { p: v2.trail.payload }); if (!alive()) return;
+          if (rt.error) throw rt.error;
+          v2.trail.items.forEach(function (x) { meta.exState[x.key] = { d: x.done, at: x.at }; });
+          if (v2.trail.rest) meta.v2sig = "";            /* ainda restam diferenças: a próxima rodada envia */
+          var trRes = rt.data && typeof rt.data === "object" ? rt.data : null;
+          if (trRes) v2ch = adoptTrail(E, S0, meta, trRes) || v2ch;
+          if (v2.settings && !v2.settings.error) {
+            var rs = await client.rpc("merge_my_settings", { p: { exp: v2.settings.exp, dias: v2.settings.dias, adjust: v2.settings.adjust, easy_streak: v2.settings.easy_streak, at: v2.settings.at } }); if (!alive()) return;
+            if (rs.error) throw rs.error;
+            v2ch = adoptSettings(E, S0, meta, rs.data) || v2ch;
+          }
+          if (v2.nozes.list.length) {
+            var rn = await client.rpc("merge_my_nozes", { p: v2.nozes.list }); if (!alive()) return;
+            if (rn.error) throw rn.error;
+            v2ch = adoptNozes(S0, rn.data) || v2ch;
+          }
+          meta.v2blocked = ""; v2ok = true;
+        } catch (e2) {
+          var k2 = classify(e2);
+          if (k2.kind === "net" || k2.kind === "auth") throw e2;   /* sem rede / sem sessão: mesma tratativa do progresso */
+          if (MISSING_RE.test(String(e2 && (e2.message || e2)))) meta.v2sig = "";   /* migração v2 ainda não aplicada: tenta de novo depois, sem bloquear o resto */
+          else meta.v2blocked = v2.sig;                                              /* recusa de dados: não repete sozinho */
+        }
+      }
       if (!alive()) return;
       adopting = true;
       try {
         var ch = false;
         if (row) ch = adoptProgress(E, S0, row, points0, meta, today) || ch;
         if (remote) ch = adoptSessions(E, S0, remote.sessions, meta) || ch;
+        ch = ch || v2ch;
         if (ch && !h.save()) throw new Error("falha_ao_salvar_localmente");
         if (ch && typeof h.changed === "function") { try { h.changed(); } catch (e) {} }
       } finally { adopting = false; }
       var after = buildProgress(E, S0, meta.amounts, today);
       meta.sig = (mutCount === mut0 && !after.error) ? hash(JSON.stringify(after.payload)) : sg; /* se o usuário mexeu durante a chamada, a próxima rodada reenvia */
+      var v2after = v2plan();
+      if (v2ok) meta.v2sig = (mutCount === mut0 && !v2after.trail.rest) ? v2after.sig : "";  /* enviado com sucesso: assinatura v2 atualizada (se ainda há mudança, a próxima rodada envia) */
       if (first) meta.seeded = true;
       meta.pending = mutCount !== mut0; meta.blocked = ""; meta.last = new Date().toISOString(); info.pending = meta.pending; info.last = meta.last; retryN = 0;
       saveMeta(uid, meta); emit("ok", "");
@@ -301,5 +419,6 @@ function create(envIn) {
 
 var instance = typeof root.document !== "undefined" || typeof root.CF !== "undefined" ? create(null) : null;
 return { instance: instance, create: create, buildProgress: buildProgress, amountFor: amountFor, toRemoteSession: toRemoteSession, pendingSessions: pendingSessions,
-  adoptProgress: adoptProgress, adoptSessions: adoptSessions, fromRemoteSession: fromRemoteSession };
+  adoptProgress: adoptProgress, adoptSessions: adoptSessions, fromRemoteSession: fromRemoteSession,
+  buildTrail: buildTrail, adoptTrail: adoptTrail, buildSettings: buildSettings, adoptSettings: adoptSettings, buildNozes: buildNozes, adoptNozes: adoptNozes };
 });
