@@ -11,9 +11,10 @@ var I = {
   // noz descascada: casca aberta com a semente à mostra
   noz: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M12 2.8c-4.6 0-7.6 3.6-7.6 8.2 0 3.9 2.3 6.9 4.7 8.4.8.5 1.6.5 2.3 0 .5-.3 1-.3 1.5 0 .7.5 1.5.5 2.3 0 2.4-1.5 4.8-4.5 4.8-8.4 0-4.6-3-8.2-7.9-8.2z"/><path d="M8.6 9.2c1.3 1.1 1.4 3.6.2 5.2M15.4 9.2c-1.3 1.1-1.4 3.6-.2 5.2"/></svg>',
   trophy: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/><path d="M12 14v4M8 20h8M9 18h6"/></svg>',
+  users: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.4 3.2-5.5 6.5-5.5s5.9 2.1 6.5 5.5"/><circle cx="17" cy="9" r="2.6"/><path d="M17.5 14.6c2.3.3 3.8 2 4.2 4.4"/></svg>',
   crow: '<img src="mascot.png" alt="Crow">'
 };
-var TABS = [["home", "home", "Trilha"], ["ach", "medal", "Conquistas"], ["app", "grid", "Aparências"], ["noz", "noz", "Nozes"]];
+var TABS = [["home", "home", "Trilha"], ["ach", "medal", "Conquistas"], ["app", "grid", "Aparências"], ["noz", "noz", "Nozes"], ["amigos", "users", "Amigos"]];
 var CROW = {
   vazio_ach: "Nenhuma conquista ainda. Não é pra olhar, é pra fazer.",
   vazio_tro: "Nenhum troféu. Treinar também é uma opção.",
@@ -72,12 +73,14 @@ function openPage(kind) {
   doc.body.appendChild(el);
   curPage = { kind: kind, el: el };
   el.querySelector("[data-full-close]").addEventListener("click", function () { if (typeof root.renderHome === "function") root.renderHome(); closePage(); });
-  renderPage();
+  if (kind === "amigos") { if (root.CrowAmigos) root.CrowAmigos.mount(el.querySelector(".cw-pagebody")); }
+  else renderPage();
   syncBar();
 }
 function renderPage() {
   if (!curPage || !S()) return;
   var k = curPage.kind, body = curPage.el.querySelector(".cw-pagebody");
+  if (k === "amigos") return; /* página de amigos cuida do próprio conteúdo (busca no servidor) */
   var html = k === "ach" ? pageAch() : k === "app" ? pageApp() : k === "tro" ? pageTro() : k === "noz" ? pageNoz() : pageLevel();
   body.innerHTML = html;
   if (sel && sel.kind === "app") detailApp(sel.id);

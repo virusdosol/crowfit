@@ -132,6 +132,8 @@ Para executar uma instalação própria com autenticação e sincronização:
 
 **XP no servidor:** todo o XP é concedido e registrado pelo servidor, numa única tabela de concessões (`xp_ledger`). O total é o saldo inicial congelado mais a soma dessas concessões. As fontes são: unidades da trilha (ao sincronizar), sessões livres (ao salvar), noz semanal (ao abrir) e Avelã, a caixa mensal (na primeira abertura). Valores de XP enviados pelo aplicativo não são aceitos; o aplicativo recebe o total do servidor. `cf_xp_reconcile()` confere se o total bate com o registro.
 
+**Amigos:** cada jogador escolhe um ID único (3 a 20 caracteres: letras minúsculas, números e _). Por ele, é possível pedir amizade. O amigo vê ID, nome, nível e XP total. A página fica no ícone de pessoas da barra inferior. As regras estão em `supabase-amigos-v8.sql`.
+
 O dia da semana de cada treino é o mesmo para todos os usuários: domingo ombros, segunda peito, terça braços, quarta abdômen, quinta pernas, sexta costas e sábado recuperação.
 
 **Segurança:** a chave publicável pode estar no frontend. Nunca exponha `service_role`, senhas ou segredos OAuth no código do aplicativo.
