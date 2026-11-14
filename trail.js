@@ -159,6 +159,8 @@ function pickIndex(items, line) {
 }
 function banner() {
   var ban = $("t-ban"); if (!ban) return;
+  /* A barra fica logo abaixo do cabeçalho fixo (.cw-sticky), que tem z-index maior e cobria a barra. */
+  var hdr = document.querySelector(".cw-sticky"); ban.style.top = ((hdr ? hdr.getBoundingClientRect().bottom : 0) + 8) + "px";
   var nodes = document.querySelectorAll(".tn"), line = ban.getBoundingClientRect().bottom + 8;
   var items = [];
   for (var j = 0; j < nodes.length; j++) items.push({ bottom: nodes[j].getBoundingClientRect().bottom, hasUnit: nodes[j].hasAttribute("data-n"), node: nodes[j] });
