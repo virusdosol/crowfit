@@ -413,6 +413,16 @@
     updateDisplayName: updateDisplayName,
     validateName: validateName,
     open: openPanel,
+    /* Engrenagem: abre direto no menu de configurações (sem passar pela tela de perfil, que mostra nome e e-mail). */
+    openSettings: function (from) {
+      if (!Auth.getState().user) return;
+      ensurePanel();
+      opener = from && from.nodeType === 1 ? from : null;
+      panelOpen = true; screen = 'settings'; draft = null; uiMsg = null;
+      panel.hidden = false;
+      reapplyInert();
+      renderPanel(true);
+    },
     setStats: function (fn) { statsFn = typeof fn === 'function' ? fn : null; },
     /* fn(nome, elementoHospedeiro, api) desenha as categorias "train" e "data". */
     setSections: function (fn) { sectionsFn = typeof fn === 'function' ? fn : null; },

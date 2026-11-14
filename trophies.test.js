@@ -61,3 +61,17 @@ describe("marcos e catálogo", () => {
     assert.equal(cat[1].stage, 0);
   });
 });
+
+describe("contador de troféus (marcos atingidos)", () => {
+  test("zero sem registros", () => assert.equal(CF.trophyCount([]), 0));
+  test("soma os marcos atingidos por exercício", () => {
+    const M = CF.TROPHY.marks;
+    const recs = [];
+    for (let i = 0; i < M[1]; i++) recs.push({ ex: "flexao", kind: "r", sets: 1, val: 10 }); /* 25 = estágio 2 */
+    for (let i = 0; i < M[0]; i++) recs.push({ ex: "marcha", kind: "s", sets: 1, val: 60 }); /* 5 = estágio 1 */
+    assert.equal(CF.trophyCount(recs), 3);
+  });
+  test("abaixo do primeiro marco não conta", () => {
+    assert.equal(CF.trophyCount([{ ex: "flexao", kind: "r", sets: 1, val: 10 }]), 0);
+  });
+});

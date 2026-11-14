@@ -369,6 +369,12 @@ function trophyAll(records) {
   });
   return out;
 }
+/* Troféus conquistados = marcos atingidos somados entre todos os exercícios. */
+function trophyCount(records) {
+  var all = trophyAll(records), n = 0;
+  Object.keys(all).forEach(function (id) { n += trophyStage(all[id].exercises).stage; });
+  return n;
+}
 /* Estágio: quantos marcos foram atingidos e qual é o próximo (null se nenhum). */
 function trophyStage(count) {
   var stage = 0, next = null;
@@ -491,12 +497,29 @@ function achAck(S, ids) {
   S.achPending = (S.achPending || []).filter(function (id) { return (ids || []).indexOf(id) < 0; });
   return before - S.achPending.length;
 }
+/* Menu do Crow: conquistas mais recentes e troféus com mais marcos (funções puras). */
+function achTop(S, n) {
+  var got = S.achievements || {}, out = [];
+  ACH.forEach(function (a) {
+    if (Object.prototype.hasOwnProperty.call(got, a.id)) out.push({ id: a.id, name: a.name, at: got[a.id].at, day: got[a.id].day });
+  });
+  out.sort(function (x, y) { return x.at < y.at ? 1 : x.at > y.at ? -1 : 0; });
+  return out.slice(0, n);
+}
+function trophyTop(records, names, n) {
+  var all = trophyAll(records), out = [];
+  Object.keys(all).forEach(function (id) {
+    if (all[id].exercises > 0) out.push({ id: id, name: (names && names[id]) || id, count: all[id].exercises, stage: trophyStage(all[id].exercises).stage });
+  });
+  out.sort(function (x, y) { return (y.stage - x.stage) || (y.count - x.count) || (x.id < y.id ? -1 : x.id > y.id ? 1 : 0); });
+  return out.slice(0, n);
+}
 return { PAT: PAT, EXP: EXP, escText: escText, escAttr: escAttr, safeClass: safeClass, safeUrl: safeUrl, cssVal: cssVal, num: num, isInt: isInt,
   dateKey: dateKey, parseDate: parseDate, addDays: addDays, emptyState: emptyState, validateProfile: validateProfile, validateState: validateState,
   makeBackup: makeBackup, parseBackup: parseBackup, setPlan: setPlan, planFor: planFor, isRestDay: isRestDay, levelFor: levelFor, xpLevelOf: xpLevelOf, xpLevelInfo: xpLevelInfo, titleOf: titleOf, levelUpEvents: levelUpEvents, XP_LEVEL: XP_LEVEL, xpNeed: xpNeed, xpStart: xpStart, checkXpConfig: checkXpConfig, applyFeedback: applyFeedback,
   computeStreak: computeStreak, refreshStreak: refreshStreak, dayStatus: dayStatus, nozWeeks: nozWeeks, nozOpened: nozOpened, openNoz: openNoz, levelOf: levelOf, timerStart: timerStart, timerPause: timerPause, timerResume: timerResume, timerTick: timerTick,
   timerSecs: timerSecs, newSession: newSession, syncStatus: syncStatus, completeSet: completeSet, skipExercise: skipExercise, advance: advance,
   grant: grant, grantExercise: grantExercise, grantSessionBonus: grantSessionBonus, finishSession: finishSession, abandonSession: abandonSession,
-  ACH: ACH, checkAchCatalog: checkAchCatalog, unlockAchievements: unlockAchievements, achCatalog: achCatalog, achMerge: achMerge, achMet: achMet, achPendingEvents: achPendingEvents, achAck: achAck, 
-  TROPHY: TROPHY, checkTrophyConfig: checkTrophyConfig, trophyAll: trophyAll, trophyStage: trophyStage, trophyCatalog: trophyCatalog };
+  ACH: ACH, checkAchCatalog: checkAchCatalog, unlockAchievements: unlockAchievements, achCatalog: achCatalog, achMerge: achMerge, achMet: achMet, achTop: achTop, trophyTop: trophyTop, achPendingEvents: achPendingEvents, achAck: achAck, 
+  TROPHY: TROPHY, checkTrophyConfig: checkTrophyConfig, trophyAll: trophyAll, trophyCount: trophyCount, trophyStage: trophyStage, trophyCatalog: trophyCatalog };
 });

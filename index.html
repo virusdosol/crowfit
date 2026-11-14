@@ -159,6 +159,7 @@ input{width:100%;border:2px solid var(--line);border-radius:14px;padding:12px;fo
 <link rel="stylesheet" href="auth.css">
 <link rel="stylesheet" href="profile.css">
 <link rel="stylesheet" href="settings.css">
+<link rel="stylesheet" href="crow-menu.css">
 <link rel="stylesheet" href="trail.css">
 </head>
 <body>
@@ -182,6 +183,7 @@ setTimeout(rm,1000);var i=s.querySelector("img");if(i)i.addEventListener("error"
 <script src="store.js"></script>
 <script src="program.js"></script>
 <script src="trail.js"></script>
+<script src="crow-menu.js"></script>
 <script src="supabase-sync.js"></script>
 <script>
 function mascote(sz){sz=sz||96;return '<img class="mascot" src="mascot.png" height="'+sz+'" alt="Crowfit, o corvo mascote" style="height:'+sz+'px;width:auto">'}
@@ -335,14 +337,15 @@ function weekDates(){var n=new Date(),i=(n.getDay()+6)%7,m=new Date(n.getFullYea
 /* ---------- Trilha (home) ---------- */
 /* O save do contexto só vale para a conta que estava ativa quando a tela foi montada. */
 function trailCtx(){var g=gen;return{S:S,save:function(){return g===gen?save():false},say:say,esc:esc,today:today(),mascote:mascote,view:view,back:renderHome,noz:function(k){openNozScreen(k)}}}
+function crowData(){var li=lvlInfo(),recs=[];try{recs=CFT.trophyRecords(trailCtx())}catch(e){}var names={};Object.keys(CFP.LIB).forEach(function(k){names[k]=CFP.LIB[k][0]});return{level:li.l,points:S.points,into:li.into,need:li.need,title:CF.titleOf(li.l),streak:S.streak,best:S.best,ach:CF.achTop(S,3),tro:CF.trophyTop(recs,names,3)}}
 function renderHome(){var li=lvlInfo(),t=today(),a=S.active,b4=S.streak+"/"+S.best;CF.refreshStreak(S,t);if(b4!==S.streak+"/"+S.best)save();
- var h='<div class="top" style="margin-bottom:8px"><button type="button" class="stat ofb" id="of" aria-label="Ver ofensivas" title="Ofensiva atual">🔥 '+S.streak+'</button><div class="stat" title="Nível"><button type="button" class="pf" id="pf" aria-label="Abrir meu perfil">'+mascote(36)+'</button> Nv '+li.l+'</div><div class="stat" title="Pontos">⭐ '+S.points+'</div></div><div class="bar" role="img" aria-label="Progresso do nível"><i style="width:'+li.pct+'%;background:var(--gold)"></i></div><small style="color:var(--mute)">'+(200-S.points%200)+' pontos para o nível '+(li.l+1)+' · Melhor ofensiva: '+S.best+(S.best===1?" dia":" dias")+'</small>';
+ var TR=0;try{TR=CF.trophyCount(CFT.trophyRecords(trailCtx()))}catch(e){}var TROFEU='<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/><path d="M12 14v4M8 20h8M9 18h6"/></svg>';var h='<div class="top" style="margin-bottom:8px"><div class="stat" title="Nível"><button type="button" class="pf" id="pf" aria-label="Abrir meu perfil">'+mascote(40)+'</button> Nv '+li.l+'</div><button type="button" class="stat ofb" id="of" aria-label="Ver ofensivas" title="Ofensiva atual">🔥 '+S.streak+'</button><div class="stat" title="Troféus" aria-label="'+TR+(TR===1?" troféu":" troféus")+'">'+TROFEU+' '+TR+'</div></div><div class="bar" role="img" aria-label="Progresso do nível"><i style="width:'+li.pct+'%;background:var(--gold)"></i></div><small style="color:var(--mute)">'+(li.need-li.into)+' pontos para o nível '+(li.l+1)+' · Melhor ofensiva: '+S.best+(S.best===1?" dia":" dias")+'</small>';
  if(a)h+='<div class="card" style="margin-top:12px"><b>Treino antigo em andamento</b><div>'+esc(SES[a.type].n)+' · exercício '+Math.min(a.exIdx+1,a.exercises.length)+' de '+a.exercises.length+'</div><div class="row"><button class="btn" id="rs">Retomar</button><button class="btn sec" id="ab">Abandonar</button></div></div>';
  h+='<div id="trail"></div>';
  view(h);
  if($("rs"))$("rs").onclick=function(){S.active.status="in_progress";renderEx()};
  if($("ab"))$("ab").onclick=function(){if(confirm("Abandonar este treino? As séries feitas ficam no histórico, mas sem bônus de conclusão.")){CF.abandonSession(S,S.active,Date.now());S.active=null;save();renderHome()}};
- if($("pf"))$("pf").onclick=function(){if(window.CrowfitProfile)CrowfitProfile.open($("pf"))};
+ if($("pf"))$("pf").onclick=function(){if(window.CrowMenu)CrowMenu.open($("pf"),crowData())};
  if($("of"))$("of").onclick=renderOfensivas;
  CFT.mount($("trail"),trailCtx())}
 

@@ -149,13 +149,21 @@ function range(ctx, lo, hi, last) {
 }
 function flush(ctx) { if (dirty) { dirty = false; ctx.save(); } }
 
+/* Escolhe qual item mostrar na barra: o primeiro abaixo da barra. Se for a noz (sem unidade),
+   mostra a unidade anterior (sempre o sábado). Não há regra de "hoje": a barra segue a posição. */
+function pickIndex(items, line) {
+  var idx = 0;
+  for (var j = 0; j < items.length; j++) { idx = j; if (items[j].bottom > line) break; }
+  while (idx > 0 && !items[idx].hasUnit) idx--;
+  return items[idx] && items[idx].hasUnit ? idx : -1;
+}
 function banner() {
   var ban = $("t-ban"); if (!ban) return;
-  var nodes = document.querySelectorAll(".tn"), line = ban.getBoundingClientRect().bottom + 8, pick = nodes[0];
-  for (var j = 0; j < nodes.length; j++) { pick = nodes[j]; if (nodes[j].getBoundingClientRect().bottom > line) break; }
-  var tn = document.querySelector(".tn.today");
-  if (tn) { var r = tn.getBoundingClientRect(); if (r.bottom > line && r.top < window.innerHeight) pick = tn; }
-  if (!pick) return;
+  var nodes = document.querySelectorAll(".tn"), line = ban.getBoundingClientRect().bottom + 8;
+  var items = [];
+  for (var j = 0; j < nodes.length; j++) items.push({ bottom: nodes[j].getBoundingClientRect().bottom, hasUnit: nodes[j].hasAttribute("data-n"), node: nodes[j] });
+  var k = pickIndex(items, line); if (k < 0) return;
+  var pick = items[k].node;
   $("tb-s").textContent = "SEMANA " + pick.getAttribute("data-w") + ", UNIDADE " + pick.getAttribute("data-n");
   $("tb-t").textContent = pick.getAttribute("data-t");
 }
@@ -331,6 +339,6 @@ function openUnit(ctx, i) {
   $("u-bk").onclick = $("u-bk2").onclick = ctx.back;
 }
 
-T.mount = mount; T.openUnit = openUnit; T.trophyRecords = trophyRecords; T.unitAt = unitAt; T.secStart = secStart; T.week = wk; T.idxOf = idxOf;
+T.mount = mount; T.openUnit = openUnit; T.trophyRecords = trophyRecords; T.pickIndex = pickIndex; T.unitAt = unitAt; T.secStart = secStart; T.week = wk; T.idxOf = idxOf;
 root.CFT = T;
 })(typeof self !== "undefined" ? self : this);

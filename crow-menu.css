@@ -1,0 +1,32 @@
+/* Menu do Crow */
+.cm-overlay{position:fixed;inset:0;z-index:60;background:rgba(10,10,14,.55);display:flex;align-items:flex-end;justify-content:center;padding:env(safe-area-inset-top,0px) 0 0}
+.cm-overlay[hidden]{display:none}
+.cm-dialog{width:100%;max-width:460px;max-height:92vh;overflow-y:auto;background:#FFFFFF;color:#17171C;border-radius:24px 24px 0 0;padding:16px 18px calc(18px + env(safe-area-inset-bottom,0px));box-sizing:border-box;font-family:Nunito,system-ui,sans-serif}
+@media (min-width:600px){.cm-overlay{align-items:center}.cm-dialog{border-radius:24px}}
+.cm-top{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.cm-title{flex:1;font:700 20px Fredoka,Nunito,sans-serif}
+.cm-gear,.cm-close{width:44px;height:44px;border:0;border-radius:14px;background:#F1F2F7;color:#17171C;display:grid;place-items:center;cursor:pointer}
+.cm-gear:focus-visible,.cm-close:focus-visible,.cm-stat:focus-visible,.cm-back:focus-visible{outline:3px solid #17171C;outline-offset:2px}
+.cm-perch{position:relative;display:flex;flex-direction:column;align-items:center;margin:8px 0 4px}
+.cm-crow{height:124px;width:auto;position:relative;z-index:1;margin-bottom:-14px}
+.cm-branch{width:100%;max-width:320px;height:auto}
+.cm-stats{display:flex;justify-content:center;gap:12px;margin:10px 0 14px}
+.cm-stat{flex:1;max-width:190px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 8px;border:0;border-radius:18px;background:#F1F2F7;color:#17171C;font:700 15px Nunito,sans-serif;cursor:default;text-align:center}
+.cm-stat b{font:700 18px Fredoka,Nunito,sans-serif}
+.cm-stat small{font-weight:600;color:#6B6B76;font-size:12px}
+button.cm-lvl{cursor:pointer;color:var(--brand,#D92332)}
+.cm-panel h3{margin:14px 0 6px;font:700 16px Fredoka,Nunito,sans-serif;color:#17171C}
+.cm-list{list-style:none;margin:0;padding:0}
+.cm-list li{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid #ECECF2}
+.cm-list b{display:block;font-weight:700}
+.cm-list small{display:block;color:#6B6B76;font-size:12px}
+.cm-ico{width:30px;height:30px;flex:none;border-radius:10px;background:#F1F2F7;display:grid;place-items:center;color:var(--brand,#D92332);font-size:16px}
+.cm-empty{color:#6B6B76;font-weight:600;margin:4px 0}
+.cm-back{border:0;background:transparent;color:#17171C;font:700 15px Nunito,sans-serif;padding:8px 0;cursor:pointer}
+.cm-level{text-align:center;padding:6px 0}
+.cm-big{display:flex;flex-direction:column;align-items:center;gap:6px;color:#17171C}
+.cm-big b{font:700 26px Fredoka,Nunito,sans-serif}
+.cm-cat{font:700 18px Fredoka,Nunito,sans-serif;color:var(--brand,#D92332);margin:6px 0}
+.cm-bar{height:12px;border-radius:8px;background:#E6E6EE;overflow:hidden;margin:14px 0 6px}
+.cm-bar i{display:block;height:100%;background:var(--gold,#E8A317)}
+.cm-level small{color:#6B6B76;font-weight:600}
