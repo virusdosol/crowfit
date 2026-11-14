@@ -237,7 +237,7 @@ function nozWeeks(S, today) {
   var out = [], st = S.trail && S.trail.start;
   if (!st || !DATE_RE.test(st)) return out;
   var sat = addDays(st, (6 - dowOf(st) + 7) % 7), n = 0;
-  while (sat < today && n < 520) { out.push(sat); sat = addDays(sat, 7); n++; }
+  while (sat <= today && n < 520) { out.push(sat); sat = addDays(sat, 7); n++; } /* sábado de hoje já conta: a noz abre no próprio sábado */
   return out;
 }
 function nozOpened(S, sat) { return typeof S.nozes[sat] === "number"; }

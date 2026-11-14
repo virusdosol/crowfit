@@ -134,3 +134,6 @@ body.cw-home .cw-bar{display:grid}
 @media (max-width:360px){.cw-icons{grid-template-columns:repeat(3,minmax(0,1fr))}.cw-ov-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cw-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .cw-icons > .cw-hint{grid-column:1 / -1}
 .cw-pf-avatar{width:min(54vw,220px)}
+
+/* aviso de erro sempre acima do topo fixo */
+#bn{z-index:60}

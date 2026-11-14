@@ -161,6 +161,9 @@ function since(iso) {
   return "Cadastrado há " + plural(Math.floor(d / 365), "ano", "anos");
 }
 function profileHtml(p) {
+  try { return profileHtmlUnsafe(p); } catch (e) { console.error('Crowfit: visão do perfil', e); return '<section class="cw-pf"><p class="cw-hint">Não consegui montar a visão geral agora. Seus dados estão salvos.</p></section>'; }
+}
+function profileHtmlUnsafe(p) {
   var s = S(), prof = (p && p.profile) || {}, name = prof.displayName || "", s2 = since(prof.createdAt);
   var li = s && root.lvlInfo ? root.lvlInfo() : { l: 0 };
   var pinned = (s && s.showTro) || [], names = (root.CFP && root.CFP.LIB) || {};
