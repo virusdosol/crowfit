@@ -106,7 +106,7 @@ function makeDevice(opts) {
   const nav = { onLine: opts.online !== false };
   const host = { gen: opts.gen || 1, uid: opts.uid || UID, saves: 0, changes: 0 };
   const client = opts.client;
-  const env = { CF, CFP, CFT: null, Auth: { getClient: () => client, getState: () => ({ user: { id: host.uid } }) }, LS: () => LS, nav: nav };
+  const env = { CF, CFP, CFT: null, Auth: { getClient: () => client, getState: () => ({ user: { id: host.uid } }) }, LS: () => LS, nav: nav, Aviso: opts.aviso || function () {} };
   const inst = SYNC.create(env);
   const S = opts.S;
   inst.attach({ state: () => ({ S: S, uid: host.uid, gen: host.gen }), save: () => { host.saves++; return true; }, today: () => TODAY,

@@ -329,3 +329,74 @@ describe("12. eventos de dia (fase 1)", () => {
     assert.equal(H.CF.dayEventOk({ id: "BAD ID", day: "2026-11-10", kind: "done", at: "2026-11-10T12:00:00.000Z" }), false);
   });
 });
+
+describe("13. relógio do aparelho (fase 1)", () => {
+  const ev = (id, day) => ({ id, day, kind: "done", at: day + "T12:00:00.000Z" });
+  function setup(serverOffsetMs) {
+    const db = makeServer();
+    const base = serverClient(db);
+    const sent = [];
+    const client = {
+      calls: base.calls, from: base.from,
+      rpc: async (name, args) => {
+        if (name === "cf_server_now") return { data: new Date(Date.now() + serverOffsetMs).toISOString(), error: null };
+        if (name === "record_day_events") { sent.push(args.p.events.map((e) => e.id)); return { data: args.p.events.map((e) => ({ id: e.id, status: "accepted", reason: null })), error: null }; }
+        return base.rpc(name, args);
+      },
+    };
+    return { db, client, sent };
+  }
+
+  test("relógio adiantado 10 min: nada é enviado, eventos ficam, popup mostrado", async () => {
+    const shown = [];
+    {
+      const { client, sent } = setup(10 * 60 * 1000);
+      const S = freshState({ points: 30 });
+      S.dayLog = [ev("ra1", "2026-11-10")];
+      const d = makeDevice({ S, client, aviso: (t) => shown.push(t) });
+      await d.run(true); await d.idle();
+      assert.equal(sent.length, 0, "não envia com relógio errado");
+      assert.equal(S.dayLog.length, 1, "evento preservado");
+      assert.equal(shown.length, 1, "popup mostrado");
+      assert.match(shown[0], /Ajuste o relógio/);
+    }
+  });
+
+  test("popup não se repete a cada sincronização dentro de 10 min", async () => {
+    const shown = [];
+    {
+      const { client } = setup(-10 * 60 * 1000);
+      const S = freshState({ points: 30 });
+      S.dayLog = [ev("rb1", "2026-11-10")];
+      const d = makeDevice({ S, client, aviso: (t) => shown.push(t) });
+      await d.run(true); await d.idle();
+      await d.run(false); await d.idle();
+      assert.equal(shown.length, 1);
+    }
+  });
+
+  test("relógio correto: envia normalmente", async () => {
+    const { client, sent } = setup(0);
+    const S = freshState({ points: 30 });
+    S.dayLog = [ev("rc1", "2026-11-10")];
+    const d = makeDevice({ S, client });
+    await d.run(true); await d.idle();
+    assert.equal(sent.length, 1);
+    assert.equal(S.dayLog.length, 0);
+  });
+
+  test("servidor sem cf_server_now (v4 não aplicada): não bloqueia o envio", async () => {
+    const db = makeServer();
+    const base = serverClient(db);
+    const sent = [];
+    const client = { calls: base.calls, from: base.from, rpc: async (name, args) => {
+      if (name === "record_day_events") { sent.push(1); return { data: args.p.events.map((e) => ({ id: e.id, status: "accepted", reason: null })), error: null }; }
+      return base.rpc(name, args);
+    } };
+    const S = freshState({ points: 30 });
+    S.dayLog = [ev("rd1", "2026-11-10")];
+    const d = makeDevice({ S, client });
+    await d.run(true); await d.idle();
+    assert.equal(sent.length, 1);
+  });
+});

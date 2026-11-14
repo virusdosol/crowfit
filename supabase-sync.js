@@ -38,6 +38,8 @@ function isoOk(v) { /* mesma janela de cf_ts: 2020-01-01 até agora + 2 dias */
 var BOX_REJECT_RE = /^(criterion_not_defined|criterion_not_met|future_month|invalid_box|invalid_items|before_cutoff)$/;
 /* Tamanho do lote de eventos de dia por rodada (o servidor aceita até 500). */
 var DAY_BATCH = 200;
+/* Relógio do aparelho: tolerância técnica de 2 minutos em relação à hora do servidor. */
+var CLOCK_TOL_MS = 120000, CLOCK_MSG = "Ajuste o relógio do seu celular para o horário automático da sua região. Seus registros continuam salvos e serão enviados quando o horário estiver certo.", CLOCK_WARN_GAP_MS = 600000;
 function trailAmount(E, S, k, n) {
   try {
     var tr = S.trail; if (!tr || !DATE_RE.test(tr.start) || !tr.lv || typeof tr.lv[k] !== "number" || !E.CFT || !E.CFP) return null;
@@ -285,11 +287,11 @@ function adoptItems(E, S, res) {
 
 /* ---------- instância (rede, fila, offline) ---------- */
 function create(envIn) {
-  var host = null, deb = 0, retryT = 0, retryN = 0, running = null, again = false, againFull = false, adopting = false, mutCount = 0, cache = null, bound = false;
+  var host = null, deb = 0, retryT = 0, retryN = 0, running = null, again = false, againFull = false, adopting = false, mutCount = 0, cache = null, bound = false, clockWarnAt = 0;
   var info = { state: "idle", message: "", pending: false, last: "", skippedSessions: 0 }, remoteAch = [];
   function env() {
     if (envIn) return envIn;
-    return { CF: root.CF, CFP: root.CFP, CFT: root.CFT, Auth: root.CrowfitAuth, LS: function () { try { return root.localStorage; } catch (e) { return null; } }, nav: root.navigator };
+    return { CF: root.CF, CFP: root.CFP, CFT: root.CFT, Auth: root.CrowfitAuth, LS: function () { try { return root.localStorage; } catch (e) { return null; } }, nav: root.navigator, Aviso: function (t) { if (typeof root.mostrarAviso === "function") root.mostrarAviso(t); } };
   }
   function emit(state, message) {
     info.state = state; info.message = message || "";
@@ -385,8 +387,26 @@ function create(envIn) {
       try {
         var allD = Array.isArray(S0.dayLog) ? S0.dayLog : [];
         var dl = allD.slice(0, DAY_BATCH);
+        var clockBad = false;
         if (dl.length) {
           if (!sameUser()) return;
+          /* Verificação do relógio: se o aparelho estiver fora do horário, nada é enviado e o usuário é avisado.
+             Os eventos continuam guardados e vão na próxima sincronização com horário certo.
+             Servidor sem cf_server_now (migração v4 ainda não aplicada): não bloqueia. */
+          var t0c = Date.now();
+          var rn = await client.rpc("cf_server_now", {}); if (!alive()) return;
+          var t1c = Date.now();
+          if (rn.error && !/does not exist/i.test(String(rn.error.message || rn.error))) throw rn.error;
+          if (!rn.error) {
+            var srvMs = Date.parse(rn.data);
+            if (isNaN(srvMs)) throw new Error("hora_invalida");
+            clockBad = Math.abs(srvMs - (t0c + t1c) / 2) > CLOCK_TOL_MS;
+          }
+          if (clockBad && typeof E.Aviso === "function" && Date.now() - clockWarnAt > CLOCK_WARN_GAP_MS) {
+            clockWarnAt = Date.now(); E.Aviso(CLOCK_MSG);
+          }
+        }
+        if (dl.length && !clockBad) {
           var rd = await client.rpc("record_day_events", { p: { events: dl } }); if (!alive()) return;
           if (rd.error) throw rd.error;
           var acks = {};
