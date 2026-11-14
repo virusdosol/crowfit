@@ -227,8 +227,17 @@ function mount(el, ctx) {
 /* Pontos e ofensiva: ao completar a unidade, concede (uma única vez, por unidade) 10 por exercício + 20 de bônus
    e marca como treinado o dia DA UNIDADE (u.date), não o dia em que o toque aconteceu (alimenta a ofensiva existente).
    Concluir hoje a unidade de ontem registra ontem. S.last guarda a data de treino mais recente e nunca regride. */
+/* Sessões livres concluídas também marcam S.done; a data só sai de S.done se nenhuma delas a sustenta. */
+function hasFreeDone(S, date) { return (S.history || []).some(function (s) { return s && s.status === "completed" && s.date === date; }); }
+function syncLast(S) { var ks = Object.keys(S.done || {}).filter(function (k) { return S.done[k] === true; }).sort(); S.last = ks.length ? ks[ks.length - 1] : ""; }
 function award(ctx, u, ct, pr) {
-  var S = ctx.S, got = 0; if (pr.p < 1) return 0;
+  var S = ctx.S, got = 0;
+  if (pr.p < 1) {
+    /* Unidade incompleta não pode continuar concluída (trilha, histórico e ofensiva). O XP já concedido permanece: a recompensa é irrevogável. */
+    if (S.done[u.date] === true && !hasFreeDone(S, u.date)) { delete S.done[u.date]; syncLast(S); }
+    C.refreshStreak(S, ctx.today);
+    return 0;
+  }
   if (u.date <= ctx.today) { S.done[u.date] = true; if (!S.last || u.date > S.last) S.last = u.date; }
   var k = "tr:" + u.key; if (S.rewards[k] !== true) { S.rewards[k] = true; got = 10 * ct.exercises.length + 20; S.points += got; }
   C.refreshStreak(S, ctx.today); return got;
@@ -339,6 +348,6 @@ function openUnit(ctx, i) {
   $("u-bk").onclick = $("u-bk2").onclick = ctx.back;
 }
 
-T.mount = mount; T.openUnit = openUnit; T.trophyRecords = trophyRecords; T.pickIndex = pickIndex; T.unitAt = unitAt; T.secStart = secStart; T.week = wk; T.idxOf = idxOf;
+T.mount = mount; T.openUnit = openUnit; T.award = award; T.prog = prog; T.trophyRecords = trophyRecords; T.pickIndex = pickIndex; T.unitAt = unitAt; T.secStart = secStart; T.week = wk; T.idxOf = idxOf;
 root.CFT = T;
 })(typeof self !== "undefined" ? self : this);
