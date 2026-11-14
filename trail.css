@@ -62,7 +62,7 @@
 .ex-b b{display:block;font:600 18px/1.25 Fredoka,Nunito,sans-serif}.ex-b span{display:block;color:var(--brand);font-weight:800;margin:2px 0}
 .ex-b small{display:block;color:var(--mute);font-weight:700}
 .u-help{margin-top:14px}.u-help p{margin:6px 0 0;color:var(--mute)}
-#app{padding-bottom:96px}
+#app{padding-bottom:0}
 @media (prefers-reduced-motion:no-preference){.rg .arc{transition:stroke-dasharray .3s}}
 .u-go{margin:14px 0}.u-go[hidden]{display:none}
 .more{margin:12px 0 4px}.more summary{cursor:pointer;color:var(--mute);font-weight:800;padding:6px 0}
@@ -101,3 +101,5 @@
 .t-next b{display:flex;align-items:center;gap:6px;font:800 20px Nunito,sans-serif;color:#303036}
 .t-next b .ico{width:18px;height:18px;stroke:#303036}
 .t-next p{margin:0;font:700 15px Nunito,sans-serif;color:#303036}
+/* Trilha: a área grafite termina escondida atrás da barra de navegação. Ao rolar até o fim, o branco nunca aparece. */
+.t-path .t-zone{margin-bottom:-110px}
