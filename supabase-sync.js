@@ -264,6 +264,21 @@ function adoptRemoteBoxes(rows) {
   return out;
 }
 
+/* Inventário: envia a coleção e a aparência equipada (merge_my_items). O servidor une e aplica a mais recente. */
+function buildItems(E, S) {
+  var ids = Object.keys(S.collection || {}).sort().slice(0, 500);
+  var eq = S.equipped && S.equippedAt ? { id: S.equipped, at: S.equippedAt } : null;
+  /* sem escolha local de aparência, não envia 'equipped': senão apagaria a escolha de outro aparelho */
+  var payload = { items: ids };
+  if (eq) { payload.equipped = eq.id; payload.at = eq.at; }
+  return { payload: payload, sig: hash(JSON.stringify([ids, eq])) };
+}
+function adoptItems(E, S, res) {
+  if (!res || typeof res !== "object") return false;
+  var eq = res.equipped && typeof res.equipped === "object" ? { id: res.equipped.id, at: res.equipped.at } : null;
+  return E.CF.itemsMerge(S, Array.isArray(res.items) ? res.items : [], eq) > 0;
+}
+
 /* ---------- instância (rede, fila, offline) ---------- */
 function create(envIn) {
   var host = null, deb = 0, retryT = 0, retryN = 0, running = null, again = false, againFull = false, adopting = false, mutCount = 0, cache = null, bound = false;
@@ -326,8 +341,8 @@ function create(envIn) {
       var remote = null, first = full || !meta.seeded, b, ps;
       function plan() { b = buildProgress(E, S0, meta.amounts, today); ps = pendingSessions(E, S0, meta, today); info.skippedSessions = ps.skipped;
         if (b.error) return; sg = hash(JSON.stringify(b.payload)); key = sg + "|" + hash(ps.items.map(function (i) { return i.id + (i.fb ? "f" : ""); }).join(",")); }
-      function v2plan() { var now = new Date().toISOString(), t = buildTrail(E, S0, meta, now), st = buildSettings(E, S0, meta), nz = buildNozes(E, S0), bx = buildBoxes(E, S0);
-        return { trail: t, settings: st, nozes: nz, boxes: bx, sig: hash([t.sig, st ? st.sig : "-", nz.sig, bx.sig].join("|")) }; }
+      function v2plan() { var now = new Date().toISOString(), t = buildTrail(E, S0, meta, now), st = buildSettings(E, S0, meta), nz = buildNozes(E, S0), bx = buildBoxes(E, S0), it = buildItems(E, S0);
+        return { trail: t, settings: st, nozes: nz, boxes: bx, items: it, sig: hash([t.sig, st ? st.sig : "-", nz.sig, bx.sig, it.sig].join("|")) }; }
       var v2 = v2plan();
       plan();
       /* conteúdo que o servidor já recusou: não repete sozinho (só no login ou quando o conteúdo mudar) */
@@ -410,6 +425,9 @@ function create(envIn) {
               }
             }
           }
+          var ri = await client.rpc("merge_my_items", { p: v2.items.payload }); if (!alive()) return;
+          if (ri.error) throw ri.error;
+          if (adoptItems(E, S0, ri.data)) v2ch = true;
           meta.v2blocked = ""; v2ok = true;
         } catch (e2) {
           var k2 = classify(e2);
@@ -492,5 +510,5 @@ function create(envIn) {
 var instance = typeof root.document !== "undefined" || typeof root.CF !== "undefined" ? create(null) : null;
 return { instance: instance, create: create, buildProgress: buildProgress, amountFor: amountFor, toRemoteSession: toRemoteSession, pendingSessions: pendingSessions,
   adoptProgress: adoptProgress, adoptSessions: adoptSessions, fromRemoteSession: fromRemoteSession,
-  buildTrail: buildTrail, adoptTrail: adoptTrail, buildSettings: buildSettings, adoptSettings: adoptSettings, buildNozes: buildNozes, adoptNozes: adoptNozes, buildBoxes: buildBoxes, adoptBox: adoptBox, adoptRemoteBoxes: adoptRemoteBoxes };
+  buildTrail: buildTrail, adoptTrail: adoptTrail, buildSettings: buildSettings, adoptSettings: adoptSettings, buildNozes: buildNozes, adoptNozes: adoptNozes, buildBoxes: buildBoxes, buildItems: buildItems, adoptItems: adoptItems, adoptBox: adoptBox, adoptRemoteBoxes: adoptRemoteBoxes };
 });
