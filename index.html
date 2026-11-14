@@ -328,7 +328,7 @@ if(window.visualViewport){var vvf=function(){var d=document.documentElement;d.st
 
 
 /* ---------- Home ---------- */
-function lvlInfo(){return{l:Math.floor(S.points/200)+1,pct:(S.points%200)/200*100}}
+function lvlInfo(){var i=CF.xpLevelInfo(S.points);return{l:i.level,pct:i.pct,title:i.title,into:i.into,need:i.need}}
 function weekDates(){var n=new Date(),i=(n.getDay()+6)%7,m=new Date(n.getFullYear(),n.getMonth(),n.getDate()-i),a=[];for(var j=0;j<7;j++)a.push(new Date(m.getFullYear(),m.getMonth(),m.getDate()+j));return{dates:a,today:i}}
 /* ---------- Trilha (home) ---------- */
 /* O save do contexto só vale para a conta que estava ativa quando a tela foi montada. */

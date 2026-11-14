@@ -198,7 +198,57 @@ function nozWeeks(S, today) {
   return out;
 }
 function nozOpened(S, sat) { return typeof S.nozes[sat] === "number"; }
-function levelOf(points) { return Math.floor(points / 200) + 1; }
+/* ---- XP e níveis (experiência acumulada do usuário) ----
+   Não confundir com o "nível de treino" (levelFor), que define a dificuldade do plano.
+   Curva exponencial: XP para subir do nível l ao l+1 = base * growth^(l-1), arredondado a múltiplos de 5.
+   Ex.: 200, 230, 265, 305, 350, 400... Alterar base ou growth muda o nível de quem já tem XP. */
+var XP_LEVEL = {
+  base: 200,
+  growth: 1.15,
+  titles: [
+    { from: 1, name: "Iniciante" },
+    { from: 5, name: "Aprendiz" },
+    { from: 10, name: "Praticante" },
+    { from: 20, name: "Veterano" },
+    { from: 35, name: "Mestre" }
+  ]
+};
+/* Valida a configuração (lança erro se algo estiver fora da regra). Roda uma vez ao carregar. */
+function checkXpConfig(cfg) {
+  if (!isInt(cfg.base, 1, 100000) || typeof cfg.growth !== "number" || !(cfg.growth >= 1 && cfg.growth <= 3)) throw new Error("curva de XP inválida");
+  if (!Array.isArray(cfg.titles) || !cfg.titles.length || cfg.titles[0].from !== 1) throw new Error("o primeiro título começa no nível 1");
+  for (var i = 0; i < cfg.titles.length; i++) {
+    var t = cfg.titles[i];
+    if (!isInt(t.from, 1, 100000) || typeof t.name !== "string" || !t.name.trim()) throw new Error("título inválido");
+    if (i > 0 && t.from <= cfg.titles[i - 1].from) throw new Error("títulos devem estar em ordem crescente de nível");
+  }
+  return true;
+}
+checkXpConfig(XP_LEVEL);
+/* XP para subir do nível l ao l+1, e XP acumulado no início do nível l (cada um depende só da configuração). */
+function xpNeed(l) { return Math.round(XP_LEVEL.base * Math.pow(XP_LEVEL.growth, l - 1) / 5) * 5; }   /* arredonda para múltiplos de 5 */
+function xpStart(l) { var t = 0; for (var k = 1; k < l; k++) t += xpNeed(k); return t; }
+function xpLevelOf(points) { var l = 1; while (xpStart(l + 1) <= points && l < 100000) l++; return l; }
+function titleOf(level) {
+  var name = XP_LEVEL.titles[0].name;
+  XP_LEVEL.titles.forEach(function (t) { if (level >= t.from) name = t.name; });
+  return name;
+}
+/* Situação do XP: nível, progresso dentro do nível e título. Não guarda nada: é derivado de points. */
+function xpLevelInfo(points) {
+  var l = xpLevelOf(points), start = xpStart(l), into = points - start, need = xpNeed(l);
+  return { level: l, points: points, into: into, need: need, pct: into / need * 100, title: titleOf(l), nextAt: xpStart(l + 1) };
+}
+/* Eventos de subida de nível entre dois totais de XP (para futuras conquistas). Função pura: não grava nada. */
+function levelUpEvents(before, after) {
+  var out = [], l0 = xpLevelOf(before), l1 = xpLevelOf(after);
+  if (!(after > before)) return out;
+  for (var l = l0 + 1; l <= l1; l++) {
+    out.push({ level: l, title: titleOf(l), titleChanged: titleOf(l) !== titleOf(l - 1), points: after });
+  }
+  return out;
+}
+function levelOf(points) { return xpLevelOf(points); }
 /* XP aleatório entre 20 e 50 vezes o nível atual. Só abre noz fechada de semana já encerrada. */
 function openNoz(S, sat, today) {
   if (nozWeeks(S, today).indexOf(sat) < 0 || nozOpened(S, sat)) return 0;
@@ -273,8 +323,8 @@ function abandonSession(S, ses, now) {
 
 return { PAT: PAT, EXP: EXP, escText: escText, escAttr: escAttr, safeClass: safeClass, safeUrl: safeUrl, cssVal: cssVal, num: num, isInt: isInt,
   dateKey: dateKey, parseDate: parseDate, addDays: addDays, emptyState: emptyState, validateProfile: validateProfile, validateState: validateState,
-  makeBackup: makeBackup, parseBackup: parseBackup, setPlan: setPlan, planFor: planFor, isRestDay: isRestDay, levelFor: levelFor, applyFeedback: applyFeedback,
+  makeBackup: makeBackup, parseBackup: parseBackup, setPlan: setPlan, planFor: planFor, isRestDay: isRestDay, levelFor: levelFor, xpLevelOf: xpLevelOf, xpLevelInfo: xpLevelInfo, titleOf: titleOf, levelUpEvents: levelUpEvents, XP_LEVEL: XP_LEVEL, xpNeed: xpNeed, xpStart: xpStart, checkXpConfig: checkXpConfig, applyFeedback: applyFeedback,
   computeStreak: computeStreak, refreshStreak: refreshStreak, dayStatus: dayStatus, nozWeeks: nozWeeks, nozOpened: nozOpened, openNoz: openNoz, levelOf: levelOf, timerStart: timerStart, timerPause: timerPause, timerResume: timerResume, timerTick: timerTick,
   timerSecs: timerSecs, newSession: newSession, syncStatus: syncStatus, completeSet: completeSet, skipExercise: skipExercise, advance: advance,
-  grantExercise: grantExercise, grantSessionBonus: grantSessionBonus, finishSession: finishSession, abandonSession: abandonSession };
+  grant: grant, grantExercise: grantExercise, grantSessionBonus: grantSessionBonus, finishSession: finishSession, abandonSession: abandonSession };
 });
