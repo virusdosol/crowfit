@@ -92,6 +92,7 @@ function serverClient(db, hooks) {
         if (cur.opened_at === null) { cur.opened_at = new Date().toISOString(); return { data: { id: p.id, already: false, opened_at: cur.opened_at }, error: null }; }
         return { data: { id: p.id, already: true, opened_at: cur.opened_at }, error: null };
       }
+      if (name === "merge_my_items") return { data: { items: [], equipped: null }, error: null }; /* formato real: { items, equipped } (supabase-items.sql) */
       return { data: null, error: { message: "function " + name + " does not exist" } };
     },
   };
