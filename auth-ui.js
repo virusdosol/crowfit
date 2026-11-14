@@ -46,7 +46,7 @@
     },
     loading: function () { return '<div class="cf-spin" role="status" aria-label="Carregando"></div>'; },
     login: function () {
-      return '<button class="cf-link cf-back" type="button" data-go="welcome">← Voltar</button>' + head('Entrar', 'Entre para continuar seu treino.') + MSG +
+      return '<button class="cf-link cf-back" type="button" data-go="welcome">← Voltar</button><img class="cf-login-mascot" src="mascot.png" alt="Crowfit, o corvo mascote">' + head('Entrar', 'Entre para continuar seu treino.') + MSG +
         '<form class="cf-form" novalidate data-form="login">' +
         field('email', 'E-mail', 'email', 'email') + field('password', 'Senha', 'password', 'current-password') +
         submit('Entrar') + '</form>' +
@@ -231,7 +231,7 @@
     updateChip(snap);
     var notice = snap.urlError || (snap.expired ? 'Sua sessão expirou. Entre novamente.' : '');
     if (!UNAUTH[view] || notice) {
-      if (notice) renderView('login', { message: notice, kind: 'error' }); else renderView(introSeen() ? 'welcome' : 'intro');
+      if (notice) renderView('login', { message: notice, kind: 'error' }); else renderView('welcome');
       Auth.clearNotices();
     }
     open();
@@ -245,7 +245,7 @@
   });
 
   /* Voltar do Google pelo botão "voltar" (bfcache) não pode deixar a tela travada em "Aguarde". */
-  global.addEventListener('pageshow', function (ev) { if (ev.persisted && root) { var s = Auth.getState(); if (!s.user) { renderView(UNAUTH[view] ? view : (introSeen() ? 'welcome' : 'intro')); } } });
+  global.addEventListener('pageshow', function (ev) { if (ev.persisted && root) { var s = Auth.getState(); if (!s.user) { renderView(UNAUTH[view] ? view : 'welcome'); } } });
 
   function start() {
     ensureRoot(); renderView('loading'); open();

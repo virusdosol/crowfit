@@ -81,3 +81,6 @@ html.cf-auth-open, html.cf-auth-open body { overflow: hidden; }
 .cf-cta2:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--line, #E6E6EE); }
 .cf-cta2:disabled { opacity: .6; cursor: default; }
 .cf-auth .in-cta:focus-visible, .cf-cta2:focus-visible { outline: 3px solid var(--focus, #17171C); outline-offset: 3px; }
+
+/* Tela "Já tenho uma conta": corvo do mascote acima do título. */
+.cf-login-mascot { display: block; height: clamp(110px, 22vh, 180px); width: auto; margin: 8px auto 4px; }
