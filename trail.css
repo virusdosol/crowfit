@@ -70,3 +70,17 @@
 .tn.rest .rb::after{content:"";position:absolute;inset:-7px;border-radius:50%;border:1.5px dashed rgba(143,143,153,.55);pointer-events:none}
 .tn.rest .tn-lbl::after{content:" · descanso";font-weight:700;opacity:.8}
 .tn.rest.st-done .rb::after{border-color:rgba(227,24,45,.45)}
+
+/* Divisor de semana (linha, texto, linha) */
+.t-wk{display:flex;align-items:center;gap:10px;margin:26px 10px 6px}
+.t-wk-l{flex:1;height:2px;background:var(--line);border-radius:2px}
+.t-wk-t{text-align:center;max-width:70%}
+.t-wk-t b{display:block;font:800 12px Nunito,sans-serif;letter-spacing:.6px;text-transform:uppercase;color:var(--brand)}
+.t-wk-t small{display:block;font:700 15px Nunito,sans-serif;color:var(--mute);margin-top:2px}
+/* Noz como baú da trilha */
+.t-chest .rb{width:96px;height:96px;display:grid;place-items:center}
+.t-chest img{width:96px;height:auto;display:block}
+.t-chest.st-wait img{opacity:.35;filter:grayscale(1)}
+.t-chest.st-ready img{animation:t-bob 1.8s ease-in-out infinite}
+@keyframes t-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@media (prefers-reduced-motion:reduce){.t-chest.st-ready img{animation:none}}

@@ -74,6 +74,30 @@ function toast(msg) {
 }
 var LOCK = '<svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><rect x="11" y="21" width="26" height="19" rx="4"/><path d="M16 21v-6a8 8 0 0 1 16 0v6"/><circle cx="24" cy="30.5" r="2"/></svg>';
 
+/* Divisor de semana: linha, "Semana N · grupos da semana", linha. Grupos vêm da própria programação (dias de treino, sem descanso). */
+function weekPhrase(ctx, i) {
+  var names = [], seen = {};
+  for (var k = 0; k < 7; k++) {
+    var g = content(ctx, unitAt(ctx.S, i + k)).group;
+    if (g && g !== "R" && !seen[g]) { seen[g] = 1; names.push(P.GROUPS[g].n.toLowerCase()); }
+  }
+  if (!names.length) return "dia de descanso";
+  var last = names.pop();
+  return names.length ? names.join(", ") + " e " + last : last;
+}
+function weekHead(ctx, i) {
+  var u = unitAt(ctx.S, i), W = wk(ctx.S, i);
+  if (C.parseDate(u.date).getDay() !== 0) return "";
+  return '<div class="t-wk" role="separator"><span class="t-wk-l"></span><div class="t-wk-t"><b>Semana ' + W.w + '</b><small>' + C.escText(weekPhrase(ctx, i)) + '</small></div><span class="t-wk-l"></span></div>';
+}
+/* Noz da semana: aparece após o sábado. Fechada e liberada, abaixo, ou aberta. */
+function chestHtml(ctx, i, u) {
+  var sat = u.date, S = ctx.S, x = Math.round(Math.sin(i * 0.85) * 62);
+  var ended = C.nozWeeks(S, ctx.today).indexOf(sat) >= 0, opened = C.nozOpened(S, sat);
+  var st = opened ? "open" : ended ? "ready" : "wait";
+  var label = "Noz da semana, " + (opened ? "já aberta" : ended ? "toque para abrir" : "disponível no fim da semana");
+  return '<button class="tn t-chest st-' + st + '" data-sat="' + sat + '" style="--x:' + x + 'px" aria-label="' + label + '"><span class="rb"><img src="' + (opened ? "noz-aberta.png" : "noz-fechada.png") + '" alt=""></span></button>';
+}
 function nodeHtml(ctx, i, locked) {
   var u = unitAt(ctx.S, i), W = wk(ctx.S, i), x = Math.round(Math.sin(i * 0.85) * 62);
   if (locked) {
@@ -93,7 +117,12 @@ function gate() {
 }
 function range(ctx, lo, hi, last) {
   var h = "", zone = false;
-  for (var i = lo; i <= hi; i++) { if (i === last + 1) { h += gate() + '<div class="t-zone">'; zone = true; } h += nodeHtml(ctx, i, i > last); }
+  for (var i = lo; i <= hi; i++) {
+    if (i === last + 1) { h += gate() + '<div class="t-zone">'; zone = true; }
+    if (i <= last) h += weekHead(ctx, i);
+    h += nodeHtml(ctx, i, i > last);
+    if (i <= last && C.parseDate(unitAt(ctx.S, i).date).getDay() === 6) h += chestHtml(ctx, i, unitAt(ctx.S, i));
+  }
   return h + (zone ? "</div>" : "");
 }
 function flush(ctx) { if (dirty) { dirty = false; ctx.save(); } }
@@ -121,6 +150,7 @@ function mount(el, ctx) {
   var path = $("t-path");
   el.onclick = function (e) {
     var t = e.target.closest && e.target.closest(".tn, .t-gate"); if (!t) return;
+    if (t.classList.contains("t-chest")) { if (t.classList.contains("st-wait")) { toast("A noz abre no fim da semana."); return; } ctx.noz(t.getAttribute("data-sat")); return; }
     if (t.classList.contains("st-miss")) { toast("Dia encerrado."); return; }
     if (t.classList.contains("t-gate") || t.classList.contains("st-lock")) { toast(); return; }
     V.scroll = window.scrollY; openUnit(ctx, +t.getAttribute("data-i"));
