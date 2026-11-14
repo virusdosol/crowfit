@@ -10,6 +10,8 @@
 (function (global, doc) {
   'use strict';
   var Auth = global.CrowfitAuth;
+  /* Erros que antes eram engolidos em silêncio passam pelo popup "erro: [id]" (definido em index.html). */
+  function reportErr(e) { try { if (typeof global.mostrarErro === 'function') global.mostrarErro(e); } catch (x) {} }
   if (!Auth) return;
 
   var NAME_MIN = 2, NAME_MAX = 40, TIMEOUT_MS = 15000;
@@ -201,7 +203,7 @@
     try {
       var r = statsFn && statsFn();
       if (r && isFinite(r.level) && isFinite(r.points)) return r;
-    } catch (e) {}
+    } catch (e) { reportErr(e); }
     return null;
   }
 
@@ -256,10 +258,10 @@
     panelOpen = false; draft = null; uiMsg = null; screen = 'profile';
     panel.hidden = true; panel.innerHTML = '';
     if (!authOverlayOpen()) { doc.documentElement.classList.remove('cf-auth-open'); setAppInert(false); }
-    if (restoreFocus && onCloseFn) { try { onCloseFn(); } catch (e) {} }
+    if (restoreFocus && onCloseFn) { try { onCloseFn(); } catch (e) { reportErr(e); } }
     if (restoreFocus) {
       var o = (opener && doc.contains(opener)) ? opener : doc.getElementById('pf');
-      if (o && o.focus) { try { o.focus(); } catch (e) {} }
+      if (o && o.focus) { try { o.focus(); } catch (e) { reportErr(e); } }
     }
     opener = null;
   }
@@ -328,7 +330,7 @@
       var retryA = (st === 'error' && state.errorKind !== 'session') ? '<button class="cf-btn cf-btn-main" type="button" data-prof-retry>Tentar de novo</button>' : '';
       var body = st === 'loading' ? '<div class="cf-spin" role="status" aria-label="Carregando"></div>' : '<p class="cf-msg error" role="alert" data-err></p>' + retryA;
       h = '<div class="cf-wrap cf-set"><h1 class="cf-title" tabindex="-1">Conta e perfil</h1><p class="cf-sub"><span class="cf-acct" data-acct></span></p>' + body + LOGOUT + BACK_MENU + '</div>';
-    } else if (st === 'ready' && extrasFn && (function () { try { extraHtml = extrasFn(state); return true; } catch (e) { console.error('Crowfit: perfil (visão geral)', e); return false; } })()) {
+    } else if (st === 'ready' && extrasFn && (function () { try { extraHtml = extrasFn(state); return true; } catch (e) { console.error('Crowfit: perfil (visão geral)', e); reportErr(e); return false; } })()) {
       mode = 'profile';
       h = '<div class="cf-wrap">' + BAR + extraHtml + LOGOUT + '</div>';
     } else if (st === 'ready') {
@@ -369,7 +371,7 @@
       if (focus) { try { input.focus(); input.select(); } catch (e) {} }
     } else if (mode === 'host') {
       var host = panel.querySelector('[data-host]');
-      try { if (sectionsFn) sectionsFn(screen, host, api); } catch (e) { host.textContent = MSG.generic; }
+      try { if (sectionsFn) sectionsFn(screen, host, api); } catch (e) { host.textContent = MSG.generic; reportErr(e); }
       if (focus) { var th = panel.querySelector('.cf-title'); if (th) th.focus(); }
     } else if (mode === 'profile') {
       panel.querySelector('[data-name]').textContent = state.profile.displayName; /* sempre via textContent */
