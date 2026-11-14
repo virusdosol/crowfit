@@ -1,7 +1,7 @@
 /* Ambiente de teste: carrega os módulos do app (scripts de navegador) em um contexto isolado
    e oferece um servidor simulado com as mesmas regras das RPCs (supabase-sync.sql e supabase-sync-v2.sql). */
 const fs = require("fs"), path = require("path"), vm = require("vm");
-const ROOT = path.join(__dirname, "..");
+const ROOT = __dirname; /* repositório é plano: app e testes na mesma pasta */
 
 function loadScript(file) {
   const ctx = { module: { exports: {} }, console, Date, Math, JSON, Object, Array, Number, String, Set, Map, Promise, setTimeout, clearTimeout, Error };
