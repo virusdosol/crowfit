@@ -182,6 +182,8 @@ function validateState(raw) {
   }
   if (typeof raw.equipped === "string" && ACH_ID.test(raw.equipped)) st.equipped = raw.equipped;
   if (typeof raw.equippedAt === "string" && raw.equippedAt.length <= 40) st.equippedAt = raw.equippedAt;
+  if (typeof raw.trophyEq === "string" && TROFEU_KEY.test(raw.trophyEq)) st.trophyEq = raw.trophyEq;
+  if (typeof raw.trophyEqAt === "string" && raw.trophyEqAt.length <= 40) st.trophyEqAt = raw.trophyEqAt;
   if (Array.isArray(raw.showTro)) st.showTro = raw.showTro.filter(function (x) { return typeof x === "string" && ACH_ID.test(x); }).slice(0, 4);
   if (raw.collection !== undefined) {
     if (raw.collection && typeof raw.collection === "object" && !Array.isArray(raw.collection)) {
@@ -396,11 +398,20 @@ function abandonSession(S, ses, now) {
    * quantidade = número de registros do exercício
    * séries = soma de sets; repetições = soma de sets*val (só kind "r"); segundos = soma de sets*val (só kind "s")
    * marcos PROVISÓRIOS: quantas vezes o exercício precisa ser feito para cada estágio */
-var TROPHY = { marks: [5, 25, 50, 100, 250] }; /* PROVISÓRIO: não são limites definitivos */
+var TROPHY = { tiers: [
+  { id: "bronze", name: "Bronze", reps: 1000, secs: 3600 },
+  { id: "prata", name: "Prata", reps: 5000, secs: 18000 },
+  { id: "ouro", name: "Ouro", reps: 10000, secs: 36000 },
+  { id: "diamante", name: "Diamante", reps: 25000, secs: 90000 }
+] };
+/* Repetição: meta em repetições. Tempo: meta em segundos (1h, 5h, 10h, 25h). */
 function checkTrophyConfig(cfg) {
-  var m = cfg && cfg.marks;
-  if (!Array.isArray(m) || !m.length) throw new Error("troféus: marcos ausentes");
-  m.forEach(function (v, i) { if (!isInt(v, 1, 1000000) || (i && v <= m[i - 1])) throw new Error("troféus: marcos devem ser inteiros positivos e crescentes"); });
+  var t = cfg && cfg.tiers;
+  if (!Array.isArray(t) || t.length !== 4) throw new Error("troféus: são 4 níveis");
+  t.forEach(function (x, i) {
+    if (!x || typeof x.id !== "string" || !isInt(x.reps, 1, 10000000) || !isInt(x.secs, 1, 100000000)) throw new Error("troféus: nível inválido");
+    if (i && (x.reps <= t[i - 1].reps || x.secs <= t[i - 1].secs)) throw new Error("troféus: níveis devem ser crescentes");
+  });
   return true;
 }
 checkTrophyConfig(TROPHY);
@@ -408,32 +419,46 @@ checkTrophyConfig(TROPHY);
 function trophyAll(records) {
   var out = Object.create(null);
   (records || []).forEach(function (r) {
-    var t = out[r.ex] || (out[r.ex] = { exercises: 0, series: 0, reps: 0, secs: 0 });
+    var t = out[r.ex] || (out[r.ex] = { kind: r.kind, exercises: 0, series: 0, reps: 0, secs: 0 });
     t.exercises++; t.series += r.sets;
     if (r.kind === "r") t.reps += r.sets * r.val; else t.secs += r.sets * r.val;
   });
   return out;
 }
-/* Troféus conquistados = marcos atingidos somados entre todos os exercícios. */
-function trophyCount(records) {
-  var all = trophyAll(records), n = 0;
-  Object.keys(all).forEach(function (id) { n += trophyStage(all[id].exercises).stage; });
-  return n;
-}
-/* Estágio: quantos marcos foram atingidos e qual é o próximo (null se nenhum). */
-function trophyStage(count) {
-  var stage = 0, next = null;
-  TROPHY.marks.forEach(function (m, i) { if (count >= m) stage = i + 1; else if (next === null) next = m; });
-  return { stage: stage, next: next };
-}
-/* Catálogo para exibição futura: um item por exercício pedido, mesmo sem registros (zeros). */
-function trophyCatalog(records, ids) {
-  var all = trophyAll(records);
-  return ids.map(function (id) {
-    var t = all[id] || { exercises: 0, series: 0, reps: 0, secs: 0 }, st = trophyStage(t.exercises);
-    return { id: id, exercises: t.exercises, series: t.series, reps: t.reps, secs: t.secs, stage: st.stage, next: st.next };
+/* Níveis de um exercício: valor atual (reps ou segundos), meta e se está desbloqueado. */
+function trophyLevels(t, kind) {
+  var k = kind || t.kind || "r", v = k === "s" ? t.secs : t.reps;
+  return TROPHY.tiers.map(function (tier) {
+    var goal = k === "s" ? tier.secs : tier.reps;
+    return { id: tier.id, name: tier.name, goal: goal, value: Math.min(v, goal), unlocked: v >= goal };
   });
 }
+/* Troféus desbloqueados no total (somando todos os exercícios). */
+function trophyCount(records) {
+  var all = trophyAll(records), n = 0;
+  Object.keys(all).forEach(function (id) { n += trophyLevels(all[id], all[id].kind).filter(function (l) { return l.unlocked; }).length; });
+  return n;
+}
+/* Catálogo para a página: um item por exercício da biblioteca (kinds: { id: "r"|"s" }), mesmo sem registros. */
+function trophyCatalog(records, kinds) {
+  var all = trophyAll(records);
+  return Object.keys(kinds || {}).map(function (id) {
+    var kind = kinds[id], t = all[id] || { kind: kind, exercises: 0, series: 0, reps: 0, secs: 0 };
+    return { id: id, kind: kind, exercises: t.exercises, series: t.series, reps: t.reps, secs: t.secs,
+      value: kind === "s" ? t.secs : t.reps, levels: trophyLevels(t, kind) };
+  });
+}
+/* Troféu equipado: um só, para a conta toda. Chave "exercicio:nivel". Só se estiver desbloqueado. */
+var TROFEU_KEY = /^[a-z0-9_]{1,24}:(bronze|prata|ouro|diamante)$/;
+function equipTrophy(S, key, records, nowIso) {
+  if (typeof key !== "string" || !TROFEU_KEY.test(key)) return false;
+  var parts = key.split(":"), t = trophyAll(records)[parts[0]];
+  if (!t) return false;
+  var lv = trophyLevels(t, t.kind).filter(function (l) { return l.id === parts[1]; })[0];
+  if (!lv || !lv.unlocked) return false;
+  S.trophyEq = key; S.trophyEqAt = nowIso; return true;
+}
+function unequipTrophy(S, nowIso) { S.trophyEq = null; S.trophyEqAt = nowIso; return true; }
 
 /* ---- conquistas: momentos especiais e objetivos (separadas dos troféus) ----
    S.achievements = { "<id>": { at: "AAAA-MM-DDTHH:MM:SS.sssZ", day: "AAAA-MM-DD", reason: "motivo" } }
@@ -554,9 +579,11 @@ function achTop(S, n) {
 function trophyTop(records, names, n) {
   var all = trophyAll(records), out = [];
   Object.keys(all).forEach(function (id) {
-    if (all[id].exercises > 0) out.push({ id: id, name: (names && names[id]) || id, count: all[id].exercises, stage: trophyStage(all[id].exercises).stage });
+    var t = all[id]; if (!t.exercises) return;
+    var won = trophyLevels(t, t.kind).filter(function (l) { return l.unlocked; }).length;
+    out.push({ id: id, name: (names && names[id]) || id, count: t.exercises, stage: won, value: t.kind === "s" ? t.secs : t.reps });
   });
-  out.sort(function (x, y) { return (y.stage - x.stage) || (y.count - x.count) || (x.id < y.id ? -1 : x.id > y.id ? 1 : 0); });
+  out.sort(function (x, y) { return (y.stage - x.stage) || (y.value - x.value) || (x.id < y.id ? -1 : x.id > y.id ? 1 : 0); });
   return out.slice(0, n);
 }
 /* ---- caixas de recompensa ----
@@ -745,5 +772,5 @@ return { PAT: PAT, EXP: EXP, escText: escText, escAttr: escAttr, safeClass: safe
   timerSecs: timerSecs, newSession: newSession, syncStatus: syncStatus, completeSet: completeSet, skipExercise: skipExercise, advance: advance,
   grant: grant, grantExercise: grantExercise, grantSessionBonus: grantSessionBonus, finishSession: finishSession, abandonSession: abandonSession,
   logDay: logDay, dayEventOk: dayEventOk, newEventId: newEventId, ACH: ACH, checkAchCatalog: checkAchCatalog, unlockAchievements: unlockAchievements, achCatalog: achCatalog, achMerge: achMerge, achMet: achMet, BOX: BOX, ITENS: ITENS, RARIDADE_ORDEM: RARIDADE_ORDEM, pickItem: pickItem, xpSubstituto: xpSubstituto, itensReservados: itensReservados, aparenciaEquipada: aparenciaEquipada, equipar: equipar, desequipar: desequipar, itemsMerge: itemsMerge, toggleDestaque: toggleDestaque, RARIDADES: RARIDADES, ITENS: ITENS, prng: prng, pickRarity: pickRarity, rollBox: rollBox, monthCriterionMet: monthCriterionMet, grantMonthly: grantMonthly, openBox: openBox, boxHistory: boxHistory, boxesMerge: boxesMerge,  achTop: achTop, trophyTop: trophyTop, achPendingEvents: achPendingEvents, achAck: achAck, 
-  TROPHY: TROPHY, checkTrophyConfig: checkTrophyConfig, trophyAll: trophyAll, trophyCount: trophyCount, trophyStage: trophyStage, trophyCatalog: trophyCatalog };
+  TROPHY: TROPHY, checkTrophyConfig: checkTrophyConfig, trophyAll: trophyAll, trophyLevels: trophyLevels, trophyCount: trophyCount, trophyCatalog: trophyCatalog, equipTrophy: equipTrophy, unequipTrophy: unequipTrophy };
 });

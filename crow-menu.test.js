@@ -27,7 +27,7 @@ describe("conquistas no menu", () => {
 describe("troféus no menu", () => {
   const names = { flexao: "Flexão", marcha: "Marcha" };
   test("ordena por nível do troféu, depois por quantidade", () => {
-    const M = CF.TROPHY.marks;
+    const M = [CF.TROPHY.tiers[0].reps / 10]; /* 100 registros de 10 repetições = 1000 */
     const rec = (ex, n) => Array.from({ length: n }, () => ({ ex, kind: "r", sets: 1, val: 10 }));
     const recs = [...rec("marcha", M[0]), ...rec("flexao", M[0] + 2)];
     const top = CF.trophyTop(recs, names, 3);

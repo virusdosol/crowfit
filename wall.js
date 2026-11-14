@@ -36,7 +36,16 @@ function gotAch(id) { var s = S(); return !!(s && s.achievements && Object.proto
 function owned(id) { var s = S(); return !!(s && s.collection && s.collection[id]); }
 function equipped() { try { return CF().aparenciaEquipada(S()); } catch (e) { return null; } }
 function trophyRecs() { try { return root.CFT.trophyRecords(root.trailCtx()); } catch (e) { return []; } }
-function trophyRows() { var names = (root.CFP && root.CFP.LIB) || {}; try { return CF().trophyCatalog(trophyRecs(), Object.keys(names)).map(function (r) { r.name = names[r.id] ? names[r.id][0] : r.id; return r; }); } catch (e) { return []; } }
+function trophyKinds() { var lib = (root.CFP && root.CFP.LIB) || {}, k = {}; Object.keys(lib).forEach(function (id) { k[id] = lib[id][1] === "s" ? "s" : "r"; }); return k; }
+function trophyRows() { var names = (root.CFP && root.CFP.LIB) || {}; try { return CF().trophyCatalog(trophyRecs(), trophyKinds()).map(function (r) { r.name = names[r.id] ? names[r.id][0] : r.id; return r; }); } catch (e) { return []; } }
+function fmtTro(kind, v) { return kind === "s" ? (Math.round(v / 360) / 10) + "h" : String(v); }
+function trophyEqInfo() {
+  var key = S() && S().trophyEq; if (!key) return null;
+  var p = key.split(":"), row = trophyRows().filter(function (r) { return r.id === p[0]; })[0];
+  if (!row) return null;
+  var lv = row.levels.filter(function (l) { return l.id === p[1]; })[0];
+  return lv ? { row: row, lv: lv, idx: row.levels.indexOf(lv) } : null;
+}
 function trophyTotal() { try { return CF().trophyCount(trophyRecs()); } catch (e) { return 0; } }
 function nozCount() { return Object.keys((S() && S().nozes) || {}).length; }
 function achList() { return (CF().ACH || []); }
@@ -111,16 +120,22 @@ function pageNoz() {
   }).join("") + '</div>';
 }
 function pageTro() {
-  var rows = trophyRows().sort(function (a, b) { return b.exercises - a.exercises; });
-  var pinned = (S().showTro || []);
+  var rows = trophyRows(), eq = S().trophyEq || null;
+  var names = ["Bronze", "Prata", "Ouro", "Diamante"];
   return '<div class="cw-head"><h2>Troféus</h2><span>' + trophyTotal() + ' no total</span></div>' +
     (!rows.some(function (r) { return r.exercises > 0; }) ? '<p class="cw-empty">' + esc(CROW.vazio_tro) + '</p>' : '') +
-    '<div class="cw-icons">' + rows.map(function (r) {
-      var on = pinned.indexOf(r.id) >= 0;
-      var bub = '<b>' + esc(r.name) + '</b><span>' + esc(plural(r.exercises, "vez", "vezes")) + ' · nível ' + r.stage + (r.next ? ' · próximo marco: ' + r.next : ' · marcos completos') + '</span>' +
-        '<button type="button" class="cw-btn cw-bbtn ' + (on ? "" : "cw-primary") + '" data-act="destaque" data-id="' + esc(r.id) + '">' + (on ? "Tirar do perfil" : "Mostrar no perfil") + '</button>';
-      return cell('<span class="cw-glyph trophy s' + Math.min(r.stage, 3) + (on ? " on" : "") + '">' + I.trophy + '</span>', r.name, bub);
-    }).join("") + '</div><p class="cw-hint">Até 4 troféus aparecem no seu perfil.</p>';
+    rows.map(function (r) {
+      var unit = r.kind === "s" ? "de tempo" : "de repetições";
+      return '<section class="cw-tro-ex"><h3>' + esc(r.name) + '</h3><p class="cw-hint">' + esc(unit) + '</p>' +
+        '<div class="cw-tro-row">' + r.levels.map(function (l, i) {
+          var key = r.id + ':' + l.id, on = l.unlocked, sel = eq === key;
+          var label = on ? 'Equipar ' + names[i] + ' de ' + esc(r.name) : names[i] + ' de ' + esc(r.name) + ': ' + fmtTro(r.kind, l.value) + '/' + fmtTro(r.kind, l.goal);
+          return '<button type="button" class="cw-tro-btn' + (sel ? ' sel' : '') + '" data-act="' + (on ? 'tro-eq' : 'tro-info') + '" data-key="' + esc(key) + '" data-text="' + esc(label) + '" aria-label="' + esc(label) + '">' +
+            '<span class="cw-glyph trophy s' + i + (on ? ' on' : ' off') + '">' + I.trophy + '</span>' +
+            '<small>' + names[i] + '</small></button>';
+        }).join('') + '</div></section>';
+    }).join('') +
+    '<p class="cw-hint">Toque em um troféu desbloqueado para equipar. Só um fica equipado, e ele aparece no seu perfil.</p>';
 }
 function pageApp() {
   var s = S(), n = Object.keys(s.collection || {}).length, eq = equipped(), it = eq && byItem(eq);
@@ -169,12 +184,8 @@ function profileHtml(p) {
 function profileHtmlUnsafe(p) {
   var s = S(), prof = (p && p.profile) || {}, name = prof.displayName || "", s2 = since(prof.createdAt);
   var li = s && root.lvlInfo ? root.lvlInfo() : { l: 0 };
-  var pinned = (s && s.showTro) || [], names = (root.CFP && root.CFP.LIB) || {};
-  var rows = trophyRows(), byId = {}; rows.forEach(function (r) { byId[r.id] = r; });
-  var troH = pinned.length ? pinned.map(function (id) {
-    var r = byId[id]; if (!r) return "";
-    return cell('<span class="cw-glyph trophy s' + Math.min(r.stage, 3) + ' on">' + I.trophy + '</span>', r.name, '<b>' + esc(r.name) + '</b><span>' + esc(plural(r.exercises, "vez", "vezes")) + ' · nível ' + r.stage + '</span>');
-  }).join("") : '<p class="cw-hint">Escolha até 4 troféus no menu de troféus para exibir aqui.</p>';
+  var te = trophyEqInfo();
+  var troH = te ? cell('<span class="cw-glyph trophy s' + te.idx + ' on">' + I.trophy + '</span>', te.row.name, '<b>' + esc(te.row.name) + '</b><span>' + esc(te.lv.name) + '</span>') : '<p class="cw-hint">Nenhum troféu equipado. Escolha um na página de troféus.</p>';
   var achH = unlockedAch().slice(0, 4).map(function (u) {
     var a = achList().filter(function (x) { return x.id === u.id; })[0]; if (!a) return "";
     return cell('<span class="cw-glyph on">' + I.medal + '</span>', a.name, '<b>' + esc(a.name) + '</b><span>' + esc(u.info.day || "") + '</span>');
@@ -189,7 +200,7 @@ function profileHtmlUnsafe(p) {
       '<div class="cw-ov"><span class="cw-ov-ico">' + I.noz + '</span><b>' + nozCount() + '</b><small>Nozes</small></div>' +
       '<div class="cw-ov"><span class="cw-ov-ico">' + I.medal + '</span><b>' + unlockedAch().length + '</b><small>Conquistas</small></div>' +
     '</div>' +
-    '<h2 class="cw-sec">Troféus em destaque</h2><div class="cw-icons cw-four">' + troH + '</div>' +
+    '<h2 class="cw-sec">Troféu equipado</h2><div class="cw-icons cw-four">' + troH + '</div>' +
     '<h2 class="cw-sec">Últimas conquistas</h2><div class="cw-icons cw-four">' + (achH || '<p class="cw-hint">Nenhuma conquista ainda.</p>') + '</div>' +
   '</section>';
 }
@@ -206,7 +217,13 @@ function bubbleToggle(btn) {
 function act(kind, el) {
   if (kind === "equip") { CF().equipar(S(), el.getAttribute("data-id"), new Date().toISOString()); save(); return renderPage(); }
   if (kind === "unequip") { CF().desequipar(S(), new Date().toISOString()); save(); return renderPage(); }
-  if (kind === "destaque") { if (!CF().toggleDestaque(S(), el.getAttribute("data-id"))) { root.alert && root.alert("Até 4 troféus no perfil."); return; } save(); return renderPage(); }
+  if (kind === "tro-eq") {
+    var key = el.getAttribute("data-key"), now = new Date().toISOString();
+    if (S().trophyEq === key) CF().unequipTrophy(S(), now);
+    else if (!CF().equipTrophy(S(), key, trophyRecs(), now)) { root.alert && root.alert("Esse troféu ainda não foi desbloqueado."); return; }
+    save(); return renderPage();
+  }
+  if (kind === "tro-info") { root.alert && root.alert(el.getAttribute("data-text")); return; }
   if (kind === "box") return openBoxNow(el.getAttribute("data-box"));
   if (kind === "noz") { var k = String(el.getAttribute("data-box")).replace(/^noz:/, ""); closePage(); if (typeof root.openNozScreen === "function") root.openNozScreen(k); }
 }

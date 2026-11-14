@@ -156,3 +156,12 @@ body.cw-home .cw-bar{display:grid}
 .am-lv{font-size:.85em;color:var(--mute,#5E5E73)}
 .am-acts{display:flex;gap:6px;flex-wrap:wrap}
 .am-flash{padding:10px 12px;border-radius:12px;background:var(--card,#fff);margin:10px 0}
+
+/* Troféus por exercício */
+.cw-tro-ex { margin: 18px 0 8px; }
+.cw-tro-ex h3 { margin: 0; font: 800 18px Nunito, sans-serif; color: #17171C; }
+.cw-tro-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; }
+.cw-tro-btn { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px; border: 2px solid transparent; border-radius: 16px; background: #F8F8FB; cursor: pointer; font-family: inherit; }
+.cw-tro-btn.sel { border-color: #E3182D; }
+.cw-tro-btn small { font: 700 12px Nunito, sans-serif; color: #303036; }
+.cw-glyph.trophy.off { opacity: .32; filter: grayscale(1); }
