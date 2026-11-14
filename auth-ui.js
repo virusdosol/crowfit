@@ -17,6 +17,8 @@
   var root = null, chip = null, toastEl = null, toastTimer = 0, view = 'loading';
   /* Perguntas do perfil de treino antes da conta. Mesmas chaves e regras de QS (index.html). Ficam só na sessão da aba: se o app for fechado, o onboarding recomeça do zero. */
   var K_DRAFT = 'crowfit-onboard-draft';
+  /* Variantes do Crow para as telas de fala (se alternam). O Crow com lápis e prancheta fica só nas perguntas. */
+  var CROW_IMGS = ['crow-1.png', 'crow-2.png', 'crow-3.png'];
   var PQ = [
     { k: 'nome', q: 'Como podemos te chamar?', type: 'text', ph: 'Seu nome', hint: 'Esse nome só aparece para você. Seu ID é o que os amigos veem.' },
     { k: 'idade', q: 'Quantos anos você tem?', type: 'number', ph: 'Idade', min: 12, max: 90, inputmode: 'numeric' },
@@ -59,7 +61,7 @@
     },
     crow: function (d) {
       return '<div class="in-wrap cf-w cf-crow"><div class="cf-bubble">' + d.text + '</div>' +
-        '<img class="cf-crow-img" src="crow.png" alt="Crow">' +
+        '<img class="cf-crow-img" src="' + d.img + '" alt="Crow">' +
         '<div class="cf-w-btns"><button class="in-cta" type="button" data-go="' + d.next + '">Continuar</button></div></div>';
     },
     pq: function (d) {
@@ -73,13 +75,14 @@
           .replace('type="text" autocomplete="off" required>', 'type="text" inputmode="' + (q.inputmode || 'text') + '" placeholder="' + q.ph + '" maxlength="40" value="' + (cur == null ? '' : String(cur).replace(/"/g, '&quot;')) + '" autocomplete="off" required>');
       var back = d.i > 0 ? 'pq' + (d.i - 1) : 'crowQ';
       return '<div class="cf-wrap"><button class="cf-link cf-back" type="button" data-go="' + back + '">← Voltar</button>' +
+        '<img class="cf-pq-crow" src="crow.png" alt="Crow">' +
         '<p class="cf-prog">' + (d.i + 1) + ' de ' + PQ.length + '</p>' + head(q.q, '') + MSG +
         '<form class="cf-form" novalidate data-form="pq" data-i="' + d.i + '">' + body +
         submit('Continuar') + '</form></div>';
     },
-    crowStart: function () { return VIEWS.crow({ text: 'Oi, eu sou o Crow!', next: 'crowQ' }); },
-    crowQ: function () { return VIEWS.crow({ text: 'Me responda umas perguntas antes.', next: 'pq0' }); },
-    crowAccount: function () { return VIEWS.crow({ text: 'Agora que nós conhecemos melhor, tá na hora de criar sua conta.', next: 'signup' }); },
+    crowStart: function () { return VIEWS.crow({ text: 'Oi, eu sou o Crow!', next: 'crowQ', img: CROW_IMGS[0] }); },
+    crowQ: function () { return VIEWS.crow({ text: 'Me responda umas perguntas antes.', next: 'pq0', img: CROW_IMGS[1] }); },
+    crowAccount: function () { return VIEWS.crow({ text: 'Agora que nós conhecemos melhor, tá na hora de criar sua conta.', next: 'signup', img: CROW_IMGS[2] }); },
     loading: function () { return '<div class="cf-spin" role="status" aria-label="Carregando"></div>'; },
     login: function () {
       return '<button class="cf-link cf-back" type="button" data-go="welcome">← Voltar</button><img class="cf-login-mascot" src="mascot.png" alt="Crowfit, o corvo mascote">' + head('Entrar', 'Entre para continuar seu treino.') + MSG +

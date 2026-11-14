@@ -92,3 +92,4 @@ html.cf-auth-open, html.cf-auth-open body { overflow: hidden; }
 .cf-crow-img { display: block; height: clamp(150px, 30vh, 240px); width: auto; margin: 40px auto 0; }
 .cf-prog { margin: 0 0 6px; font: 800 13px Nunito, sans-serif; color: #303036; letter-spacing: .4px; text-transform: uppercase; }
 .cf-chips { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 12px 0 16px; }
+.cf-pq-crow { display: block; height: clamp(90px, 18vh, 140px); width: auto; margin: 4px auto 8px; }
