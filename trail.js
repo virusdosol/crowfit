@@ -192,7 +192,7 @@ function mount(el, ctx) {
   var S = ctx.S, tr = ensure(S, ctx.today), ti = Math.max(0, idxOf(S, ctx.today)), last = lastOpen(S, ti), hi = last + PREVIA;
   if (!V || V.start !== tr.start) V = { start: tr.start, lo: Math.max(0, ti - 6), scroll: null };
   V.ctx = ctx;
-  el.innerHTML = '<div class="t-ban" id="t-ban"><div class="tb-l"><small id="tb-s"></small><b id="tb-t"></b></div><button id="t-hoje" aria-label="Ir para o treino de hoje">Hoje</button></div>' +
+  el.innerHTML = '<div class="t-ban" id="t-ban"><div class="tb-l"><small id="tb-s"></small><b id="tb-t"></b></div><button id="t-hoje" aria-label="Ir para o treino de hoje">Hoje</button></div><div class="t-ban-sp" id="t-ban-sp"></div>' +
     (V.lo > 0 ? '<button class="btn sec t-more" id="t-prev">Ver dias anteriores</button>' : "") +
     '<div class="t-path" id="t-path">' + range(ctx, V.lo, hi, last) + '</div>';
   flush(ctx);
@@ -222,6 +222,7 @@ function mount(el, ctx) {
   var n = el.querySelector('[data-i="' + ti + '"]');
   if (V.scroll != null) window.scrollTo(0, V.scroll); else if (n) n.scrollIntoView({ block: "center" });
   banner();
+  var bn = $("t-ban"), sp = $("t-ban-sp"); if (bn && sp) sp.style.height = (bn.offsetHeight + 22) + "px";
 }
 
 /* Pontos e ofensiva: ao completar a unidade, concede (uma única vez, por unidade) 10 por exercício + 20 de bônus

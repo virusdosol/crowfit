@@ -3,7 +3,8 @@
 .tab{flex:1;border:2px solid var(--line);background:var(--card);color:var(--mute);border-radius:14px;padding:10px;font:800 15px Nunito,system-ui,sans-serif;cursor:pointer}
 .tab.on{border-color:var(--brand);color:var(--ink);box-shadow:0 3px 0 var(--brand-d)}
 .tab:focus-visible,.tn:focus-visible,.ex-chk:focus-visible,.t-ban button:focus-visible{outline:3px solid var(--focus,#17171C);outline-offset:2px}
-.t-ban{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;background:var(--brand);color:#F5F5F5;border-radius:16px;box-shadow:0 4px 0 var(--brand-d);margin:14px 0 8px}
+.t-ban{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:50%;transform:translateX(-50%);width:calc(min(480px,100vw) - 32px);box-sizing:border-box;z-index:5;display:flex;background:var(--brand);color:#F5F5F5;border-radius:16px;box-shadow:0 4px 0 var(--brand-d);margin:0}
+.t-ban-sp{display:block;height:0}
 .tb-l{flex:1;min-width:0;padding:12px 14px}
 .tb-l small{display:block;font-weight:800;letter-spacing:.04em;opacity:.9}
 .tb-l b{display:block;font:600 20px/1.2 Fredoka,Nunito,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
