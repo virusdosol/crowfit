@@ -205,26 +205,49 @@ O progresso fica **primeiro no seu aparelho**, separado por conta:
 
 ## 🔄 Sincronização
 
-> **Status:** implementada e coberta por testes automatizados que usam um simulador das regras do SQL. **Ainda não foi validada de ponta a ponta** em navegador real contra o Supabase.
+> **Status:** implementada e coberta por uma suíte automatizada (`node --test`) que usa um servidor simulado com as mesmas regras do SQL. **Não foi validada em produção:** falta o teste manual em dois aparelhos contra o Supabase real (veja `RELATORIO_AUDITORIA.md`).
 
-| Dado local | Tabela remota | Como |
+### O que é sincronizado
+
+| Dado | Tabela no Supabase | Como o conflito é resolvido |
 |---|---|---|
-| Pontos, melhor ofensiva, última data, dias concluídos, histórico de plano, recompensas | `public.user_progress` | RPC `merge_my_progress` |
-| Sessões do histórico | `public.workout_sessions` | RPC `upsert_my_sessions` (lotes de até 100) |
-| Conquistas | `public.achievements_unlocked` | RPC `unlock_my_achievements` (envio pronto, catálogo ainda não existe) |
+| Pontos (base + recompensas), melhor ofensiva, última data de treino, dias concluídos, histórico de planos, recompensas | `user_progress` | Pontos: a base mais alta vence e as recompensas são uma união. Datas e dias: união. Melhor ofensiva e última data: o maior valor. Nada regride. |
+| Sessões de treino do histórico | `workout_sessions` | Sessão finalizada é imutável; só o feedback pode ser preenchido, uma vez. |
+| Início da trilha | `trail_state.start` | Só é gravado uma vez. Um aparelho sem nenhuma marca local aceita o início da conta. |
+| Níveis congelados por seção | `trail_state.levels` | Já gravado prevalece; seções novas são adicionadas. |
+| Exercícios marcados e desmarcados (cada unidade × exercício) | `trail_exercise_states` | O último a mudar vence (`changed_at`). Desmarcar é um estado como outro, então a desmarcação sincroniza. Empate: "desmarcado" vence. |
+| Experiência, dias por semana, ajuste de dificuldade e sequência de feedback fácil | `training_settings` | O último a mudar vence, pelo horário da mudança. Um perfil local que nunca sincronizou prevalece sobre a conta. |
+| Nozes abertas (semana e XP) | `user_nozes` | Uma noz por semana. Repetição não concede XP de novo. O XP já entra nos pontos pelo progresso. |
+| Conquistas desbloqueadas | `achievements_unlocked` | Envio pronto, mas o app ainda não tem conquistas. |
 
-- A leitura é por `SELECT` sob RLS: cada usuário só enxerga as próprias linhas. Toda escrita passa pelas RPCs, que usam `auth.uid()`. O app nunca envia um UID.
-- **Pontos:** o servidor calcula `points = base_points + soma(recompensas)`, o que preserva o total local exato.
-- **Mescla:** `base_points`, melhor ofensiva e última data ficam com o maior valor; dias e recompensas são unidos. Nada regride.
-- **Quando sincroniza:** ao entrar, ao salvar (agrupado por ~4 s), ao voltar a conexão e ao voltar para o app.
-- **Offline:** a pendência é registrada e reenviada quando a conexão volta. Nenhum sucesso falso é mostrado.
+A leitura é feita por `SELECT` com RLS: cada usuário só vê as próprias linhas. Toda escrita passa por funções `SECURITY DEFINER` que usam `auth.uid()`; o app nunca envia um UID.
+
+### O que permanece somente local
+
+- **Idade, peso e altura.** Nunca são enviados ao servidor. Um aparelho novo pede esses dados no onboarding.
+- **Nome do perfil** (`S.profile.nome`) não vai para `training_settings`. O nome de exibição vai para `public.profiles`, pelo caminho que já existia.
+- **Metadados de sincronização** (`corvofit-v2:sync:<UID>`): assinaturas, horários de mudança e o cache do que já foi enviado. Podem ser apagados sem perder progresso; o app reenvia.
+- **Treino em andamento** (`S.active`).
+- **Ajustes de interface** e o que está no cache offline.
+
+### Quando sincroniza
+
+Ao entrar na conta, ao salvar (agrupado por ~4 s), ao voltar a conexão, ao voltar para o app (puxa mudanças de outros aparelhos mesmo sem mudança local) e em novas tentativas após falha de rede.
+
+### Offline e erros
+
+- O app abre e funciona sem rede. Tudo continua salvo localmente.
+- Sem rede, a pendência é registrada e o envio é repetido quando a conexão volta, com intervalos de 15 s, 60 s e 5 min.
+- Se o servidor recusar um conteúdo (erro de validação), o app não repete sozinho o mesmo conteúdo, mantém tudo local e avisa.
+- Se as tabelas v2 ainda não existirem no banco, a parte nova é ignorada e o progresso continua sincronizando.
+- Cada rodada pertence a uma conta e a uma "geração" do app: se a conta trocar no meio de uma resposta, nada é gravado na conta errada.
 
 ### Limites conhecidos
 
-- **A trilha não é sincronizada** (início, exercícios marcados, níveis). Em outro aparelho, pontos, dias e recompensas chegam, mas a trilha começa do zero.
-- **Não sincronizam:** perfil de treino, ajuste de dificuldade, treino em andamento e as **nozes abertas** (o XP delas já entra nos pontos, mas a lista de nozes não vai ao servidor ainda).
-
----
+- A hora de cada mudança de exercício é a hora em que o app percebe a mudança durante a sincronização, não o toque exato.
+- O aplicativo ainda sorteia o XP da noz no próprio aparelho. A função `open_my_noz` do servidor existe, mas o app não a chama.
+- O estado de sincronização da trilha fica no navegador e pode passar de 100 KB.
+- O servidor confia no XP enviado por `merge_my_nozes` (importação de nozes antigas). Não há conferência de fórmula.
 
 ## 🛠 Para quem quer mexer no código
 
@@ -247,6 +270,8 @@ crowfit/
 ├── sw.js                   # service worker (cache offline)
 ├── manifest.json           # PWA
 ├── supabase-profiles*.sql, supabase-sync.sql
+├── supabase-sync-v2.sql    # migração v2: trilha, exercícios, configurações e nozes (depois da v1)
+├── tests/                  # testes automatizados da sincronização (node --test; o app não usa)
 └── imagens: logo.png, logo-dark.png, mascot.png, flame.png, noz-aberta.png,
              noz-fechada.png, intro-logo.png, intro-mascot.png, splash.jpg, icon-*.png
 ```
@@ -264,7 +289,7 @@ Ordem de carregamento no `index.html`: SDK, `supabase-config.js`, `auth.js`, `au
 O login e a sincronização só funcionam com o **seu** projeto Supabase.
 
 1. Crie o projeto e coloque a URL e a chave publicável em `supabase-config.js`.
-2. No *SQL Editor*, execute em um banco novo, nesta ordem: `supabase-profiles.sql` e depois `supabase-sync.sql`. Use `supabase-profiles-verify.sql` para conferir os perfis. (O projeto original já tem esses scripts aplicados.)
+2. No *SQL Editor*, execute em um banco novo, nesta ordem: `supabase-profiles.sql`, `supabase-sync.sql` e depois `supabase-sync-v2.sql`. Use `supabase-profiles-verify.sql` para conferir os perfis. (O projeto original já tem esses scripts aplicados.)
 3. Em *Authentication > URL Configuration*, defina o Site URL com o endereço real do app e as Redirect URLs (com e sem `index.html`; `http://localhost:PORTA/**` para testes locais).
 4. Em *Authentication > Providers*, ative e-mail (decida sobre "Confirm email") e Google (Client ID e Secret só no painel do Supabase).
 5. No Google Cloud, autorize o URI `https://<seu-projeto>.supabase.co/auth/v1/callback`.
@@ -276,12 +301,13 @@ O SMTP padrão do Supabase tem limite baixo de envios; para uso real, configure 
 
 ## 🗺 Ainda não tem
 
-- Sincronização da trilha, do perfil de treino, do ajuste de dificuldade e das nozes.
+- Abertura de noz pelo servidor (`open_my_noz`) no app.
+- Perfil de treino (idade, peso, altura) na nuvem: continua somente local, por decisão.
 - Conquistas (o envio já existe; faltam o catálogo e os desbloqueios).
 - Tela de histórico de sessões.
 - Ilustrações ou vídeos dos exercícios.
 - Ligas, amigos e lembretes diários.
-- Ajuste da regra de descanso da ofensiva para o sábado.
+- Ajuste da regra de descanso da ofensiva para o sábado (a trilha usa sábado; a ofensiva ainda conta domingo).
 
 Sugestões e contribuições são bem-vindas: abra uma *issue* ou um *pull request*.
 
