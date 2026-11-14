@@ -557,7 +557,8 @@ function catalogoTemporario() {
   var qtd = { comum: 18, epica: 9, rara: 5, lendaria: 3 }, out = [];
   Object.keys(qtd).forEach(function (r) {
     for (var n = 1; n <= qtd[r]; n++) {
-      out.push({ id: "ap_" + r.slice(0, 3) + "_" + (n < 10 ? "0" : "") + n, nome: "Aparência " + r + " " + n,
+      var Rot = { comum: "comum", epica: "épica", rara: "rara", lendaria: "lendária" }[r];
+      out.push({ id: "ap_" + r.slice(0, 3) + "_" + (n < 10 ? "0" : "") + n, nome: "Aparência " + Rot + " " + n,
                  tipo: "aparencia", raridade: r, temporario: true });
     }
   });
