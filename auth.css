@@ -72,7 +72,7 @@ html.cf-auth-open, html.cf-auth-open body { overflow: hidden; }
 
 /* Telas de apresentação e escolha de conta (usam as classes .in-* do app) */
 .cf-auth.cf-bare { padding: 0; }
-.cf-w .cf-w-mascot { display: block; height: clamp(150px, 30vh, 260px); width: auto; margin: clamp(24px, 8vh, 72px) auto 0; }
+.cf-w .cf-w-mascot { display: block; height: clamp(120px, 22vh, 190px); width: auto; margin: clamp(8px, 2vh, 20px) auto 0; }
 .cf-w .cf-w-logo { width: min(54%, 230px); margin: clamp(14px, 3vh, 28px) auto 0; }
 .cf-w .cf-w-btns { width: 100%; margin-top: auto; padding-top: 28px; display: flex; flex-direction: column; gap: 14px; }
 .cf-w .cf-w-btns .in-cta { margin-top: 0; font-size: 20px; text-transform: uppercase; letter-spacing: .03em; }

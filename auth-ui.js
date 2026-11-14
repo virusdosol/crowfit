@@ -65,7 +65,7 @@
     },
     /* 2ª tela: já tem conta? */
     welcome: function () {
-      return '<div class="in-wrap cf-w"><img class="cf-w-mascot" src="mascot.png" alt="Crowfit, o corvo mascote">' +
+      return '<div class="in-wrap cf-w"><img class="cf-w-mascot" src="crow-wave.png" alt="Crowfit, o corvo mascote acenando">' +
         '<img class="cf-w-logo" src="logo-dark.png" alt="Crowfit"><p>Treine, evolua e seja mais forte!</p>' +
         '<div class="cf-w-btns"><button class="in-cta" type="button" data-go="crowStart">Começar agora</button>' +
         '<button class="cf-cta2" type="button" data-go="login">Já tenho uma conta</button></div></div>';
