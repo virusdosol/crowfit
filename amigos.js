@@ -16,7 +16,7 @@ var MSG = {
   profile_missing: "Seu perfil ainda não está pronto. Tente de novo em instantes."
 };
 var ESC = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
-var box = null, busy = false, flash = "";
+var box = null, busy = false, flash = "", lastData = null, filterText = "";
 
 function validHandle(h) { return typeof h === "string" && HANDLE_RE.test(h); }
 function normHandle(h) { return String(h == null ? "" : h).trim().toLowerCase(); }
@@ -47,13 +47,18 @@ function section(title, items, fn, empty) {
 function html(d) {
   var idBlock = d.handle
     ? '<div class="am-id"><span>Seu ID</span><b>@' + esc(d.handle) + '</b><button type="button" class="am-btn" data-act="copy">Copiar</button></div>'
-    : '<form class="am-form" data-form="handle"><label>Escolha seu ID<input name="handle" maxlength="20" autocomplete="off" autocapitalize="off" placeholder="ex.: treino_ana"></label>' +
-      '<p class="am-hint">3 a 20 caracteres: letras minúsculas, números e _.</p><button type="submit" class="am-btn am-pri">Salvar ID</button></form>';
+    : '<p class="am-flash">Seu ID ainda não foi definido. Escolha em Configurações > Conta e perfil.</p>';
+  var friendsAll = d.friends || [];
+  var q = normHandle(filterText).replace(/^@/, "");
+  var friends = q ? friendsAll.filter(function (p) {
+    return String(p.handle || "").indexOf(q) >= 0 || String(p.name || "").toLowerCase().indexOf(q) >= 0;
+  }) : friendsAll;
+  var searchBox = '<form class="am-form am-search" data-form="filter" role="search"><label>Buscar amigo<input name="q" type="search" maxlength="40" autocomplete="off" autocapitalize="off" placeholder="@usuario ou nome" value="' + esc(filterText) + '"></label></form>';
   var addForm = d.handle
     ? '<form class="am-form am-add" data-form="add"><label>Adicionar amigo pelo ID<input name="handle" maxlength="21" autocomplete="off" autocapitalize="off" placeholder="@do_amigo"></label><button type="submit" class="am-btn am-pri">Pedir</button></form>'
     : '';
   return '<div class="cw-head"><h2>Amigos</h2><span>' + (d.friends || []).length + '</span></div>' +
-    idBlock + addForm +
+    idBlock + addForm + searchBox +
     (flash ? '<p class="am-flash" role="status">' + esc(flash) + '</p>' : '') +
     (d.incoming && d.incoming.length ? section("Pedidos recebidos", d.incoming, function (p) {
       return row(p, '<button type="button" class="am-btn am-pri" data-act="accept" data-h="' + esc(p.handle) + '">Aceitar</button>' +
@@ -62,9 +67,9 @@ function html(d) {
     (d.outgoing && d.outgoing.length ? section("Pedidos enviados", d.outgoing, function (p) {
       return row(p, '<button type="button" class="am-btn" data-act="remove" data-h="' + esc(p.handle) + '">Cancelar</button>');
     }, "") : '') +
-    section("Seus amigos", d.friends || [], function (p) {
+    section("Seus amigos", friends, function (p) {
       return row(p, '<button type="button" class="am-btn" data-act="remove" data-h="' + esc(p.handle) + '">Remover</button>');
-    }, "Ainda sem amigos. Compartilhe seu ID para alguém te adicionar.");
+    }, q ? "Nenhum amigo encontrado para essa busca." : "Ainda sem amigos. Compartilhe seu ID para alguém te adicionar.");
 }
 
 /* ---------- fluxo ---------- */
@@ -72,7 +77,8 @@ async function load() {
   if (!box) return;
   try {
     var d = await call("get_my_social");
-    box.innerHTML = html(d || {});
+    lastData = d || {};
+    box.innerHTML = html(lastData);
   } catch (e) {
     box.innerHTML = '<p class="am-flash" role="alert">' + esc(msgFor(e)) + '</p>';
   }
@@ -100,10 +106,20 @@ function onSubmit(ev) {
   var f = ev.target; if (!f || !f.getAttribute) return;
   ev.preventDefault();
   var kind = f.getAttribute("data-form"), input = f.querySelector("input[name=handle]");
+  if (kind === "filter") return;
   var h = normHandle(input && input.value);
   if (!validHandle(h)) { flash = MSG.invalid_handle; return load(); }
-  if (kind === "handle") return act(function () { return call("set_my_handle", { p: { handle: h } }); }, "ID salvo.");
   if (kind === "add") { input.value = ""; return act(function () { return call("send_friend_request", { p: { handle: h } }); }, "Pedido enviado."); }
+}
+
+function onInput(ev) {
+  var f = ev.target && ev.target.closest && ev.target.closest("form[data-form=filter]");
+  if (!f || !lastData) return;
+  var pos = ev.target.selectionStart;
+  filterText = ev.target.value || "";
+  box.innerHTML = html(lastData);
+  var inp = box.querySelector("form[data-form=filter] input");
+  if (inp) { inp.focus(); try { inp.setSelectionRange(pos, pos); } catch (e) {} }
 }
 
 function mount(el) {
@@ -111,6 +127,7 @@ function mount(el) {
   box = el; flash = "";
   el.addEventListener("click", onClick);
   el.addEventListener("submit", onSubmit);
+  el.addEventListener("input", onInput);
   box.innerHTML = '<p class="cw-empty">Carregando…</p>';
   load();
 }

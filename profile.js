@@ -15,7 +15,8 @@
   if (!Auth) return;
 
   var NAME_MIN = 2, NAME_MAX = 40, TIMEOUT_MS = 15000;
-  var COLS = 'id, display_name, created_at, updated_at';
+  var COLS = 'id, display_name, handle, handle_changed_at, created_at, updated_at';
+  var HANDLE_DAYS = 30;
   var MSG = {
     network: 'Sem conexão com a internet. Seu treino continua funcionando; tente o perfil de novo quando a rede voltar.',
     unavailable: 'O servidor não respondeu agora. Tente novamente em instantes.',
@@ -69,7 +70,7 @@
   /* Valida a linha recebida: precisa ser do usuário atual e ter display_name textual. */
   function toProfile(row, uid) {
     if (!row || row.id !== uid || typeof row.display_name !== 'string') return null;
-    return { id: row.id, displayName: row.display_name, createdAt: row.created_at || '', updatedAt: row.updated_at || '' };
+    return { id: row.id, displayName: row.display_name, handle: row.handle || null, handleChangedAt: row.handle_changed_at || null, createdAt: row.created_at || '', updatedAt: row.updated_at || '' };
   }
 
   function validateName(raw) {
@@ -223,8 +224,10 @@
       else if (t.hasAttribute('data-prof-settings') || t.hasAttribute('data-prof-menu')) go('settings');
       else if (t.hasAttribute('data-prof-back')) go('profile');
       else if (t.hasAttribute('data-prof-go')) { var g = t.getAttribute('data-prof-go'); if (SCREENS[g]) go(g); }
+      else if (t.hasAttribute('data-prof-switch')) switchAcc();
       else if (t.hasAttribute('data-prof-retry')) { uiMsg = null; refresh(); }
     });
+    panel.addEventListener('submit', onExtraSubmit);
     panel.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape' || saving) return;
       if (screen === 'settings') go('profile');
@@ -288,6 +291,78 @@
   var CLOSE = '<button class="cf-btn cf-btn-ghost" type="button" data-prof-close>Fechar</button>';
   var LOGOUT = '<button class="cf-btn cf-btn-ghost cf-btn-danger" type="button" data-crowfit-logout>Sair da conta</button>';
   var BACK_MENU = '<button class="cf-btn cf-btn-ghost" type="button" data-prof-menu>Voltar às configurações</button>';
+  var MESES_BR = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+  function fmtDate(iso) { var d = new Date(iso); return d.getDate() + ' de ' + MESES_BR[d.getMonth()] + ' de ' + d.getFullYear(); }
+  /* Janela de troca: só começa na primeira troca (handle_changed_at nulo = nunca trocou). */
+  function handleWindow(p) {
+    if (!p || !p.handleChangedAt) return { open: true };
+    var next = new Date(new Date(p.handleChangedAt).getTime() + HANDLE_DAYS * 86400000);
+    return next.getTime() <= Date.now() ? { open: true } : { open: false, until: fmtDate(next.toISOString()) };
+  }
+  function idSection() {
+    var p = state.profile || {};
+    var w = p.handle ? handleWindow(p) : { open: true };
+    return '<div class=\"cf-section\"><h2 class=\"cf-sec-t\">Seu ID</h2>' +
+      (p.handle ? '<p class=\"cf-acct\">@' + esc(p.handle) + '</p>' : '<p class=\"cf-hint\">Seu ID ainda não foi definido. Escolha um para usar amigos.</p>') +
+      (w.open
+        ? '<form class=\"cf-form\" novalidate data-prof-handle-form><div class=\"cf-field\"><label for=\"cf-prof-handle\">Novo ID</label>' +
+          '<input id=\"cf-prof-handle\" name=\"handle\" type=\"text\" maxlength=\"20\" autocomplete=\"off\" autocapitalize=\"off\" required>' +
+          '<p class=\"cf-hint\">3 a 20 caracteres: letras minúsculas, números e _. Depois da primeira troca, só pode trocar de novo após 30 dias.</p></div>' +
+          '<button class=\"cf-btn cf-btn-main\" type=\"submit\" data-label=\"Trocar ID\">Trocar ID</button></form>'
+        : '<p class=\"cf-hint\">Você poderá trocar o ID a partir de ' + esc(w.until) + '.</p>') +
+      '</div>';
+  }
+  function providerSection() {
+    var snap = Auth.getState(), u = snap && snap.user;
+    if (!u) return '';
+    if (u.provider === 'google') {
+      return '<div class=\"cf-section\"><h2 class=\"cf-sec-t\">Conta Google</h2><p class=\"cf-acct\">' + esc(u.email) + '</p>' +
+        '<button class=\"cf-btn cf-btn-ghost\" type=\"button\" data-prof-switch>Trocar de conta Google</button></div>';
+    }
+    return '<div class=\"cf-section\"><h2 class=\"cf-sec-t\">E-mail</h2>' +
+      '<form class=\"cf-form\" novalidate data-prof-email-form><div class=\"cf-field\"><label for=\"cf-prof-email\">Novo e-mail</label>' +
+      '<input id=\"cf-prof-email\" name=\"email\" type=\"email\" autocomplete=\"email\" required>' +
+      '<p class=\"cf-hint\">Enviaremos um link de confirmação para o novo endereço.</p></div>' +
+      '<button class=\"cf-btn cf-btn-main\" type=\"submit\" data-label=\"Atualizar e-mail\">Atualizar e-mail</button></form></div>';
+  }
+  var HANDLE_ERR = { handle_cooldown: 'Você só pode trocar o ID 30 dias após a última troca.', handle_taken: 'Esse ID já está em uso. Escolha outro.', invalid_handle: 'Use de 3 a 20 letras minúsculas, números ou _.', not_authenticated: 'Entre na sua conta para trocar o ID.' };
+  function handleErrMsg(e) { var m = (e && (e.message || e.code)) || ''; for (var k in HANDLE_ERR) if (m.indexOf(k) >= 0) return HANDLE_ERR[k]; return MSG.generic; }
+  async function onExtraSubmit(e) {
+    var f = e.target;
+    if (!f || !f.hasAttribute) return;
+    if (!f.hasAttribute('data-prof-handle-form') && !f.hasAttribute('data-prof-email-form')) return;
+    e.preventDefault();
+    if (saving) return;
+    saving = true; setBusy(true);
+    try {
+      if (f.hasAttribute('data-prof-handle-form')) {
+        var h = String((f.elements.handle && f.elements.handle.value) || '').trim().toLowerCase();
+        if (!/^[a-z0-9_]{3,20}$/.test(h)) { uiMsg = { text: HANDLE_ERR.invalid_handle, kind: 'error' }; }
+        else {
+          var client = Auth.getClient && Auth.getClient();
+          var r = await withTimeout(client.rpc('set_my_handle', { p: { handle: h } }));
+          if (r.error) uiMsg = { text: handleErrMsg(r.error), kind: 'error' };
+          else { uiMsg = { text: 'ID salvo: @' + h, kind: 'ok' }; refresh(); }
+        }
+      } else {
+        var em = String((f.elements.email && f.elements.email.value) || '').trim();
+        var res = await Auth.changeEmail(em);
+        uiMsg = res.ok ? { text: 'Enviamos um link para confirmar o novo e-mail.', kind: 'ok' } : { text: res.error.message, kind: 'error' };
+      }
+    } catch (err) {
+      uiMsg = { text: handleErrMsg(err), kind: 'error' };
+    }
+    saving = false; setBusy(false);
+    renderPanel(false);
+  }
+  async function switchAcc() {
+    if (saving) return;
+    saving = true; setBusy(true);
+    var r = await Auth.switchAccount();
+    saving = false;
+    if (!r.ok) { uiMsg = { text: r.error.message, kind: 'error' }; renderPanel(false); }
+  }
+
   function menuItem(id, title, sub) { return '<button class="cf-menu-item" type="button" data-prof-go="' + id + '"><span>' + title + '<small>' + sub + '</small></span></button>'; }
 
   /* API entregue às seções desenhadas pelo app. */
@@ -324,7 +399,7 @@
         '<input id="cf-prof-name" name="name" type="text" autocomplete="name" maxlength="' + (NAME_MAX * 2) + '" required>' +
         '<p class="cf-hint">De ' + NAME_MIN + ' a ' + NAME_MAX + ' caracteres.</p></div>' +
         '<button class="cf-btn cf-btn-main" type="submit" data-label="Salvar">Salvar</button></form>' +
-        LOGOUT + BACK_MENU + '</div>';
+        idSection() + providerSection() + LOGOUT + BACK_MENU + '</div>';
     } else if (screen === 'account') {
       mode = 'account-off';
       var retryA = (st === 'error' && state.errorKind !== 'session') ? '<button class="cf-btn cf-btn-main" type="button" data-prof-retry>Tentar de novo</button>' : '';

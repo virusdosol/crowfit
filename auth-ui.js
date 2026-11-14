@@ -58,7 +58,8 @@
     signup: function () {
       return '<button class="cf-link cf-back" type="button" data-go="welcome">← Voltar</button>' + head('Criar conta', 'Leva menos de um minuto.') + MSG +
         '<form class="cf-form" novalidate data-form="signup">' +
-        field('name', 'Nome', 'text', 'name') + field('email', 'E-mail', 'email', 'email') +
+        field('name', 'Nome', 'text', 'name') + field('handle', 'ID (nome de usuário)', 'text', 'off', '3 a 20 caracteres: letras minúsculas, números e _. Não poderá ser trocado por 30 dias após a primeira troca.') +
+        field('email', 'E-mail', 'email', 'email') +
         field('password', 'Senha', 'password', 'new-password', 'Mínimo de 8 caracteres, com letras e números.') +
         field('confirm', 'Confirmar senha', 'password', 'new-password') + submit('Criar conta') + '</form>' +
         '<div class="cf-or"><span>ou</span></div>' +
@@ -158,12 +159,17 @@
         if (!r.ok) setMsg(r.error.message);
       } else if (name === 'signup') {
         var nm = val(form, 'name').trim();
+        var hd = val(form, 'handle').trim().toLowerCase();
         if (nm.length < 2) return setMsg('Digite seu nome.');
+        if (!/^[a-z0-9_]{3,20}$/.test(hd)) return setMsg('Use de 3 a 20 letras minúsculas, números ou _ no ID.');
         if (!Auth.validateEmail(email)) return setMsg('Digite um e-mail válido.');
         if (!Auth.validatePassword(pw)) return setMsg('A senha precisa ter ao menos 8 caracteres, com letras e números.');
         if (pw !== val(form, 'confirm')) return setMsg('As senhas não são iguais.');
         setBusy(root, true); setMsg('');
-        r = await Auth.signUp({ name: nm, email: email, password: pw });
+        var chk = await Auth.checkHandle(hd);
+        if (!chk.ok) { setBusy(root, false); return setMsg(chk.error.message); }
+        if (!chk.available) { setBusy(root, false); return setMsg('Esse ID já está em uso. Escolha outro.'); }
+        r = await Auth.signUp({ name: nm, email: email, password: pw, handle: hd });
         setBusy(root, false);
         if (!r.ok) setMsg(r.error.message);
         else if (r.needsConfirmation) renderView('sent', { kind: 'signup', email: email });

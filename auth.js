@@ -64,7 +64,8 @@
     if (!u) return null;
     var meta = u.user_metadata || {};
     var email = u.email || '';
-    return { id: u.id, email: email, name: meta.full_name || meta.name || (email ? email.split('@')[0] : '') };
+    var provider = (u.app_metadata && u.app_metadata.provider) || 'email';
+    return { id: u.id, email: email, provider: provider, name: meta.full_name || meta.name || (email ? email.split('@')[0] : '') };
   }
 
   function snapshot(event) {
@@ -175,7 +176,7 @@
     try {
       var r = await state.client.auth.signUp({
         email: p.email, password: p.password,
-        options: { data: { full_name: p.name }, emailRedirectTo: returnUrl() }
+        options: { data: { full_name: p.name, handle: p.handle || null }, emailRedirectTo: returnUrl() }
       });
       if (r.error) return fail(r.error);
       /* Com confirmação de e-mail ligada, e-mail já cadastrado volta "sucesso" com identities vazio. */
@@ -198,6 +199,39 @@
     if (!state.client) return noClient();
     try {
       var r = await state.client.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: returnUrl() } });
+      return r.error ? fail(r.error) : { ok: true };
+    } catch (e) { return fail(e); }
+  }
+
+  /* Verifica se o ID está livre. Funciona sem login (usado no cadastro). */
+  async function checkHandle(handle) {
+    if (!state.client) return noClient();
+    try {
+      var r = await state.client.rpc('handle_available', { p: { handle: handle } });
+      if (r.error) return fail(r.error);
+      return { ok: true, available: !!(r.data && r.data.available) };
+    } catch (e) { return fail(e); }
+  }
+
+  /* Troca o e-mail da conta (só para contas que não entram com Google). */
+  async function changeEmail(email) {
+    if (!state.client) return noClient();
+    try {
+      var r = await state.client.auth.updateUser({ email: email }, { emailRedirectTo: returnUrl() });
+      return r.error ? fail(r.error) : { ok: true };
+    } catch (e) { return fail(e); }
+  }
+
+  /* Sai da conta Google atual e abre a escolha de conta do Google. */
+  async function switchAccount() {
+    if (!state.client) return noClient();
+    try {
+      var out = await signOut();
+      if (!out.ok) return out;
+      var r = await state.client.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: returnUrl(), queryParams: { prompt: 'select_account' } }
+      });
       return r.error ? fail(r.error) : { ok: true };
     } catch (e) { return fail(e); }
   }
@@ -240,6 +274,7 @@
     clearNotices: function () { state.expired = false; state.urlError = ''; },
     validateEmail: validateEmail, validatePassword: validatePassword,
     signUp: signUp, signIn: signIn, signInWithGoogle: signInWithGoogle,
+    checkHandle: checkHandle, changeEmail: changeEmail, switchAccount: switchAccount,
     sendPasswordReset: sendPasswordReset, updatePassword: updatePassword, signOut: signOut
   };
 })(window);
