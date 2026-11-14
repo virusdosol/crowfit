@@ -317,6 +317,7 @@ function create(envIn) {
     if (retryT || !host) return;
     var d = RETRY[Math.min(retryN, RETRY.length - 1)]; retryN++;
     retryT = setTimeout(function () { retryT = 0; kick("retry", false); }, d);
+    if (retryT && typeof retryT.unref === "function") retryT.unref(); /* não impede o processo de encerrar em testes; no navegador o número do timer não tem unref */
   }
 
   async function fetchRemote(client, uid) {
@@ -374,7 +375,7 @@ function create(envIn) {
         if (r2.error) throw r2.error;
         part.forEach(function (x) { meta.sess[x.id] = x.fb ? 1 : 0; }); saveMeta(uid, meta);
       }
-      var v2ch = false, v2ok = false;
+      var v2ch = false, v2ok = false, v2fail = false;
       if (v2need && v2.trail.payload && meta.v2blocked !== v2.sig) {
         try {
           if (first) {   /* recuperação de outro aparelho: leitura direta (RLS) de configurações e nozes */
@@ -432,9 +433,31 @@ function create(envIn) {
         } catch (e2) {
           var k2 = classify(e2);
           if (k2.kind === "net" || k2.kind === "auth") throw e2;   /* sem rede / sem sessão: mesma tratativa do progresso */
+          v2fail = true;
           if (MISSING_RE.test(String(e2 && (e2.message || e2)))) meta.v2sig = "";   /* migração v2 ainda não aplicada: tenta de novo depois, sem bloquear o resto */
           else meta.v2blocked = v2.sig;                                              /* recusa de dados: não repete sozinho */
         }
+      }
+      /* Conquistas. Envio: só confirma no núcleo (achAck) o que o servidor aceitou; falha mantém as pendências.
+         Recebimento: achMerge preserva a data mais antiga e não cria notificações. A RPC é idempotente. */
+      var achCh = false, achOk = false, achFail = false;
+      try {
+        var evA = E.CF.achPendingEvents(S0);
+        if (evA.length) {
+          var plA = evA.map(function (x) { return { id: x.id, at: x.at }; });
+          if (!sameUser()) return;
+          var ra = await client.rpc("unlock_my_achievements", { p: plA }); if (!alive()) return;
+          if (ra.error) throw ra.error;
+          E.CF.achAck(S0, plA.map(function (x) { return x.id; })); achCh = true;
+        }
+        var rA = await client.from("achievements_unlocked").select("achievement_id,unlocked_at").eq("user_id", uid).limit(500); if (!alive()) return;
+        if (rA.error) throw rA.error;
+        if (E.CF.achMerge(S0, rA.data || [])) achCh = true;
+        achOk = true;
+      } catch (eA) {
+        var kA = classify(eA);
+        if (kA.kind === "net" || kA.kind === "auth") throw eA;
+        achFail = true;   /* pendências continuam salvas para a próxima tentativa */
       }
       if (!alive()) return;
       adopting = true;
@@ -442,7 +465,7 @@ function create(envIn) {
         var ch = false;
         if (row) ch = adoptProgress(E, S0, row, points0, meta, today) || ch;
         if (remote) ch = adoptSessions(E, S0, remote.sessions, meta) || ch;
-        ch = ch || v2ch;
+        ch = ch || v2ch || achCh;
         if (ch && !h.save()) throw new Error("falha_ao_salvar_localmente");
         if (ch && typeof h.changed === "function") { try { h.changed(); } catch (e) {} }
       } finally { adopting = false; }
@@ -451,8 +474,13 @@ function create(envIn) {
       var v2after = v2plan();
       if (v2ok) meta.v2sig = (mutCount === mut0 && !v2after.trail.rest) ? v2after.sig : "";  /* enviado com sucesso: assinatura v2 atualizada (se ainda há mudança, a próxima rodada envia) */
       if (first) meta.seeded = true;
-      meta.pending = mutCount !== mut0; meta.blocked = ""; meta.last = new Date().toISOString(); info.pending = meta.pending; info.last = meta.last; retryN = 0;
-      saveMeta(uid, meta); emit("ok", "");
+      var failed = [];
+      if (v2fail) failed.push("trilha, configurações, nozes, caixas ou inventário");
+      if (achFail) failed.push("conquistas");
+      meta.pending = mutCount !== mut0 || failed.length > 0; meta.blocked = ""; meta.last = new Date().toISOString(); info.pending = meta.pending; info.last = meta.last; retryN = 0;
+      saveMeta(uid, meta);
+      if (failed.length) { emit("partial", "Sincronizado parcialmente. Pendente: " + failed.join("; ") + ". Seus dados continuam salvos neste aparelho."); scheduleRetry(); }
+      else emit("ok", "");
     } catch (e) {
       var k = classify(e); meta.pending = true; info.pending = true;
       if (k.kind === "net") { saveMeta(uid, meta); emit("offline", ""); scheduleRetry(); }
