@@ -112,18 +112,40 @@ function nodeHtml(ctx, i, locked) {
     (pr.st === "done" ? '<span class="tn-chk" aria-hidden="true">✓</span>' : "") +
     '<span class="tn-lbl">U' + W.d + ' · ' + P.DIAS_ABR[u.dow] + '</span></button>';
 }
+var MESES = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"], PREVIA = 3;
+/* Status de um dia já passado: concluído, incompleto (pelo menos um exercício) ou não efetuado. Descanso não conta. */
+function pastMsg(ctx, u) {
+  var ct = content(ctx, u);
+  if (ct.group === "R") return "Dia de descanso";
+  var pr = prog(ctx, u, ct);
+  return pr.total && pr.done === pr.total ? "Treino concluído" : pr.done > 0 ? "Treino incompleto" : "Treino não efetuado";
+}
+/* Balão de fala saindo do círculo, na cor do próprio círculo (cor da semana). */
+function say(node, msg) {
+  var old = document.querySelector(".t-say"); if (old) old.remove();
+  var cls = (node.className.match(/wk(\d)/) || [, "0"])[1], r = node.getBoundingClientRect();
+  var el = document.createElement("div"); el.className = "t-say c" + cls; el.setAttribute("role", "status"); el.textContent = msg;
+  el.style.left = (r.left + r.width / 2) + "px"; el.style.top = (r.top - 12) + "px";
+  document.body.appendChild(el);
+  clearTimeout(say.t); say.t = setTimeout(function () { el.remove(); }, 2200);
+}
+/* Cartão no fim da prévia: o próximo mês fica travado e a rolagem para aqui. */
+function nextCard(ctx, last) {
+  var u = unitAt(ctx.S, last + 1), days = Math.max(1, between(ctx.today, u.date)), m = MESES[+u.date.slice(5, 7) - 1];
+  return '<div class="t-next"><span class="t-next-tag">A seguir</span><b>' + LOCK + ' Mês de ' + m + '</b><p>Libera em ' + days + (days === 1 ? " dia" : " dias") + '</p></div>';
+}
 function gate() {
   return '<button class="t-gate" type="button" aria-label="Meses seguintes bloqueados"><span class="tg-l"></span><span class="tg-i">' + LOCK + '</span><span class="tg-l"></span></button>';
 }
 function range(ctx, lo, hi, last) {
   var h = "", zone = false;
   for (var i = lo; i <= hi; i++) {
-    if (i === last + 1) { h += gate() + '<div class="t-zone">'; zone = true; }
+    if (i === last + 1) { h += '<div class="t-zone">'; zone = true; }
     if (i <= last) h += weekHead(ctx, i);
     h += nodeHtml(ctx, i, i > last);
     if (i <= last && C.parseDate(unitAt(ctx.S, i).date).getDay() === 6) h += chestHtml(ctx, i, unitAt(ctx.S, i));
   }
-  return h + (zone ? "</div>" : "");
+  return h + (zone ? "</div>" : "") + (hi > last ? nextCard(ctx, last) : "");
 }
 function flush(ctx) { if (dirty) { dirty = false; ctx.save(); } }
 
@@ -140,7 +162,7 @@ function banner() {
 function onScroll() { if (raf) return; raf = requestAnimationFrame(function () { raf = 0; banner(); }); }
 
 function mount(el, ctx) {
-  var S = ctx.S, tr = ensure(S, ctx.today), ti = Math.max(0, idxOf(S, ctx.today)), last = lastOpen(S, ti), hi = last + MES;
+  var S = ctx.S, tr = ensure(S, ctx.today), ti = Math.max(0, idxOf(S, ctx.today)), last = lastOpen(S, ti), hi = last + PREVIA;
   if (!V || V.start !== tr.start) V = { start: tr.start, lo: Math.max(0, ti - 6), scroll: null };
   V.ctx = ctx;
   el.innerHTML = '<div class="t-ban" id="t-ban"><div class="tb-l"><small id="tb-s"></small><b id="tb-t"></b></div><button id="t-hoje" aria-label="Ir para o treino de hoje">Hoje</button></div>' +
@@ -151,7 +173,8 @@ function mount(el, ctx) {
   el.onclick = function (e) {
     var t = e.target.closest && e.target.closest(".tn, .t-gate"); if (!t) return;
     if (t.classList.contains("t-chest")) { if (t.classList.contains("st-wait")) { toast("A noz abre no fim da semana."); return; } ctx.noz(t.getAttribute("data-sat")); return; }
-    if (t.classList.contains("st-miss")) { toast("Dia encerrado."); return; }
+    var iu = +t.getAttribute("data-i"), uu = unitAt(V.ctx.S, iu);
+    if (uu.date < V.ctx.today && !t.classList.contains("st-lock")) { say(t, pastMsg(V.ctx, uu)); return; }
     if (t.classList.contains("t-gate") || t.classList.contains("st-lock")) { toast(); return; }
     V.scroll = window.scrollY; openUnit(ctx, +t.getAttribute("data-i"));
   };
