@@ -231,6 +231,8 @@ function load(uid){var raw=null,k=CFStore.key(uid);
 function save(){
  if(!S||!curUid)return false;
  if(blocked){banner("Dados não carregados: nada será salvo até você restaurar um backup ou começar do zero.");return false}
+ /* Conquistas: checadas a cada gravação (treino, noz, trilha). Novas conquistas disparam window.onAchievement(eventos), se existir. Pendentes ficam no estado (CF.achPendingEvents / CF.achAck). */
+ try{var ev=CF.unlockAchievements(S,today(),new Date().toISOString());if(ev.length&&typeof window.onAchievement==="function")window.onAchievement(ev)}catch(e){console.error("conquistas",e)}
  try{var k=CFStore.key(curUid),js=JSON.stringify(S);localStorage.setItem(k,js);if(localStorage.getItem(k)!==js)throw new Error("a verificação da gravação falhou");banner("");if(window.CFSync)CFSync.notify("save");return true}
  catch(e){console.error("Crowfit: falha ao salvar",e);banner("Alterações NÃO salvas ("+(e&&e.name==="QuotaExceededError"?"armazenamento cheio":"erro de gravação")+"). Exporte um backup.");return false}}
 function persist(){var a=S.active,ex=a&&a.exercises[a.exIdx];if(ex&&ex.timer)CF.timerTick(ex.timer,Date.now());return save()}

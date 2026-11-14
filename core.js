@@ -24,7 +24,7 @@ function parseDate(s) { return new Date(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.s
 function addDays(s, n) { var d = parseDate(s); d.setDate(d.getDate() + n); return dateKey(d); }
 
 /* ---- estado e validação ---- */
-function emptyState() { return { version: 2, profile: null, points: 0, streak: 0, best: 0, last: "", done: {}, rewards: {}, nozes: {}, history: [], planHistory: [], adjust: 0, easyStreak: 0, active: null, trail: { start: "", ex: {}, lv: {} } }; }
+function emptyState() { return { version: 2, profile: null, points: 0, streak: 0, best: 0, last: "", done: {}, rewards: {}, nozes: {}, history: [], planHistory: [], adjust: 0, easyStreak: 0, achievements: {}, achPending: [], active: null, trail: { start: "", ex: {}, lv: {} } }; }
 function validateProfile(p) {
   var e = [];
   if (!p || typeof p !== "object") return { ok: false, errors: ["Perfil inválido"] };
@@ -137,6 +137,28 @@ function validateState(raw) {
       if (tr.lv && typeof tr.lv === "object" && !Array.isArray(tr.lv)) Object.keys(tr.lv).forEach(function (k) { if (/^\d{1,3}$/.test(k) && isInt(tr.lv[k], 0, 2)) nt.lv[k] = tr.lv[k]; });
     } else wr.push("Dados da trilha inválidos foram ignorados");
     st.trail = nt;
+  }
+  /* Conquistas (campo opcional). Entrada inválida é descartada com aviso; nunca bloqueia o resto. */
+  if (raw.achievements !== undefined) {
+    var ao = raw.achievements;
+    if (ao && typeof ao === "object" && !Array.isArray(ao)) {
+      var akeys = Object.keys(ao);
+      if (akeys.length > ACH_MAX) wr.push("Conquistas em excesso foram ignoradas");
+      else akeys.forEach(function (k) {
+        var r = ao[k];
+        if (ACH_ID.test(k) && achEntryOk(r)) st.achievements[k] = { at: r.at, day: r.day, reason: r.reason };
+        else wr.push("Conquista inválida foi ignorada");
+      });
+    } else wr.push("Dados de conquistas inválidos foram ignorados");
+  }
+  /* Fila de notificações pendentes: só ids de conquistas já gravadas. Some quando a tela marca como vista. */
+  if (raw.achPending !== undefined) {
+    if (Array.isArray(raw.achPending) && raw.achPending.length <= ACH_MAX) {
+      raw.achPending.forEach(function (id) {
+        if (typeof id === "string" && ACH_ID.test(id) && Object.prototype.hasOwnProperty.call(st.achievements, id) && st.achPending.indexOf(id) < 0) st.achPending.push(id);
+        else wr.push("Notificação pendente inválida foi descartada");
+      });
+    } else wr.push("Fila de notificações inválida foi descartada");
   }
   if (raw.active) { fixed += sanitizeTimers(raw.active); if (validSession(raw.active)) st.active = raw.active; else wr.push("Treino em andamento inválido foi descartado"); }
   if (fixed) wr.push("Cronômetro com estado inválido foi reiniciado (" + fixed + ")");
@@ -362,11 +384,119 @@ function trophyCatalog(records, ids) {
   });
 }
 
+/* ---- conquistas: momentos especiais e objetivos (separadas dos troféus) ----
+   S.achievements = { "<id>": { at: "AAAA-MM-DDTHH:MM:SS.sssZ", day: "AAAA-MM-DD", reason: "motivo" } }
+   * permanente: nunca é removida, mesmo que a condição deixe de valer
+   * concedida uma única vez: quem chama só recebe eventos de conquistas novas
+   * CATÁLOGO PROVISÓRIO: números e textos podem ser ajustados sem mudar a lógica */
+var ACH_ID = /^[a-z0-9_]{1,40}$/, ACH_MAX = 500, ACH_MARCOS = ["primeira_noz"];
+var ACH = [
+  { id: "primeiro_treino", name: "Primeiro treino", cond: { t: "dias", v: 1 },
+    how: "Treinar pela primeira vez", line: "Finalmente. Já era hora." },
+  { id: "primeira_noz", name: "Primeira noz", cond: { t: "marco", v: "primeira_noz" },
+    how: "Abrir a primeira noz", line: "Uma noz. Não se acostume." },
+  { id: "nivel_3", name: "Nível 3", cond: { t: "level", v: 3 },
+    how: "Chegar ao nível 3", line: "Nível 3. Nada mal. Mas ainda falta muito." },
+  { id: "nivel_5", name: "Nível 5", cond: { t: "level", v: 5 },
+    how: "Chegar ao nível 5", line: "Nível 5. Bom. Quero ver repetir." },
+  { id: "consistencia_insana", name: "Consistência insana", cond: { t: "streak", v: 21 },
+    how: "Treinar 21 dias seguidos", line: "21 dias seguidos. Até que enfim algo que parece treino." },
+  { id: "dias_30", name: "Trinta dias", cond: { t: "dias", v: 30 },
+    how: "Treinar em 30 dias diferentes", line: "Trinta dias. Agora não some." }
+];
+function checkAchCatalog(list) {
+  var seen = {};
+  if (!Array.isArray(list) || !list.length) throw new Error("conquistas: catálogo vazio");
+  list.forEach(function (a) {
+    if (!a || !ACH_ID.test(a.id) || seen[a.id]) throw new Error("conquistas: id inválido ou repetido: " + (a && a.id));
+    seen[a.id] = 1;
+    if (!a.name || !a.how || !a.line) throw new Error("conquistas: texto ausente em " + a.id);
+    var c = a.cond || {};
+    if (c.t === "marco") { if (ACH_MARCOS.indexOf(c.v) < 0) throw new Error("conquistas: marco desconhecido em " + a.id); }
+    else if (c.t === "level" || c.t === "streak" || c.t === "dias") { if (!isInt(c.v, 1, 1000000)) throw new Error("conquistas: valor inválido em " + a.id); }
+    else throw new Error("conquistas: tipo de condição desconhecido em " + a.id);
+  });
+  return true;
+}
+checkAchCatalog(ACH);
+function achEntryOk(r) {
+  return !!r && typeof r === "object" && !Array.isArray(r) && typeof r.at === "string" && r.at.length <= 40 &&
+    typeof r.day === "string" && DATE_RE.test(r.day) && typeof r.reason === "string" && r.reason.length <= 200;
+}
+function achMet(a, S) {
+  var c = a.cond;
+  if (c.t === "level") return xpLevelOf(S.points) >= c.v;
+  if (c.t === "streak") return S.best >= c.v;
+  if (c.t === "dias") return Object.keys(S.done || {}).length >= c.v;
+  if (c.t === "marco") return c.v === "primeira_noz" && Object.keys(S.nozes || {}).length >= 1;
+  return false;
+}
+/* Motivo registrado no desbloqueio, com o número que foi atingido. */
+function achReason(a, S) {
+  var c = a.cond;
+  if (c.t === "level") return "Chegou ao nível " + xpLevelOf(S.points);
+  if (c.t === "streak") return "Sequência de " + S.best + " dias de treino";
+  if (c.t === "dias") return "Treinou em " + Object.keys(S.done || {}).length + " dias";
+  return "Abriu a primeira noz";
+}
+/* Desbloqueia o que foi atingido agora. Devolve só as conquistas NOVAS (eventos para notificação).
+   at = instante (ISO), day = dia do treino (AAAA-MM-DD). Nunca sobrescreve uma conquista já existente. */
+function unlockAchievements(S, day, at) {
+  var events = [];
+  if (!DATE_RE.test(day) || typeof at !== "string") return events;
+  if (!S.achievements) S.achievements = {};
+  ACH.forEach(function (a) {
+    if (Object.prototype.hasOwnProperty.call(S.achievements, a.id) || !achMet(a, S)) return;
+    var reason = achReason(a, S);
+    S.achievements[a.id] = { at: at, day: day, reason: reason };
+    if (!S.achPending) S.achPending = [];
+    if (S.achPending.indexOf(a.id) < 0) S.achPending.push(a.id);
+    events.push({ type: "achievement_unlocked", id: a.id, name: a.name, line: a.line, at: at, day: day, reason: reason });
+  });
+  return events;
+}
+/* Estado para a futura parede: bloqueadas (opacas) e desbloqueadas, com data e motivo. */
+function achCatalog(S) {
+  return ACH.map(function (a) {
+    var got = Object.prototype.hasOwnProperty.call(S.achievements || {}, a.id) ? S.achievements[a.id] : null;
+    return { id: a.id, name: a.name, how: a.how, unlocked: !!got, at: got ? got.at : null, day: got ? got.day : null, reason: got ? got.reason : null };
+  });
+}
+/* Mescla conquistas vindas do servidor: nova entra; existente fica com a data MAIS ANTIGA. Nunca remove. */
+function achMerge(S, remote) {
+  var changed = 0;
+  if (!S.achievements) S.achievements = {};
+  (Array.isArray(remote) ? remote : []).forEach(function (r) {
+    if (!r || !ACH_ID.test(r.achievement_id) || typeof r.unlocked_at !== "string") return;
+    var t = new Date(r.unlocked_at); if (isNaN(t.getTime())) return;
+    var at = t.toISOString(), day = at.slice(0, 10), cur = S.achievements[r.achievement_id];
+    if (!cur) { S.achievements[r.achievement_id] = { at: at, day: day, reason: "Desbloqueada em outro aparelho" }; changed++; }
+    else if (at < cur.at) { cur.at = at; cur.day = day; changed++; }
+  });
+  return changed;
+}
+
+/* Notificações pendentes (persistidas): eventos das conquistas que a tela ainda não mostrou. */
+function achPendingEvents(S) {
+  var out = [];
+  (S.achPending || []).forEach(function (id) {
+    var a = ACH.filter(function (x) { return x.id === id; })[0], got = (S.achievements || {})[id];
+    if (a && got) out.push({ type: "achievement_unlocked", id: a.id, name: a.name, line: a.line, at: got.at, day: got.day, reason: got.reason });
+  });
+  return out;
+}
+/* A tela chama isto depois de mostrar as notificações. Só remove os ids informados. */
+function achAck(S, ids) {
+  var before = (S.achPending || []).length;
+  S.achPending = (S.achPending || []).filter(function (id) { return (ids || []).indexOf(id) < 0; });
+  return before - S.achPending.length;
+}
 return { PAT: PAT, EXP: EXP, escText: escText, escAttr: escAttr, safeClass: safeClass, safeUrl: safeUrl, cssVal: cssVal, num: num, isInt: isInt,
   dateKey: dateKey, parseDate: parseDate, addDays: addDays, emptyState: emptyState, validateProfile: validateProfile, validateState: validateState,
   makeBackup: makeBackup, parseBackup: parseBackup, setPlan: setPlan, planFor: planFor, isRestDay: isRestDay, levelFor: levelFor, xpLevelOf: xpLevelOf, xpLevelInfo: xpLevelInfo, titleOf: titleOf, levelUpEvents: levelUpEvents, XP_LEVEL: XP_LEVEL, xpNeed: xpNeed, xpStart: xpStart, checkXpConfig: checkXpConfig, applyFeedback: applyFeedback,
   computeStreak: computeStreak, refreshStreak: refreshStreak, dayStatus: dayStatus, nozWeeks: nozWeeks, nozOpened: nozOpened, openNoz: openNoz, levelOf: levelOf, timerStart: timerStart, timerPause: timerPause, timerResume: timerResume, timerTick: timerTick,
   timerSecs: timerSecs, newSession: newSession, syncStatus: syncStatus, completeSet: completeSet, skipExercise: skipExercise, advance: advance,
   grant: grant, grantExercise: grantExercise, grantSessionBonus: grantSessionBonus, finishSession: finishSession, abandonSession: abandonSession,
+  ACH: ACH, checkAchCatalog: checkAchCatalog, unlockAchievements: unlockAchievements, achCatalog: achCatalog, achMerge: achMerge, achMet: achMet, achPendingEvents: achPendingEvents, achAck: achAck, 
   TROPHY: TROPHY, checkTrophyConfig: checkTrophyConfig, trophyAll: trophyAll, trophyStage: trophyStage, trophyCatalog: trophyCatalog };
 });
