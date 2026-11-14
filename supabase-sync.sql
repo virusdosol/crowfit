@@ -13,6 +13,53 @@
 -- =====================================================================
 
 -- ---------------------------------------------------------------------
+-- 0) Curva de XP (precisa existir ANTES da tabela, porque level é coluna gerada)
+-- ---------------------------------------------------------------------
+-- PARTE 1 — funções da curva (IMMUTABLE: resultado depende só do argumento)
+-- ---------------------------------------------------------------------
+-- XP do nível l: round(200 * 1.15^(l-1) / 5) * 5.
+-- floor(x + 0.5) é igual ao Math.round do JS para valores positivos.
+-- (round() do Postgres em double precision arredonda para par nos empates.)
+create or replace function public.cf_xp_need(l integer)
+returns integer
+language sql
+immutable
+strict
+parallel safe
+set search_path = ''
+as $$
+  select (pg_catalog.floor(200 * pg_catalog.power(1.15::double precision, l - 1) / 5 + 0.5))::integer * 5
+$$;
+
+-- Nível para p pontos: sobe enquanto o XP acumulado até o próximo nível couber em p.
+-- Mesma lógica de xpLevelOf (limite de 100000 níveis, como no app).
+create or replace function public.cf_level_for(points integer)
+returns integer
+language plpgsql
+immutable
+strict
+parallel safe
+set search_path = ''
+as $$
+declare
+  l   integer := 1;
+  acc bigint  := 0;
+  n   integer;
+begin
+  loop
+    n := public.cf_xp_need(l);
+    exit when acc + n > points or l >= 100000;
+    acc := acc + n;
+    l := l + 1;
+  end loop;
+  return l;
+end;
+$$;
+
+revoke all on function public.cf_xp_need(integer)  from public, anon, authenticated;
+revoke all on function public.cf_level_for(integer) from public, anon, authenticated;
+
+-- ---------------------------------------------------------------------
 -- 1) profiles: avatar (variações fixas do corvo; desbloqueio será regra futura)
 -- ---------------------------------------------------------------------
 alter table public.profiles add column if not exists avatar_id text not null default 'corvo';
@@ -33,13 +80,13 @@ grant update (display_name, avatar_id) on table public.profiles to authenticated
 -- ---------------------------------------------------------------------
 -- 2) user_progress: 1 linha por usuário (XP, ofensiva, planos)
 --    points = base_points + soma dos valores de rewards (calculado pelo servidor)
---    level  = derivado de points (mesma regra do app: 200 XP por nível)
+--    level  = derivado de points pela curva exponencial (public.cf_level_for, igual ao app)
 -- ---------------------------------------------------------------------
 create table if not exists public.user_progress (
   user_id           uuid primary key references auth.users (id) on delete cascade,
   base_points       integer not null default 0 check (base_points between 0 and 10000000),
   points            integer not null default 0 check (points between 0 and 10000000),
-  level             integer generated always as (points / 200 + 1) stored,
+  level             integer generated always as (public.cf_level_for(points)) stored,
   best_streak       integer not null default 0 check (best_streak between 0 and 100000),
   last_workout_date date,
   done_dates        date[] not null default '{}' check (cardinality(done_dates) <= 20000),

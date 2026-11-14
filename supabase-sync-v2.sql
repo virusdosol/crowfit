@@ -413,7 +413,7 @@ begin
     return jsonb_build_object('week_start', v_sat::text, 'xp', row_n.xp, 'already', true);
   end if;
 
-  v_level := cur.points / 200 + 1;
+  v_level := public.cf_level_for(cur.points);
   v_xp := 20 * v_level + floor(random() * (30 * v_level + 1))::integer;
   v_now := now();
 
