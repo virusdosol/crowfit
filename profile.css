@@ -16,3 +16,11 @@
 .cf-stat-v { font-family: Fredoka, Nunito, sans-serif; font-size: 2rem; line-height: 1; color: var(--cf-a); }
 .cf-stat-l { font-size: .85rem; color: var(--cf-muted); }
 .cf-btn-danger { color: var(--cf-a); }
+
+/* Topo padrão das páginas (Etapa de ajustes): Voltar à esquerda, engrenagem à direita. */
+.cf-prof .cf-topbar { display: flex; justify-content: space-between; align-items: center; margin: 0 0 14px; }
+.cf-back { min-height: 44px; padding: 0 16px; border-radius: 14px; border: 2px solid var(--line, #E4E4EE); background: #fff; color: var(--ink, #17171C); font: 700 16px Nunito, system-ui, sans-serif; box-shadow: 0 3px 0 var(--line, #E4E4EE); cursor: pointer; }
+.cf-back:active { transform: translateY(2px); box-shadow: none; }
+.cf-back:focus-visible { outline: 3px solid var(--brand, #E3182D); outline-offset: 2px; }
+.cf-prof .cf-icon { width: 46px; height: 46px; border-radius: 16px; border: 2px solid var(--cf-line, #E4E4EE); background: var(--cf-card, #fff); box-shadow: 0 3px 0 var(--cf-line, #E4E4EE); color: var(--cf-ink, #17171C); display: grid; place-items: center; cursor: pointer; }
+.cf-prof .cf-icon:active { transform: translateY(2px); box-shadow: none; }

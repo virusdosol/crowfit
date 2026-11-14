@@ -281,7 +281,7 @@
     });
   }
 
-  var GEAR = '<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
+  var GEAR = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
   var BAR = '<div class="cf-bar"><button class="cf-icon" type="button" data-prof-settings aria-label="Configurações">' + GEAR + '</button></div>';
   var CLOSE = '<button class="cf-btn cf-btn-ghost" type="button" data-prof-close>Fechar</button>';
   var LOGOUT = '<button class="cf-btn cf-btn-ghost cf-btn-danger" type="button" data-crowfit-logout>Sair da conta</button>';
@@ -347,6 +347,12 @@
       mode = 'idle';
       h = '<div class="cf-wrap">' + BAR + '<h1 class="cf-title" tabindex="-1">Seu perfil</h1><p class="cf-msg error" role="alert">' + MSG.network + '</p>' + CLOSE + '</div>';
     }
+    /* Topo fixo: Voltar sempre no canto superior esquerdo; a engrenagem fica à direita só no perfil. */
+    var tbBack = mode === 'settings' ? 'data-prof-back' : (mode === 'host' || mode === 'account' || mode === 'account-off') ? 'data-prof-menu' : 'data-prof-close';
+    h = h.split(CLOSE).join('').split(BACK_MENU).join('').split(BAR).join('');
+    var tbGear = mode === 'profile' ? '<button type="button" class="cf-icon" data-prof-settings aria-label="Configurações">' + GEAR + '</button>' : '';
+    var tb = '<div class="cf-bar cf-topbar"><button class="cf-back" type="button" ' + tbBack + '>← Voltar</button>' + tbGear + '</div>';
+    h = h.replace(/^<div class="cf-wrap[^"]*">/, function (m) { return m + tb; });
     panel.innerHTML = h;
 
     var ac = panel.querySelector('[data-acct]');
