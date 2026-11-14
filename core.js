@@ -176,9 +176,9 @@ function validateState(raw) {
       Object.keys(raw.boxes).forEach(function (k) {
         var b = raw.boxes[k];
         if (BOX_ID.test(k) && boxEntryOk(b) && b.id === k) st.boxes[k] = { id: b.id, kind: b.kind, month: b.month, xp: b.xp, items: b.items.slice(), granted: b.granted, opened: b.opened };
-        else wr.push("Caixa inválida foi descartada");
+        else wr.push("Avelã inválida foi descartada");
       });
-    } else wr.push("Dados de caixas inválidos foram descartados");
+    } else wr.push("Dados de Avelã inválidos foram descartados");
   }
   if (typeof raw.equipped === "string" && ACH_ID.test(raw.equipped)) st.equipped = raw.equipped;
   if (typeof raw.equippedAt === "string" && raw.equippedAt.length <= 40) st.equippedAt = raw.equippedAt;

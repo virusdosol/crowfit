@@ -130,6 +130,10 @@ Para executar uma instalação própria com autenticação e sincronização:
 4. Revise os arquivos SQL do repositório e aplique as migrações na ordem indicada pela documentação de cada arquivo.
 5. Configure o domínio de publicação nas URLs permitidas de autenticação.
 
+**XP no servidor:** todo o XP é concedido e registrado pelo servidor, numa única tabela de concessões (`xp_ledger`). O total é o saldo inicial congelado mais a soma dessas concessões. As fontes são: unidades da trilha (ao sincronizar), sessões livres (ao salvar), noz semanal (ao abrir) e Avelã, a caixa mensal (na primeira abertura). Valores de XP enviados pelo aplicativo não são aceitos; o aplicativo recebe o total do servidor. `cf_xp_reconcile()` confere se o total bate com o registro.
+
+O dia da semana de cada treino é o mesmo para todos os usuários: domingo ombros, segunda peito, terça braços, quarta abdômen, quinta pernas, sexta costas e sábado recuperação.
+
 **Segurança:** a chave publicável pode estar no frontend. Nunca exponha `service_role`, senhas ou segredos OAuth no código do aplicativo.
 
 ### Testes

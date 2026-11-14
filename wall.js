@@ -101,7 +101,7 @@ function pageNoz() {
   if (!hist.length) return '<div class="cw-head"><h2>Nozes</h2></div><p class="cw-empty">' + esc(CROW.vazio_noz) + '</p>';
   return '<div class="cw-head"><h2>Nozes</h2><span>' + nozCount() + ' abertas</span></div><div class="cw-icons">' + hist.map(function (h) {
     var aberta = h.status === "aberta", semanal = h.tipo === "semanal";
-    var nome = semanal ? "Noz da semana de " + h.data : "Caixa mensal de " + h.data.slice(0, 7);
+    var nome = semanal ? "Noz da semana de " + h.data : "Avelã de " + h.data.slice(0, 7);
     var st = aberta ? "Aberta" : "Pronta para abrir";
     var act = aberta ? "" : '<button type="button" class="cw-btn cw-primary cw-bbtn" data-act="' + (semanal ? "noz" : "box") + '" data-box="' + esc(h.id) + '">Abrir</button>';
     return cell('<span class="cw-glyph' + (aberta ? " on" : " off") + '">' + I.noz + '</span>', nome, '<b>' + esc(nome) + '</b><span>' + esc(st) + (h.xp != null ? " · " + plural(h.xp, "XP", "XP") : "") + '</span>' + act);
@@ -139,7 +139,7 @@ function detailApp(id) {
   box.hidden = false;
   box.innerHTML = '<div class="cw-dcard cw-' + esc(it.raridade) + '"><b>' + esc(has ? it.nome : "???") + '</b>' +
     '<small>' + esc(RAR[it.raridade] || it.raridade) + ' · arte provisória (TEMP)</small>' +
-    '<p>' + (has ? "Obtida em caixa mensal." : "Bloqueada. Só sai de caixa mensal, e não duplica.") + '</p>' +
+    '<p>' + (has ? "Obtida em Avelã." : "Bloqueada. Só sai de Avelã, e não duplica.") + '</p>' +
     '<div class="cw-acts">' + act2 + '</div></div>';
 }
 function pageLevel() {
@@ -211,7 +211,7 @@ function openBoxNow(id) {
   var res = CF().openBox(S(), id, new Date().toISOString());
   if (!res) return; save();
   var names = res.items.map(function (i) { var it = byItem(i); return it ? it.nome : i; });
-  celebrate({ title: "Caixa aberta", name: plural(res.xp, "XP", "XP") + (names.length ? " e " + names.join(", ") : ""), line: names.length ? "Não é grande coisa. Mas é seu." : "Só XP desta vez. Trate de treinar mais." });
+  celebrate({ title: "Avelã aberta", name: plural(res.xp, "XP", "XP") + (names.length ? " e " + names.join(", ") : ""), line: names.length ? "Não é grande coisa. Mas é seu." : "Só XP desta vez. Trate de treinar mais." });
   renderPage();
 }
 
