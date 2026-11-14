@@ -15,6 +15,19 @@
   var ART = '<svg viewBox="0 0 1040 760" aria-hidden="true" focusable="false"><g fill="#F1F2F7"><ellipse cx="225" cy="255" rx="165" ry="160"/><ellipse cx="125" cy="470" rx="120" ry="100"/><ellipse cx="190" cy="440" rx="150" ry="110"/><ellipse cx="850" cy="390" rx="175" ry="165"/><ellipse cx="840" cy="520" rx="195" ry="125"/></g><ellipse cx="520" cy="722" rx="422" ry="28" fill="#E9E9F1"/><ellipse cx="520" cy="716" rx="250" ry="14" fill="#E2E3EC"/><g fill="#D9DAE6" transform="translate(170,700)"><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(-34) scale(.9)"/><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(-4)"/><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(28) scale(.8)"/></g><g fill="#D9DAE6" transform="translate(870,700)"><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(34) scale(.9)"/><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(4)"/><path d="M0,0 C-34,-40 -26,-95 0,-128 C26,-95 34,-40 0,0Z" transform="rotate(-28) scale(.8)"/></g></svg>';
   var ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15"/><path d="M13 6l6 6-6 6"/></svg>';
   var root = null, chip = null, toastEl = null, toastTimer = 0, view = 'loading';
+  /* Perguntas do perfil de treino antes da conta. Mesmas chaves e regras de QS (index.html). Ficam no aparelho até a conta existir. */
+  var K_DRAFT = 'crowfit-onboard-draft';
+  var PQ = [
+    { k: 'nome', q: 'Como podemos te chamar?', type: 'text', ph: 'Seu nome', hint: 'Esse nome só aparece para você. Seu ID é o que os amigos veem.' },
+    { k: 'idade', q: 'Quantos anos você tem?', type: 'number', ph: 'Idade', min: 12, max: 90, inputmode: 'numeric' },
+    { k: 'peso', q: 'Quanto você pesa (kg)?', type: 'number', ph: 'Peso em kg', min: 30, max: 250, inputmode: 'decimal' },
+    { k: 'altura', q: 'Qual é a sua altura (cm)?', type: 'number', ph: 'Altura em cm', min: 120, max: 230, inputmode: 'decimal' },
+    { k: 'exp', q: 'Qual é a sua experiência com exercícios?', type: 'chips', o: ['Nunca treinei', 'Treino às vezes', 'Treino sempre'] },
+    { k: 'dias', q: 'Quantos dias por semana quer treinar?', type: 'chips', o: ['3', '4', '5', '6'] }
+  ];
+  function readDraft() { try { return JSON.parse(global.localStorage.getItem(K_DRAFT)) || {}; } catch (e) { return {}; } }
+  function writeDraft(d) { try { global.localStorage.setItem(K_DRAFT, JSON.stringify(d)); } catch (e) {} }
+  function hasDraft() { var d = readDraft(); return !!(d && d.nome); }
 
   var GOOGLE_SVG = '<svg viewBox="0 0 18 18" width="18" height="18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.97 10.72A5.41 5.41 0 0 1 3.68 9c0-.6.1-1.18.29-1.72V4.95H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.05l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/></svg>';
 
@@ -41,9 +54,32 @@
     welcome: function () {
       return '<div class="in-wrap cf-w"><img class="cf-w-mascot" src="mascot.png" alt="Crowfit, o corvo mascote">' +
         '<img class="cf-w-logo" src="intro-logo.png" alt="Crowfit"><p>Treine, evolua e seja mais forte!</p>' +
-        '<div class="cf-w-btns"><button class="in-cta" type="button" data-go="signup">Começar agora</button>' +
+        '<div class="cf-w-btns"><button class="in-cta" type="button" data-go="crowStart">Começar agora</button>' +
         '<button class="cf-cta2" type="button" data-go="login">Já tenho uma conta</button></div></div>';
     },
+    crow: function (d) {
+      return '<div class="in-wrap cf-w cf-crow"><div class="cf-bubble">' + d.text + '</div>' +
+        '<img class="cf-crow-img" src="mascot.png" alt="Crow">' +
+        '<div class="cf-w-btns"><button class="in-cta" type="button" data-go="' + d.next + '">Continuar</button></div></div>';
+    },
+    pq: function (d) {
+      var q = PQ[d.i], cur = (readDraft() || {})[q.k];
+      var body = q.type === 'chips'
+        ? '<div class="cf-chips" role="group" aria-label="' + q.q + '">' + q.o.map(function (o) {
+            var on = String(cur) === o;
+            return '<button type="button" class="chip' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-chip="' + o + '">' + o + '</button>';
+          }).join('') + '</div>'
+        : field('v', '', q.type === 'number' ? 'text' : 'text', 'off', q.hint || '').replace('<label for="cf-v"></label>', '')
+          .replace('type="text" autocomplete="off" required>', 'type="text" inputmode="' + (q.inputmode || 'text') + '" placeholder="' + q.ph + '" maxlength="40" value="' + (cur == null ? '' : String(cur).replace(/"/g, '&quot;')) + '" autocomplete="off" required>');
+      var back = d.i > 0 ? 'pq' + (d.i - 1) : 'crowQ';
+      return '<div class="cf-wrap"><button class="cf-link cf-back" type="button" data-go="' + back + '">← Voltar</button>' +
+        '<p class="cf-prog">' + (d.i + 1) + ' de ' + PQ.length + '</p>' + head(q.q, '') + MSG +
+        '<form class="cf-form" novalidate data-form="pq" data-i="' + d.i + '">' + body +
+        submit('Continuar') + '</form></div>';
+    },
+    crowStart: function () { return VIEWS.crow({ text: 'Oi, eu sou o Crow!', next: 'crowQ' }); },
+    crowQ: function () { return VIEWS.crow({ text: 'Me responda umas perguntas antes.', next: 'pq0' }); },
+    crowAccount: function () { return VIEWS.crow({ text: 'Agora que nós conhecemos melhor, tá na hora de criar sua conta.', next: 'signup' }); },
     loading: function () { return '<div class="cf-spin" role="status" aria-label="Carregando"></div>'; },
     login: function () {
       return '<button class="cf-link cf-back" type="button" data-go="welcome">← Voltar</button><img class="cf-login-mascot" src="mascot.png" alt="Crowfit, o corvo mascote">' + head('Entrar', 'Entre para continuar seu treino.') + MSG +
@@ -58,7 +94,7 @@
     signup: function () {
       return '<button class="cf-link cf-back" type="button" data-go="welcome">← Voltar</button>' + head('Criar conta', 'Leva menos de um minuto.') + MSG +
         '<form class="cf-form" novalidate data-form="signup">' +
-        field('name', 'Nome', 'text', 'name') + field('handle', 'ID (nome de usuário)', 'text', 'off', '3 a 20 caracteres: letras minúsculas, números e _. Não poderá ser trocado por 30 dias após a primeira troca.') +
+        (hasDraft() ? '' : field('name', 'Nome', 'text', 'name')) + field('handle', 'ID (nome de usuário)', 'text', 'off', '3 a 20 caracteres: letras minúsculas, números e _. Não poderá ser trocado por 30 dias após a primeira troca.') +
         field('email', 'E-mail', 'email', 'email') +
         field('password', 'Senha', 'password', 'new-password', 'Mínimo de 8 caracteres, com letras e números.') +
         field('confirm', 'Confirmar senha', 'password', 'new-password') + submit('Criar conta') + '</form>' +
@@ -100,6 +136,15 @@
     root.addEventListener('click', function (e) {
       var go = e.target.closest && e.target.closest('[data-go]');
       if (go) { renderView(go.getAttribute('data-go')); return; }
+      var ch = e.target.closest && e.target.closest('[data-chip]');
+      if (ch) {
+        var form = ch.closest('form'), idx = +form.getAttribute('data-i'), k = PQ[idx].k, d = readDraft();
+        d[k] = PQ[idx].type === 'chips' && PQ[idx].k === 'dias' ? Number(ch.getAttribute('data-chip')) : ch.getAttribute('data-chip');
+        writeDraft(d);
+        Array.prototype.forEach.call(form.querySelectorAll('.chip'), function (x) { var on = x === ch; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+        setMsg('');
+        return;
+      }
       if (e.target.closest && e.target.closest('[data-intro]')) { markIntro(); renderView('welcome'); }
     });
   }
@@ -124,10 +169,13 @@
   function renderView(name, data) {
     ensureRoot();
     data = data || {};
+    var pm = /^pq(\d+)$/.exec(name);
+    if (pm) { data = { i: +pm[1] }; name = 'pq'; }
     view = name;
-    var bare = name === 'intro' || name === 'welcome';
+    var bare = name === 'intro' || name === 'welcome' || name === 'crowStart' || name === 'crowQ' || name === 'crowAccount';
     root.classList.toggle('cf-bare', bare);
     root.innerHTML = bare ? VIEWS[name](data) : '<div class="cf-wrap' + (name === 'loading' ? ' cf-center' : '') + '">' + VIEWS[name](data) + '</div>';
+    if (name === 'pq') { var fi = root.querySelector('input[name=v]'); if (fi) try { fi.focus(); } catch (e) {} }
     var em = root.querySelector('[data-email]');
     if (em) em.textContent = data.email || '';
     bind(name);
@@ -158,7 +206,7 @@
         setBusy(root, false);
         if (!r.ok) setMsg(r.error.message);
       } else if (name === 'signup') {
-        var nm = val(form, 'name').trim();
+        var nm = (val(form, 'name') || (readDraft().nome || '')).trim();
         var hd = val(form, 'handle').trim().toLowerCase();
         if (nm.length < 2) return setMsg('Digite seu nome.');
         if (!/^[a-z0-9_]{3,20}$/.test(hd)) return setMsg('Use de 3 a 20 letras minúsculas, números ou _ no ID.');
@@ -173,6 +221,22 @@
         setBusy(root, false);
         if (!r.ok) setMsg(r.error.message);
         else if (r.needsConfirmation) renderView('sent', { kind: 'signup', email: email });
+      } else if (name === 'pq') {
+        var i = +form.getAttribute('data-i'), q = PQ[i], d = readDraft(), raw = val(form, 'v').trim();
+        if (q.type === 'chips') { if (d[q.k] == null || d[q.k] === '') return setMsg('Escolha uma opção.'); }
+        else {
+          if (!raw) return setMsg('Preencha para continuar.');
+          if (q.type === 'number') {
+            var num = Number(raw.replace(',', '.'));
+            if (!isFinite(num) || num < q.min || num > q.max || (q.k === 'idade' && Math.floor(num) !== num)) return setMsg('Digite um valor entre ' + q.min + ' e ' + q.max + '.');
+            d[q.k] = num;
+          } else {
+            if (raw.length > 40) return setMsg('Use no máximo 40 caracteres.');
+            d[q.k] = raw;
+          }
+        }
+        writeDraft(d);
+        renderView(i < PQ.length - 1 ? 'pq' + (i + 1) : 'crowAccount');
       } else if (name === 'forgot') {
         if (!Auth.validateEmail(email)) return setMsg('Digite um e-mail válido.');
         setBusy(root, true); setMsg('');

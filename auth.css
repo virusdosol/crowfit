@@ -84,3 +84,11 @@ html.cf-auth-open, html.cf-auth-open body { overflow: hidden; }
 
 /* Tela "Já tenho uma conta": corvo do mascote acima do título. */
 .cf-login-mascot { display: block; height: clamp(110px, 22vh, 180px); width: auto; margin: 8px auto 4px; }
+
+/* Telas do Crow (antes da conta) */
+.cf-crow { justify-content: center; }
+.cf-bubble { position: relative; max-width: 88%; margin: 0 auto 8px; padding: 18px 20px; border: 2px solid #C9C9D6; border-radius: 22px; background: #fff; color: #303036; font: 800 20px Nunito, sans-serif; text-align: center; }
+.cf-bubble::after { content: ""; position: absolute; left: 50%; bottom: -12px; transform: translateX(-50%); width: 18px; height: 18px; background: #fff; border-right: 2px solid #C9C9D6; border-bottom: 2px solid #C9C9D6; transform: translateX(-50%) rotate(45deg); }
+.cf-crow-img { display: block; height: clamp(150px, 30vh, 240px); width: auto; margin: 40px auto 0; }
+.cf-prog { margin: 0 0 6px; font: 800 13px Nunito, sans-serif; color: #303036; letter-spacing: .4px; text-transform: uppercase; }
+.cf-chips { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 12px 0 16px; }

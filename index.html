@@ -273,9 +273,14 @@ function leave(){
  gen++;if(window.CFSync)CFSync.reset();S=null;curUid="";ob={step:0,d:{}};loadErr=null;blocked=false;rawBad=null;bakOk=false;homeStale=false;
  clearInterval(tm);banner("");app.innerHTML="";say("")}
 function legacyValid(raw){try{return CF.validateState(JSON.parse(raw)).ok}catch(e){return false}}
+function draftRead(){try{return JSON.parse(localStorage.getItem("crowfit-onboard-draft"))||null}catch(e){return null}}
+/* Respostas feitas antes da conta (no aparelho): viram o perfil desta conta, sem repetir as perguntas. */
+function applyDraft(){var d=draftRead();if(!d||!d.nome)return false;var r=CF.validateProfile({nome:d.nome,idade:d.idade,peso:d.peso,altura:d.altura,exp:d.exp,dias:Number(d.dias)});if(!r.ok)return false;S.profile=r.profile;CF.setPlan(S,r.profile.dias,today());save();try{localStorage.removeItem("crowfit-onboard-draft")}catch(e){}return true}
 function enter(uid){var st=load(uid);
  if(loadErr&&blocked){renderRecovery();return}
  if(st==="empty"&&CFStore.legacyStatus(LS(),uid,legacyValid)==="offer"){S=null;renderAdopt(uid);return} /* S nulo: nada pode ser gravado enquanto a decisão está pendente */
+ if(S&&!S.profile&&applyDraft()){renderHome();if(window.CFSync)CFSync.notify("login",true);return}
+ if(S&&S.profile){try{localStorage.removeItem("crowfit-onboard-draft")}catch(e){}}
  S.profile?renderHome():renderOb();if(window.CFSync)CFSync.notify("login",true)}
 /* Dados antigos (sem dono) só passam para uma conta com confirmação explícita; depois disso não são oferecidos a nenhuma outra. */
 function renderAdopt(uid){var my=gen,old=null;try{old=JSON.parse(localStorage.getItem(CFStore.LEGACY))}catch(e){}
