@@ -586,24 +586,11 @@ function trophyTop(records, names, n) {
   out.sort(function (x, y) { return (y.stage - x.stage) || (y.value - x.value) || (x.id < y.id ? -1 : x.id > y.id ? 1 : 0); });
   return out.slice(0, n);
 }
-/* ---- caixas de recompensa ----
-   SEMANAL = noz (já existe; reaproveitada: uma por semana, XP aleatório, sem nova moeda).
-   MENSAL = caixa nova, criada só quando o critério CONFIGURADO for cumprido. Sem critério, nada é criado.
-   S.boxes["mensal:AAAA-MM"] = { id, kind:"mensal", month, xp, items:[id], granted:"AAAA-MM-DD", opened: null|ISO }
-   * o sorteio sai de uma semente fixa (usuário + caixa): todo aparelho chega ao mesmo resultado
-   * a caixa é criada uma vez e aberta uma vez (opened); nunca soma XP duas vezes
-   * XP da caixa vai para points (base), não para rewards, como as nozes */
+/* ---- Noz Dourada (recompensa mensal) ----
+   O SERVIDOR é a única autoridade: concessão, sorteio, XP e pontos (supabase-boxes-v3.sql).
+   Este arquivo guarda e mostra o que o servidor confirmou. Não sorteia, não concede e não soma XP.
+   S.boxes["mensal:AAAA-MM"] = { id, kind:"mensal", month, xp: null|int, items:[id], granted:"AAAA-MM-DD", opened: null|ISO } */
 var BOX_ID = /^mensal:\d{4}-\d{2}$/;
-var BOX = {
-  criterio: null,                    /* PROVISÓRIO: sem regra definitiva. Ex.: { t: "dias_no_mes", v: 12 } */
-  xp: { base: 30, porNivel: 60 },    /* PROVISÓRIO: XP = base x nível + sorteio até porNivel x nível */
-  itens: 1                           /* PROVISÓRIO: itens sorteados por caixa (só quando houver catálogo) */
-};
-var RARIDADES = [{ id: "comum", peso: 70 }, { id: "rara", peso: 22 }, { id: "epica", peso: 7 }, { id: "lendaria", peso: 1 }]; /* PROVISÓRIO */
-/* Ordem do mais raro para o mais comum: usada quando a raridade sorteada se esgota. */
-var RARIDADE_ORDEM = ["lendaria", "epica", "rara", "comum"];
-/* Fração do nível convertida em XP quando não há item disponível (aprovado: 33,33%). */
-var XP_SUBSTITUTO = 0.3333;
 /* CATÁLOGO TEMPORÁRIO (aprovado): sem arte definitiva. Nomes e ids são provisórios. */
 function catalogoTemporario() {
   var qtd = { comum: 18, epica: 9, rara: 5, lendaria: 3 }, out = [];
@@ -617,90 +604,41 @@ function catalogoTemporario() {
   return out;
 }
 var ITENS = catalogoTemporario();
+var ITENS = catalogoTemporario();
 function boxEntryOk(b) {
   return !!b && typeof b === "object" && !Array.isArray(b) && b.kind === "mensal" && typeof b.id === "string" &&
-    /^mensal:\d{4}-\d{2}$/.test(b.id) && typeof b.month === "string" && /^\d{4}-\d{2}$/.test(b.month) &&
-    b.id === "mensal:" + b.month && isInt(b.xp, 0, 10000000) && Array.isArray(b.items) && b.items.length <= 20 &&
+    /^mensal:\d{4}-\d{2}$/.test(b.id) && typeof b.month === "string" && /^\d{4}-(0[1-9]|1[0-2])$/.test(b.month) &&
+    b.id === "mensal:" + b.month && (b.xp === null || isInt(b.xp, 0, 10000000)) &&
+    Array.isArray(b.items) && b.items.length <= 20 &&
     b.items.every(function (i) { return typeof i === "string" && ACH_ID.test(i); }) &&
-    typeof b.granted === "string" && DATE_RE.test(b.granted) && (b.opened === null || (typeof b.opened === "string" && b.opened.length <= 40));
+    typeof b.granted === "string" && DATE_RE.test(b.granted) &&
+    (b.opened === null || (typeof b.opened === "string" && b.opened.length <= 40)) &&
+    (b.opened !== null || (b.xp === null && b.items.length === 0));
 }
-/* Gerador determinístico (FNV-1a + mulberry32): mesma semente, mesma sequência. */
-function hashSeed(str) { var h = 2166136261; for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
-function prng(seed) {
-  var a = hashSeed(String(seed));
-  return function () {
-    a = (a + 0x6D2B79F5) | 0;
-    var t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-function pickRarity(u) {
-  var total = RARIDADES.reduce(function (a, r) { return a + r.peso; }, 0), x = u * total;
-  for (var i = 0; i < RARIDADES.length; i++) { if (x < RARIDADES[i].peso) return RARIDADES[i].id; x -= RARIDADES[i].peso; }
-  return RARIDADES[RARIDADES.length - 1].id;
-}
-/* Sorteio da caixa. Só depende de seed, nível e catálogo: não lê o estado. */
-/* Escolhe um item que ainda não existe (owned) e não foi escolhido nesta caixa (chosen).
-   Ordem: a raridade sorteada; depois as mais raras (mais próxima primeiro); depois as mais comuns.
-   Devolve null quando não resta nenhum item disponível. */
-function pickItem(r, catalog, owned, chosen) {
-  var rar = pickRarity(r()), idx = RARIDADE_ORDEM.indexOf(rar);
-  var order = [rar].concat(RARIDADE_ORDEM.slice(0, idx).reverse(), RARIDADE_ORDEM.slice(idx + 1));
-  for (var o = 0; o < order.length; o++) {
-    var pool = catalog.filter(function (i) {
-      return i.raridade === order[o] && !owned[i.id] && chosen.indexOf(i.id) < 0;
-    });
-    if (pool.length) return pool[Math.floor(r() * pool.length)];
-  }
-  return null;
-}
-/* XP dado no lugar de cada item que não pôde ser concedido: 33,33% do nível, arredondado. */
-function xpSubstituto(level) { return Math.round(level * XP_SUBSTITUTO); }
-function rollBox(seed, level, catalog, cfg, owned) {
-  cfg = cfg || BOX; catalog = catalog || []; owned = owned || {};
-  var r = prng(seed), xp = cfg.xp.base * level + Math.floor(r() * (cfg.xp.porNivel * level + 1)), items = [];
-  for (var k = 0; k < cfg.itens; k++) {
-    var pick = pickItem(r, catalog, owned, items);
-    if (pick) items.push(pick.id); else xp += xpSubstituto(level);
-  }
-  return { xp: xp, items: items };
-}
-/* Critério mensal configurável. Hoje só existe "dias_no_mes"; novos tipos entram aqui. */
-function monthCriterionMet(S, month, criterio) {
-  if (!criterio) return false;
-  if (criterio.t === "dias_no_mes") return Object.keys(S.done || {}).filter(function (d) { return d.slice(0, 7) === month; }).length >= criterio.v;
-  return false;
-}
-/* Cria a caixa do mês se o critério for cumprido. Uma vez por mês; nunca recria. */
-/* Itens que o usuário já tem ou que estão em caixas ainda não abertas: não podem ser sorteados de novo. */
-function itensReservados(S) {
-  var owned = {};
-  Object.keys(S.collection || {}).forEach(function (i) { owned[i] = true; });
-  Object.keys(S.boxes || {}).forEach(function (k) { (S.boxes[k].items || []).forEach(function (i) { owned[i] = true; }); });
-  return owned;
-}
-function grantMonthly(S, month, seed, level, day, cfg, catalog) {
-  cfg = cfg || BOX; catalog = catalog || ITENS;
-  if (!/^\d{4}-\d{2}$/.test(month) || !DATE_RE.test(day)) return null;
+/* Mostra a Noz pendente do mês. A concessão real é do servidor (grant_my_box). Um mês = uma Noz. */
+function grantMonthly(S, month, day) {
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month) || !DATE_RE.test(day)) return null;
   if (!S.boxes) S.boxes = {};
   var id = "mensal:" + month;
   if (Object.prototype.hasOwnProperty.call(S.boxes, id)) return null;
-  if (!monthCriterionMet(S, month, cfg.criterio)) return null;
-  var roll = rollBox(seed, level, catalog, cfg, itensReservados(S));
-  S.boxes[id] = { id: id, kind: "mensal", month: month, xp: roll.xp, items: roll.items, granted: day, opened: null };
-  return { id: id, xp: roll.xp, items: roll.items.slice() };
+  S.boxes[id] = { id: id, kind: "mensal", month: month, xp: null, items: [], granted: day, opened: null };
+  return { id: id };
 }
-/* Abre a caixa uma única vez: soma o XP em points e registra os itens na coleção. */
-function openBox(S, id, nowIso) {
+/* Aplica o resultado CONFIRMADO pelo servidor (open_my_box). Recusa resposta incoerente.
+   Não soma XP: o servidor já creditou, e os pontos vêm no campo points. */
+function applyBoxOpen(S, id, res, nowIso) {
   var b = S.boxes && S.boxes[id];
-  if (!b || b.opened !== null || typeof nowIso !== "string") return null;
-  b.opened = nowIso;
-  S.points += b.xp;
+  if (!b || typeof nowIso !== "string") return null;
+  if (!res || res.id !== id || !isInt(res.xp, 0, 10000000) || !Array.isArray(res.items) || res.items.length > 20 ||
+      !res.items.every(function (i) { return typeof i === "string" && ACH_ID.test(i); }) || !isInt(res.points, 0, 100000000)) return null;
+  if (b.opened === null) b.opened = res.opened_at ? new Date(res.opened_at).toISOString() : nowIso;
+  b.xp = res.xp; b.items = res.items.slice();
   if (!S.collection) S.collection = {};
   b.items.forEach(function (i) { S.collection[i] = 1; });
-  return { id: id, xp: b.xp, items: b.items.slice() };
+  S.points = res.points;
+  return { id: id, xp: res.xp, items: b.items.slice(), details: Array.isArray(res.item_details) ? res.item_details : [] };
 }
+/* Histórico: Noz semanal + Noz Dourada, mais recente primeiro. */
 /* Aparência equipada: só vale se o item existe no catálogo, é do tipo aparência e está na coleção. */
 function aparenciaEquipada(S) {
   var id = S.equipped;
@@ -771,6 +709,6 @@ return { PAT: PAT, EXP: EXP, escText: escText, escAttr: escAttr, safeClass: safe
   computeStreak: computeStreak, refreshStreak: refreshStreak, dayStatus: dayStatus, nozWeeks: nozWeeks, nozOpened: nozOpened, openNoz: openNoz, levelOf: levelOf, timerStart: timerStart, timerPause: timerPause, timerResume: timerResume, timerTick: timerTick,
   timerSecs: timerSecs, newSession: newSession, syncStatus: syncStatus, completeSet: completeSet, skipExercise: skipExercise, advance: advance,
   grant: grant, grantExercise: grantExercise, grantSessionBonus: grantSessionBonus, finishSession: finishSession, abandonSession: abandonSession,
-  logDay: logDay, dayEventOk: dayEventOk, newEventId: newEventId, ACH: ACH, checkAchCatalog: checkAchCatalog, unlockAchievements: unlockAchievements, achCatalog: achCatalog, achMerge: achMerge, achMet: achMet, BOX: BOX, ITENS: ITENS, RARIDADE_ORDEM: RARIDADE_ORDEM, pickItem: pickItem, xpSubstituto: xpSubstituto, itensReservados: itensReservados, aparenciaEquipada: aparenciaEquipada, equipar: equipar, desequipar: desequipar, itemsMerge: itemsMerge, toggleDestaque: toggleDestaque, RARIDADES: RARIDADES, ITENS: ITENS, prng: prng, pickRarity: pickRarity, rollBox: rollBox, monthCriterionMet: monthCriterionMet, grantMonthly: grantMonthly, openBox: openBox, boxHistory: boxHistory, boxesMerge: boxesMerge,  achTop: achTop, trophyTop: trophyTop, achPendingEvents: achPendingEvents, achAck: achAck, 
+  logDay: logDay, dayEventOk: dayEventOk, newEventId: newEventId, ACH: ACH, checkAchCatalog: checkAchCatalog, unlockAchievements: unlockAchievements, achCatalog: achCatalog, achMerge: achMerge, achMet: achMet, ITENS: ITENS, aparenciaEquipada: aparenciaEquipada, equipar: equipar, desequipar: desequipar, itemsMerge: itemsMerge, toggleDestaque: toggleDestaque, grantMonthly: grantMonthly, applyBoxOpen: applyBoxOpen, boxEntryOk: boxEntryOk, boxHistory: boxHistory, boxesMerge: boxesMerge,  achTop: achTop, trophyTop: trophyTop, achPendingEvents: achPendingEvents, achAck: achAck, 
   TROPHY: TROPHY, checkTrophyConfig: checkTrophyConfig, trophyAll: trophyAll, trophyLevels: trophyLevels, trophyCount: trophyCount, trophyCatalog: trophyCatalog, equipTrophy: equipTrophy, unequipTrophy: unequipTrophy };
 });

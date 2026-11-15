@@ -299,12 +299,25 @@ function syncTrophies() {
   } catch (e) { /* tenta de novo na próxima atualização */ }
 }
 function markBibIntro() { try { localStorage.setItem("crowfit-bib-intro", "1"); } catch (e) {} }
+var openingBox = false;
+/* Abre a Noz Dourada SOMENTE pelo servidor. Nada é aplicado antes da resposta confirmada. */
 function openBoxNow(id) {
-  var res = CF().openBox(S(), id, new Date().toISOString());
-  if (!res) return; save();
-  var names = res.items.map(function (i) { var it = byItem(i); return it ? it.nome : i; });
-  celebrate({ title: "Avelã aberta", name: plural(res.xp, "XP", "XP") + (names.length ? " e " + names.join(", ") : ""), line: names.length ? "Não é grande coisa. Mas é seu." : "Só XP desta vez. Trate de treinar mais." });
-  renderPage();
+  if (openingBox) return;
+  var sync = root.CFSync;
+  if (!sync || typeof sync.openBox !== "function") { root.alert && root.alert("Não foi possível abrir a Noz Dourada agora."); return; }
+  openingBox = true;
+  sync.openBox(id).then(function (serverRes) {
+    openingBox = false;
+    var r = CF().applyBoxOpen(S(), id, serverRes, new Date().toISOString());
+    if (!r) { root.alert && root.alert("Resposta inesperada do servidor. Tente de novo."); return; }
+    save();
+    var names = r.items.map(function (i) { var it = byItem(i); return it ? it.nome : i; });
+    celebrate({ title: "Noz Dourada aberta", name: plural(r.xp, "XP", "XP") + (names.length ? " e " + names.join(", ") : ""), line: names.length ? "Não é grande coisa. Mas é seu." : "Só XP desta vez. Trate de treinar mais." });
+    renderPage();
+  }).catch(function () {
+    openingBox = false;
+    root.alert && root.alert("Sem conexão. Tente abrir a Noz Dourada de novo.");
+  });
 }
 
 /* ---------- feedback: conquista nova e subida de nível ---------- */

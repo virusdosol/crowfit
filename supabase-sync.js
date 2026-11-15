@@ -35,7 +35,7 @@ function isoOk(v) { /* mesma janela de cf_ts: 2020-01-01 até agora + 2 dias */
 /* ---------- valor (em XP) de cada recompensa, a partir do identificador ---------- */
 /* ex:<data>:<exercício> = 10 | sess:<data> = 20 | tr:s<k>u<n> = 10 x exercícios da unidade + 20 (derivado da trilha congelada). */
 /* Recusas de grant_my_box que não são falha de sincronização (ver bloco de caixas). */
-var BOX_REJECT_RE = /^(criterion_not_defined|criterion_not_met|future_month|invalid_box|invalid_items|before_cutoff)$/;
+var BOX_REJECT_RE = /^(criterion_not_defined|criterion_not_met|future_month|month_expired|invalid_box|invalid_payload|before_cutoff)$/;
 /* Tamanho do lote de eventos de dia por rodada (o servidor aceita até 500). */
 var DAY_BATCH = 200;
 /* Relógio do aparelho: tolerância técnica de 2 minutos em relação à hora do servidor. */
@@ -69,7 +69,9 @@ function buildProgress(E, S, known, today) {
     if (a === null) { skipped++; return; } /* sem valor seguro: continua dentro de base_points, nunca é enviada */
     rew[k] = a; sum += a;
   });
-  var base = S.points - sum;
+  /* XP das Noz Douradas abertas já entra em S.points (creditado pelo servidor). Não pode voltar na base enviada. */
+  var boxXp = 0; Object.keys(S.boxes || {}).forEach(function (k) { var b = S.boxes[k]; if (b && b.opened !== null && isInt(b.xp, 0, 1e7)) boxXp += b.xp; });
+  var base = S.points - sum - boxXp;
   if (!isInt(S.points, 0, 1e7) || base < 0 || base > 1e7) return { error: "xp_inconsistent", message: "Os pontos locais não batem com as recompensas registradas. Nada foi enviado nem alterado.", skippedRewards: skipped };
   return { payload: { base_points: base, best_streak: Math.min(100000, Math.max(0, S.best | 0)),
     last_workout_date: (DATE_RE.test(S.last || "") && S.last >= MIN_DATE && S.last <= lim) ? S.last : null,
@@ -243,11 +245,29 @@ function adoptNozes(S, res) {
 /* Caixas mensais: envia cada caixa (grant_my_box, a primeira gravação vence) e registra a abertura (open_my_box).
    O XP da caixa NÃO vai por aqui: entra pela base do progresso (merge_my_progress), que nunca dobra. */
 var BOX_RE = /^mensal:\d{4}-\d{2}$/;
+/* Abre a Noz Dourada no servidor e devolve o resultado confirmado. A tela só mostra o que voltar daqui. */
+function remoteOpenBox(id) {
+  var A = root.CrowfitAuth, c = A && A.getClient ? A.getClient() : null;
+  if (!c) return Promise.reject(new Error("sem conexão"));
+  return c.rpc("open_my_box", { p: { id: id } }).then(function (r) {
+    if (r.error) throw r.error;
+    return r.data;
+  });
+}
+function currentBoxId() {
+  try {
+    var parts = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit" }).formatToParts(new Date());
+    var y = parts.filter(function (p) { return p.type === "year"; })[0].value, m = parts.filter(function (p) { return p.type === "month"; })[0].value;
+    return "mensal:" + y + "-" + m;
+  } catch (e) { return null; }
+}
 function buildBoxes(E, S) {
   var b = S.boxes || {};
-  var list = Object.keys(b).filter(function (k) { return BOX_RE.test(k) && b[k] && b[k].id === k; }).sort().slice(-50)
-    .map(function (k) { var x = b[k]; return { id: k, grant: { id: k, month: x.month, xp: x.xp, items: (x.items || []).slice(), granted: x.granted }, opened: x.opened !== null }; });
-  return { list: list, sig: hash(JSON.stringify(list.map(function (x) { return [x.id, x.grant, x.opened]; }))) };
+  var keys = Object.keys(b).filter(function (k) { return BOX_RE.test(k) && b[k] && b[k].id === k; }).sort().slice(-50);
+  var cur = currentBoxId();
+  if (cur && keys.indexOf(cur) < 0) keys.push(cur);   /* pede ao servidor a Noz do mês corrente, mesmo sem caixa local */
+  var list = keys.map(function (k) { var x = b[k]; return { id: k, grant: { id: k }, opened: !!x && x.opened !== null && x.opened !== undefined }; });
+  return { list: list, sig: hash(JSON.stringify(list.map(function (x) { return [x.id, x.opened]; }))) };
 }
 /* Resposta de grant_my_box: se o servidor já tinha a caixa, o conteúdo dele vale (se ainda não foi aberta aqui). */
 function adoptBox(S, res) {
@@ -475,12 +495,16 @@ function create(envIn) {
               if (kg.kind === "net" || kg.kind === "auth" || !BOX_REJECT_RE.test(kg.code || "")) throw gr.error;
               continue;
             }
+            if (!S0.boxes || !S0.boxes[bxi.id]) {
+              if (gr.data && typeof gr.data.granted === "string" && E.CF.grantMonthly(S0, bxi.id.slice(7), gr.data.granted.slice(0, 10))) v2ch = true;
+            }
             if (adoptBox(S0, gr.data)) v2ch = true;
             if (bxi.opened) {
               meta.boxSent = meta.boxSent || {};
               if (!meta.boxSent[bxi.id]) {
                 var orr = await client.rpc("open_my_box", { p: { id: bxi.id } }); if (!alive()) return;
                 if (orr.error) throw orr.error;
+                if (E.CF.applyBoxOpen(S0, bxi.id, orr.data, new Date().toISOString())) v2ch = true;
                 meta.boxSent[bxi.id] = 1; saveMeta(uid, meta);
               }
             }
@@ -590,7 +614,7 @@ function create(envIn) {
     return { ok: true };
   }
 
-  return { attach: attach, notify: notify, reset: reset,
+  return { attach: attach, notify: notify, reset: reset, openBox: remoteOpenBox,
     remoteSettings: function () { var c = host && host.state && host.state(); return c ? (loadMeta(c.uid).remoteSettings || null) : null; }, status: function () { return { state: info.state, message: info.message, pending: info.pending, last: info.last, skippedSessions: info.skippedSessions }; },
     achievements: function () { return remoteAch.slice(); }, unlockAchievements: unlockAchievements, _run: function (full, reason) { return run(reason || "test", !!full); }, _waitIdle: function () { return running || Promise.resolve(); } };
 }

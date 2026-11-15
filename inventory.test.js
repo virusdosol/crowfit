@@ -27,58 +27,6 @@ describe("catálogo temporário aprovado", () => {
   });
 });
 
-describe("sorteio sem duplicatas", () => {
-  test("nunca sorteia item já possuído", () => {
-    const owned = {}; CF.ITENS.filter((i) => i.raridade !== "lendaria").forEach((i) => { owned[i.id] = true; });
-    for (let lv = 1; lv <= 40; lv++) {
-      const r = CF.rollBox("s" + lv, 2, CF.ITENS, cfg, owned);
-      r.items.forEach((id) => assert.ok(!owned[id], "item possuído sorteado: " + id));
-    }
-  });
-  test("escalona para raridade mais rara quando a sorteada se esgota", () => {
-    // só sobra uma lendária: qualquer sorteio que não seja lendária deve cair nela (ou dar XP)
-    const owned = {}; CF.ITENS.filter((i) => i.raridade !== "lendaria" || i.id !== "ap_len_01").forEach((i) => { owned[i.id] = true; });
-    const CAT = CF.ITENS;
-    let saw = false;
-    for (let lv = 1; lv <= 60; lv++) {
-      const r = CF.rollBox("e" + lv, 2, CAT, cfg, owned);
-      if (r.items.length) { saw = true; assert.ok(r.items[0] === "ap_len_01" || owned[r.items[0]] === undefined); }
-    }
-    assert.ok(saw);
-  });
-  test("catálogo esgotado: vira XP de 33,33% do nível, sem item", () => {
-    const owned = {}; CF.ITENS.forEach((i) => { owned[i.id] = true; });
-    const cheio = CF.rollBox(SEED, 6, CF.ITENS, cfg, {});
-    const vazio = CF.rollBox(SEED, 6, CF.ITENS, cfg, owned);
-    assert.deepEqual(vazio.items, []);
-    // mesma semente = mesma parte aleatória do XP; diferença é exatamente o substituto (6 x 0,3333 = 2)
-    assert.equal(vazio.xp - cheio.xp, CF.xpSubstituto(6));
-    assert.equal(CF.xpSubstituto(6), 2);
-  });
-  test("determinístico com o mesmo inventário", () => {
-    const owned = { "ap_com_01": 1 };
-    assert.deepEqual(CF.rollBox(SEED, 4, CF.ITENS, cfg, owned), CF.rollBox(SEED, 4, CF.ITENS, cfg, owned));
-  });
-});
-
-describe("reserva entre caixas", () => {
-  test("item de caixa ainda não aberta não é sorteado de novo", () => {
-    const S = withDays();
-    CF.grantMonthly(S, "2026-11", SEED, 2, DAY, cfg, CF.ITENS);
-    const reservado = S.boxes["mensal:2026-11"].items[0];
-    assert.ok(CF.itensReservados(S)[reservado]);
-    const r = CF.rollBox("outra", 2, CF.ITENS, cfg, CF.itensReservados(S));
-    assert.ok(!r.items.includes(reservado));
-  });
-  test("abrir a caixa coloca cada item na coleção com quantidade 1", () => {
-    const S = withDays();
-    CF.grantMonthly(S, "2026-11", SEED, 2, DAY, cfg, CF.ITENS);
-    const b = S.boxes["mensal:2026-11"];
-    CF.openBox(S, b.id, NOW);
-    b.items.forEach((i) => assert.equal(S.collection[i], 1));
-  });
-});
-
 describe("equipar e desequipar", () => {
   const base = () => { const S = withDays(); S.collection = { "ap_com_01": 1 }; return S; };
   test("equipa item possuído do tipo aparência", () => {

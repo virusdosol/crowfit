@@ -78,19 +78,30 @@ function serverClient(db, hooks) {
         p.forEach((r) => { if (db.nozes[r.week_start] === undefined) db.nozes[r.week_start] = r.xp; });
         return { data: Object.keys(db.nozes).sort().map((k) => ({ week_start: k, xp: db.nozes[k] })), error: null };
       }
+      /* Contrato da v3 (supabase-boxes-v3.sql): grant só recebe { id }; open sorteia no servidor e credita o XP.
+         O sorteio aqui é um DUPLO de teste determinístico (40 XP x nível, sem itens). */
       if (name === "grant_my_box") {
-        const id = p.id, cur = db.boxes[id];
-        if (cur) return { data: { id, xp: cur.xp, items: cur.items, granted: cur.granted, opened: cur.opened_at !== null, opened_at: cur.opened_at }, error: null };
-        const L = CF.levelOf(db.progress.points), lo = 30 * L, hi = 90 * L;
-        if (!Number.isInteger(p.xp) || p.xp < lo || p.xp > hi) return { data: null, error: { message: "invalid_xp" } };
-        db.boxes[id] = { month: p.month, xp: p.xp, items: p.items.slice(), granted: p.granted, opened_at: null };
-        return { data: { id, xp: p.xp, items: p.items, granted: p.granted, opened: false, opened_at: null }, error: null };
+        const id = p && p.id;
+        if (!p || typeof p !== "object" || Object.keys(p).some((k) => k !== "id")) return { data: null, error: { message: "invalid_payload" } };
+        if (!/^mensal:\d{4}-\d{2}$/.test(id || "")) return { data: null, error: { message: "invalid_box" } };
+        const today = db.today || "2026-11-13";
+        if (id.slice(7) < today.slice(0, 7)) return { data: null, error: { message: "month_expired" } };
+        if (id.slice(7) > today.slice(0, 7)) return { data: null, error: { message: "future_month" } };
+        const cur = db.boxes[id];
+        if (cur) return { data: { id, granted: cur.granted, opened: cur.opened_at !== null, opened_at: cur.opened_at }, error: null };
+        db.boxes[id] = { month: id.slice(7), xp: null, items: [], granted: today, opened_at: null };
+        return { data: { id, granted: today, opened: false, opened_at: null }, error: null };
       }
       if (name === "open_my_box") {
-        const cur = db.boxes[p.id];
+        const id = p && p.id, cur = db.boxes[id];
         if (!cur) return { data: null, error: { message: "box_not_granted" } };
-        if (cur.opened_at === null) { cur.opened_at = new Date().toISOString(); return { data: { id: p.id, already: false, opened_at: cur.opened_at }, error: null }; }
-        return { data: { id: p.id, already: true, opened_at: cur.opened_at }, error: null };
+        if (cur.opened_at !== null) return { data: { id, xp: cur.xp, items: cur.items, item_details: [], opened: true, already: true, opened_at: cur.opened_at, points: db.progress.points }, error: null };
+        const L = CF.levelOf(db.progress.points);
+        cur.xp = 40 * L; cur.items = []; cur.opened_at = new Date().toISOString();
+        /* Como cf_grant_xp (v7): o crédito entra no ledger (rewards) e o total é base + ledger. */
+        db.progress.rewards = Object.assign({}, db.progress.rewards, { ["gldnoz:" + id]: cur.xp });
+        db.progress.points = Math.min(10000000, db.progress.base_points + sum(db.progress.rewards));
+        return { data: { id, xp: cur.xp, items: [], item_details: [], opened: true, already: false, opened_at: cur.opened_at, points: db.progress.points }, error: null };
       }
       if (name === "merge_my_items") return { data: { items: [], equipped: null }, error: null }; /* formato real: { items, equipped } (supabase-items.sql) */
       return { data: null, error: { message: "function " + name + " does not exist" } };

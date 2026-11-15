@@ -1,119 +1,117 @@
-/* Caixas mensais na sincronização: envio, abertura única, dois aparelhos, desconexão e reconexão.
-   Usa o mesmo servidor simulado do sync.test.js (helpers.js). Rodar: node --test sync-boxes.test.js */
+/* Noz Dourada na sincronização (contrato da v3): o aparelho pede a concessão, o SERVIDOR sorteia e credita o XP,
+   e o aparelho só aplica o que o servidor devolve. Usa o servidor simulado de helpers.js.
+   Rodar: node --test sync-boxes.test.js */
 const { test, describe } = require("node:test");
 const assert = require("node:assert/strict");
 const H = require("./helpers.js");
 const { CF, makeServer, serverClient, makeDevice, freshState } = H;
 
-const SEED = "user-a|mensal:2026-11", BOX = "mensal:2026-11", DAY = "2026-11-13", NOW = "2026-11-13T20:00:00.000Z";
-const CFG = Object.assign({}, CF.BOX, { criterio: { t: "dias_no_mes", v: 3 } });
-const DONE = { "2026-11-02": true, "2026-11-05": true, "2026-11-09": true };
-
-/* Estado com a caixa do mês criada (nível 3, 480 XP). Não abre nada. */
-function withBox(over) {
-  const S = freshState(Object.assign({ points: 480, done: Object.assign({}, DONE) }, over || {}));
-  const g = CF.grantMonthly(S, "2026-11", SEED, 3, DAY, CFG, []);
-  return { S, xp: g.xp };
-}
+const ID = "mensal:2026-11", NOW = "2026-11-13T20:00:00.000Z";
+const withDb = (db) => { db.today = "2026-11-13"; return db; };
 async function sync(dev) { await dev.run(true); await dev.idle(); }
 const count = (client, name) => client.calls.filter((c) => c === name).length;
 
-describe("envio e abertura única", () => {
-  test("caixa aberta chega ao servidor e o XP entra uma vez na base", async () => {
-    const db = makeServer();
-    const { S, xp } = withBox();
-    CF.openBox(S, BOX, NOW);
+/* Abre a Noz como a tela faz: chamada ao servidor e aplicação do resultado confirmado. */
+async function openLikeScreen(S, client) {
+  const r = await client.rpc("open_my_box", { p: { id: ID } });
+  assert.equal(r.error, null, "servidor aceitou a abertura");
+  return CF.applyBoxOpen(S, ID, r.data, NOW);
+}
+
+describe("concessão pelo servidor", () => {
+  test("sincronizar concede a Noz do mês corrente, sem sortear no aparelho", async () => {
+    const db = withDb(makeServer());
+    const S = freshState({ points: 480 });
     await sync(makeDevice({ S, client: serverClient(db) }));
-    assert.ok(db.boxes[BOX].opened_at, "abertura registrada");
-    assert.equal(db.progress.base_points, 480 + xp);
-    assert.equal(db.progress.points, 480 + xp);
-    assert.equal(S.points, 480 + xp);
+    assert.ok(db.boxes[ID], "servidor registrou a Noz do mês");
+    assert.equal(db.boxes[ID].opened_at, null, "nasce pendente");
+    assert.equal(db.boxes[ID].xp, null, "sem XP antes da abertura");
+    assert.equal(S.boxes[ID].xp, null, "aparelho não guarda sorteio");
+    assert.equal(db.progress.points, 480, "concessão não credita XP");
   });
-  test("sincronizar de novo não reabre nem soma XP", async () => {
-    const db = makeServer();
-    const { S, xp } = withBox();
-    CF.openBox(S, BOX, NOW);
-    const client = serverClient(db);
-    const dev = makeDevice({ S, client });
-    await sync(dev);
-    await sync(dev);
-    assert.equal(count(client, "open_my_box"), 1, "abertura enviada uma vez só");
-    assert.equal(db.progress.base_points, 480 + xp);
-    assert.equal(S.points, 480 + xp);
-  });
-  test("a caixa é registrada uma vez, mesmo com sincronizações repetidas", async () => {
-    const db = makeServer();
-    const { S } = withBox();
+  test("sincronizar várias vezes não cria Noz extra", async () => {
+    const db = withDb(makeServer());
+    const S = freshState({ points: 480 });
     const client = serverClient(db);
     const dev = makeDevice({ S, client });
     await sync(dev); await sync(dev);
     assert.equal(Object.keys(db.boxes).length, 1);
-    assert.equal(count(client, "grant_my_box") >= 2, true, "envia, mas o servidor não duplica");
   });
-  test("caixa não aberta é registrada sem XP na base", async () => {
-    const db = makeServer();
-    const { S } = withBox();
+  test("Noz de mês passado não é concedida depois (sem retroativa)", async () => {
+    const db = withDb(makeServer());
+    const S = freshState({ points: 480, boxes: { "mensal:2026-10": { id: "mensal:2026-10", kind: "mensal", month: "2026-10", xp: null, items: [], granted: "2026-10-05", opened: null } } });
     await sync(makeDevice({ S, client: serverClient(db) }));
-    assert.ok(db.boxes[BOX], "caixa gravada");
-    assert.equal(db.boxes[BOX].opened_at, null);
-    assert.equal(db.progress.base_points, 480, "sem abrir, o XP da caixa não entra");
+    assert.equal(db.boxes["mensal:2026-10"], undefined, "servidor recusou o mês passado");
+    assert.equal(db.progress.points, 480);
+  });
+});
+
+describe("abertura pela tela (servidor sorteia e credita)", () => {
+  test("abrir credita o XP uma vez e os pontos batem com o servidor", async () => {
+    const db = withDb(makeServer());
+    const S = freshState({ points: 480 });
+    const client = serverClient(db);
+    await sync(makeDevice({ S, client }));
+    const r = await openLikeScreen(S, client);
+    assert.ok(r, "resultado aplicado");
+    assert.equal(S.points, db.progress.points, "pontos do aparelho = pontos do servidor");
+    assert.equal(S.points, 480 + r.xp);
+  });
+  test("sincronizar depois de abrir não reabre nem soma XP de novo", async () => {
+    const db = withDb(makeServer());
+    const S = freshState({ points: 480 });
+    const client = serverClient(db);
+    const dev = makeDevice({ S, client });
+    await sync(dev);
+    await openLikeScreen(S, client);
+    const pts = db.progress.points;
+    await sync(dev); await sync(dev);
+    assert.equal(db.progress.points, pts, "XP não duplica");
+    assert.equal(S.points, pts);
+  });
+  test("abrir de novo a mesma Noz devolve o resultado gravado, sem novo crédito", async () => {
+    const db = withDb(makeServer());
+    const S = freshState({ points: 480 });
+    const client = serverClient(db);
+    await sync(makeDevice({ S, client }));
+    const first = await client.rpc("open_my_box", { p: { id: ID } });
+    const pts = db.progress.points;
+    const again = await client.rpc("open_my_box", { p: { id: ID } });
+    assert.equal(again.data.already, true);
+    assert.equal(again.data.xp, first.data.xp);
+    assert.equal(db.progress.points, pts, "repetir não credita");
+  });
+  test("abrir sem Noz concedida é recusado pelo servidor", async () => {
+    const db = withDb(makeServer());
+    const r = await serverClient(db).rpc("open_my_box", { p: { id: ID } });
+    assert.equal(r.error.message, "box_not_granted");
+    assert.equal(db.progress.points || 0, 0);
   });
 });
 
 describe("dois aparelhos", () => {
-  test("aparelho novo recebe a caixa aberta em outro aparelho e não soma de novo", async () => {
-    const db = makeServer();
-    const { S: SA, xp } = withBox();
-    CF.openBox(SA, BOX, NOW);
-    await sync(makeDevice({ S: SA, client: serverClient(db) }));
-    const SB = freshState({ points: 480, done: Object.assign({}, DONE) });
-    await sync(makeDevice({ S: SB, client: serverClient(db) }));
-    assert.equal(SB.points, 480 + xp, "XP vem da base do servidor, uma vez");
-    assert.ok(SB.boxes[BOX].opened, "aparelho B vê a caixa aberta");
-    assert.equal(db.progress.base_points, 480 + xp);
-  });
-  test("os dois abriram offline: o servidor soma o XP uma vez só", async () => {
-    const db = makeServer();
-    const { S: SA, xp } = withBox();
-    const SB = JSON.parse(JSON.stringify(SA));
-    CF.openBox(SA, BOX, "2026-11-13T10:00:00.000Z");
-    CF.openBox(SB, BOX, "2026-11-13T12:00:00.000Z");
-    await sync(makeDevice({ S: SA, client: serverClient(db) }));
-    await sync(makeDevice({ S: SB, client: serverClient(db) }));
-    assert.equal(db.progress.base_points, 480 + xp);
-    assert.equal(SA.points, 480 + xp);
-    assert.equal(SB.points, 480 + xp);
-  });
-  test("servidor já tem o conteúdo da caixa: o aparelho adota esse conteúdo (não aberto aqui)", async () => {
-    const db = makeServer({ boxes: { [BOX]: { month: "2026-11", xp: 100, items: [], granted: DAY, opened_at: null } } });
-    const { S } = withBox();
-    S.boxes[BOX].xp = 150;
-    await sync(makeDevice({ S, client: serverClient(db) }));
-    assert.equal(S.boxes[BOX].xp, 100, "primeira gravação do servidor vale");
+  test("o segundo aparelho recebe a abertura do primeiro sem somar XP", async () => {
+    const db = withDb(makeServer());
+    const A = freshState({ points: 480 }), B = freshState({ points: 480 });
+    const client = serverClient(db);
+    await sync(makeDevice({ S: A, client }));
+    await openLikeScreen(A, client);
+    const pts = db.progress.points;
+    await sync(makeDevice({ S: B, client }));
+    assert.ok(B.boxes[ID].opened, "B vê a Noz aberta");
+    assert.equal(db.progress.points, pts, "B não creditou nada");
   });
 });
 
 describe("desconexão e reconexão", () => {
-  test("abre offline, reconecta e envia: XP e abertura chegam ao servidor", async () => {
-    const db = makeServer();
-    const { S, xp } = withBox();
-    const store = new Map();
-    CF.openBox(S, BOX, NOW);
-    await sync(makeDevice({ S, store, client: null, online: false }));
-    assert.equal(db.progress.base_points, 0, "nada enviado enquanto offline");
-    assert.equal(db.boxes[BOX], undefined);
-    await sync(makeDevice({ S, store, client: serverClient(db) }));
-    assert.equal(db.progress.base_points, 480 + xp);
-    assert.ok(db.boxes[BOX].opened_at);
-    assert.equal(S.points, 480 + xp, "reconexão não soma de novo");
-  });
-  test("caixa criada offline é enviada na reconexão, com o mesmo conteúdo", async () => {
-    const db = makeServer();
-    const { S, xp } = withBox();
+  test("offline não concede; ao reconectar, a Noz do mês entra no servidor", async () => {
+    const db = withDb(makeServer());
+    const S = freshState({ points: 480 });
     const store = new Map();
     await sync(makeDevice({ S, store, client: null, online: false }));
+    assert.equal(db.boxes[ID], undefined);
     await sync(makeDevice({ S, store, client: serverClient(db) }));
-    assert.equal(db.boxes[BOX].xp, xp);
-    assert.equal(db.boxes[BOX].opened_at, null);
+    assert.ok(db.boxes[ID], "concedida na reconexão");
+    assert.equal(db.progress.points, 480, "sem crédito de XP");
   });
 });
