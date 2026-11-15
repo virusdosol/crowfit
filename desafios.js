@@ -145,7 +145,7 @@ function html(data, tab, opts) {
   tab = TABS.some(function (t) { return t.k === tab; }) ? tab : "active";
   var now = data.server_now || new Date().toISOString();
   var list = data[tab] || [];
-  var h = '<div class="dg-wrap"><div class="dg-top"><button type="button" class="of-x" id="dg-bk" aria-label="Voltar"><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M3 3l16 16M19 3L3 19" stroke="#17171C" stroke-width="2.6" stroke-linecap="round"/></svg></button><h2>Desafios</h2></div>';
+  var h = '<div class="dg-wrap"><div class="dg-top"><button type="button" class="cw-back-ico" id="dg-bk" aria-label="Voltar" aria-label="Voltar"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Desafios</h2></div>';
   if (opts.pending) h += '<p class="dg-note">Sem conexão: mostrando a última lista carregada.</p>';
   h += '<div class="dg-tabs" role="tablist">';
   TABS.forEach(function (t) {
@@ -227,7 +227,7 @@ function open(box, client, after) {
     call("get_my_social").then(function (soc) {
       var friends = (soc && soc.friends) || [];
       var f = { title: "", metric: "units", target: 5, duration: 7, handles: [] };
-      var mhtml = '<div class="dg-wrap"><div class="dg-top"><button type="button" class="of-x" id="dg-cancel" aria-label="Voltar"><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M3 3l16 16M19 3L3 19" stroke="#17171C" stroke-width="2.6" stroke-linecap="round"/></svg></button><h2>Novo desafio</h2></div>' +
+      var mhtml = '<div class="dg-wrap"><div class="dg-top"><button type="button" class="cw-back-ico" id="dg-cancel" aria-label="Voltar" aria-label="Voltar"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Novo desafio</h2></div>' +
         '<label class="dg-lbl">Nome<input id="dg-title" maxlength="40" placeholder="Ex.: Semana forte"></label>' +
         '<p class="dg-lbl">Objetivo</p><div class="dg-opts">' +
         Object.keys(METRIC).map(function (k) { return '<button type="button" class="dg-opt" data-dg-m="' + k + '" aria-pressed="' + (k === f.metric) + '">' + esc(METRIC[k].name) + '</button>'; }).join("") +
