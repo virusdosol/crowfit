@@ -223,6 +223,7 @@
       if (t.hasAttribute('data-prof-close')) closePanel(true);
       else if (t.hasAttribute('data-prof-settings') || t.hasAttribute('data-prof-menu')) go('settings');
       else if (t.hasAttribute('data-prof-back')) go('profile');
+      else if (t.hasAttribute('data-prof-progress')) { closePanel(false); if (window.openPainel) window.openPainel(); }
       else if (t.hasAttribute('data-prof-go')) { var g = t.getAttribute('data-prof-go'); if (SCREENS[g]) go(g); }
       else if (t.hasAttribute('data-prof-switch')) switchAcc();
       else if (t.closest && t.closest('[data-prof-nivel]')) { if (window.CrowWall) window.CrowWall.openPage('nivel'); }
@@ -432,7 +433,8 @@
     /* Topo fixo: Voltar sempre no canto superior esquerdo; a engrenagem fica à direita só no perfil. */
     var tbBack = mode === 'settings' ? 'data-prof-back' : (mode === 'host' || mode === 'account' || mode === 'account-off') ? 'data-prof-menu' : 'data-prof-close';
     h = h.split(CLOSE).join('').split(BACK_MENU).join('').split(BAR).join('');
-    var tbGear = mode === 'profile' ? '<button type="button" class="cf-icon" data-prof-settings aria-label="Configurações">' + GEAR + '</button>' : '';
+    var PROG = '<svg viewBox="0 0 22 22" width="22" height="22" aria-hidden="true"><path d="M3 18V11M9 18V6M15 18V9M21 18V3" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg>';
+    var tbGear = mode === 'profile' ? '<button type="button" class="cf-icon" data-prof-progress aria-label="Minha evolução" title="Minha evolução">' + PROG + '</button>' + '<button type="button" class="cf-icon" data-prof-settings aria-label="Configurações">' + GEAR + '</button>' : '';
     var tb = '<div class="cf-bar cf-topbar"><button class="cw-back-ico" type="button" aria-label="Voltar" ' + tbBack + '>' +
       '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>' + tbGear + '</div>';
     h = h.replace(/^<div class="cf-wrap[^"]*">/, function (m) { return m + tb; });
