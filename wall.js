@@ -80,6 +80,7 @@ function openPage(kind) {
   if (kind === "home") { closePage(); if (typeof root.renderHome === "function") root.renderHome(); return; }
   closePage();
   if (kind === "bib") bibSt = { view: "cats" };
+  if (kind === "tro") { trSt.last = null; trSt.focusQ = false; }
   var el = doc.createElement("div"); el.className = "cw-full"; el.setAttribute("role", "dialog");
   el.innerHTML = '<div class="cf-bar cf-topbar"><button type="button" class="cf-back" data-full-close>← Voltar</button></div><div class="cw-pagebody"></div>';
   doc.body.appendChild(el);
@@ -94,8 +95,13 @@ function renderPage() {
   if (!curPage || !S()) return;
   var k = curPage.kind, body = curPage.el.querySelector(".cw-pagebody");
   if (k === "amigos") return; /* página de amigos cuida do próprio conteúdo (busca no servidor) */
+  if (k === "tro" && body) { if (trSt.last !== null) trSt.sc[trSt.last] = body.scrollTop; }
   var html = k === "ach" ? pageAch() : k === "app" ? pageApp() : k === "tro" ? pageTro() : k === "noz" ? pageNoz() : k === "bib" ? pageBib() : pageLevel();
   body.innerHTML = html;
+  if (k === "tro") {
+    trSt.last = trKey(); body.scrollTop = trSt.sc[trKey()] || 0;
+    if (trSt.focusQ) { var qi = body.querySelector("[data-tr-q]"); trSt.focusQ = false; if (qi) { qi.focus(); try { qi.setSelectionRange(qi.value.length, qi.value.length); } catch (e) {} } }
+  }
   if (sel && sel.kind === "app") detailApp(sel.id);
 }
 function cell(inner, label, bubble, extraCls) {
@@ -123,24 +129,60 @@ function pageNoz() {
     return cell('<span class="cw-glyph' + (aberta ? " on" : " off") + '">' + I.noz + '</span>', nome, '<b>' + esc(nome) + '</b><span>' + esc(st) + (h.xp != null ? " · " + plural(h.xp, "XP", "XP") : "") + '</span>' + act);
   }).join("") + '</div>';
 }
-function pageTro() {
-  var rows = trophyRows(), eq = S().trophyEq || null;
-  var names = ["Bronze", "Prata", "Ouro", "Diamante"];
-  return '<div class="cw-head"><h2>Troféus</h2><span>' + trophyTotal() + ' no total</span></div>' +
-    (!rows.some(function (r) { return r.exercises > 0; }) ? '<p class="cw-empty">' + esc(CROW.vazio_tro) + '</p>' : '') +
-    rows.map(function (r) {
-      var unit = r.kind === "s" ? "de tempo" : "de repetições";
-      return '<section class="cw-tro-ex"><h3>' + esc(r.name) + '</h3><p class="cw-hint">' + esc(unit) + '</p>' +
-        '<div class="cw-tro-row">' + r.levels.map(function (l, i) {
-          var key = r.id + ':' + l.id, on = l.unlocked, sel = eq === key;
-          var label = on ? 'Equipar ' + names[i] + ' de ' + esc(r.name) : names[i] + ' de ' + esc(r.name) + ': ' + fmtTro(r.kind, l.value) + '/' + fmtTro(r.kind, l.goal);
-          return '<button type="button" class="cw-tro-btn' + (sel ? ' sel' : '') + '" data-act="' + (on ? 'tro-eq' : 'tro-info') + '" data-key="' + esc(key) + '" data-text="' + esc(label) + '" aria-label="' + esc(label) + '">' +
-            '<span class="cw-glyph trophy s' + i + (on ? ' on' : ' off') + '">' + I.trophy + '</span>' +
-            '<small>' + names[i] + '</small></button>';
-        }).join('') + '</div></section>';
-    }).join('') +
-    '<p class="cw-hint">Toque em um troféu desbloqueado para equipar. Só um fica equipado, e ele aparece no seu perfil.</p>';
+/* Troféus: 3 níveis (categorias -> exercícios -> níveis do exercício). Só organiza a visão; dados e regras vêm de trophyRows()/core. */
+var trSt = { view: "cats", cat: null, open: null, q: "", f: "all", sc: {}, last: null, focusQ: false };
+var TR_NAMES = ["Bronze", "Prata", "Ouro", "Diamante"];
+var TR_FILTERS = [["all", "Todos"], ["prog", "Em progresso"], ["unl", "Desbloqueados"], ["done", "Completos"]];
+function trKey() { return trSt.view + (trSt.cat ? ":" + trSt.cat : ""); }
+function trLvlTxt(r, l) { return fmtTro(r.kind, l.value) + "/" + fmtTro(r.kind, l.goal) + (r.kind === "s" ? "" : " repetições"); }
+function trDots(r) { return r.levels.map(function (l, i) { return '<i class="tr-dot s' + i + (l.unlocked ? " on" : "") + '"></i>'; }).join(""); }
+function trBar(n, t) { var p = t ? Math.round((n / t) * 100) : 0; return '<span class="tr-bar"><i style="width:' + p + '%"></i></span>'; }
+function trCard(r, eq) {
+  var w = CFTrL.won(r), open = trSt.open === r.id;
+  var lv = r.levels.map(function (l, i) {
+    var key = r.id + ":" + l.id, sel = eq === key;
+    return '<div class="tr-lvl' + (l.unlocked ? " on" : " off") + '">' +
+      '<span class="cw-glyph trophy s' + i + (l.unlocked ? " on" : " off") + '">' + I.trophy + '</span>' +
+      '<div class="tr-lvl-t"><b>' + TR_NAMES[i] + '</b><small>' + (l.unlocked ? "Desbloqueado" : "Bloqueado") + ' · ' + esc(trLvlTxt(r, l)) + '</small></div>' +
+      (l.unlocked ? '<button type="button" class="cw-btn ' + (sel ? "" : "cw-primary") + ' tr-eqbtn" data-act="tro-eq" data-key="' + esc(key) + '">' + (sel ? "Desequipar" : "Equipar") + '</button>' : "") +
+      '</div>';
+  }).join("");
+  return '<article class="tr-card' + (open ? " open" : "") + '">' +
+    '<button type="button" class="tr-head" data-act="tr-open" data-id="' + esc(r.id) + '" aria-expanded="' + open + '">' +
+    '<span class="tr-top"><span class="tr-name">' + esc(r.name) + '</span><span class="tr-count">' + w + '/4</span></span>' +
+    trBar(w, 4) + '<span class="tr-dots">' + trDots(r) + '</span></button>' +
+    '<div class="tr-body"><div class="tr-inner">' + lv + '</div></div></article>';
 }
+function pageTro() {
+  var rows = trophyRows(), eq = S().trophyEq || null, cats = (root.CFBib && root.CFBib.CATS) || [];
+  var hasAny = rows.some(function (r) { return r.exercises > 0; });
+  var head = '<div class="cw-head"><h2>Troféus</h2><span>' + trophyTotal() + ' no total</span></div>';
+  var search = '<input class="tr-q" data-tr-q type="search" maxlength="40" autocomplete="off" placeholder="Buscar exercício" value="' + esc(trSt.q) + '" aria-label="Buscar exercício">';
+  var chips = '<div class="tr-chips" role="group" aria-label="Filtrar">' + TR_FILTERS.map(function (f) {
+    return '<button type="button" class="tr-chip' + (trSt.f === f[0] ? " on" : "") + '" data-act="tr-f" data-f="' + f[0] + '" aria-pressed="' + (trSt.f === f[0]) + '">' + f[1] + '</button>';
+  }).join("") + '</div>';
+  var body = "";
+  if (CFTrL.norm(trSt.q)) {
+    var found = CFTrL.filterRows(rows, trSt.f, trSt.q);
+    body = '<p class="tr-sub">' + found.length + (found.length === 1 ? " resultado" : " resultados") + '</p>' + chips +
+      (found.length ? '<div class="tr-list">' + found.map(function (r) { return trCard(r, eq); }).join("") + '</div>' : '<p class="cw-hint">Nenhum exercício com essa busca.</p>');
+  } else if (trSt.view === "cat" && trSt.cat) {
+    var cat = cats.filter(function (c) { return c.id === trSt.cat; })[0];
+    var list = rows.filter(function (r) { return cat && cat.ids.indexOf(r.id) >= 0 && CFTrL.matches(r, trSt.f); });
+    body = '<button type="button" class="cf-back tr-back" data-act="tr-back">← Categorias</button>' +
+      '<h3 class="tr-cat-t">' + esc(cat ? cat.n : "") + '</h3>' + chips +
+      (list.length ? '<div class="tr-list">' + list.map(function (r) { return trCard(r, eq); }).join("") + '</div>' : '<p class="cw-hint">Nenhum exercício nesse filtro.</p>');
+  } else {
+    var sum = CFTrL.categorySummary(rows, cats);
+    body = '<div class="tr-grid">' + sum.map(function (c) {
+      return '<button type="button" class="tr-cat" data-act="tr-cat" data-cat="' + esc(c.id) + '">' + CFBib.catIcon(c.cat) +
+        '<span class="tr-cat-n">' + esc(c.n) + '</span><span class="tr-cat-c">' + c.won + '/' + c.total + ' troféus</span>' + trBar(c.won, c.total) + '</button>';
+    }).join("") + '</div>';
+  }
+  var note = trSt.view === "cats" && !CFTrL.norm(trSt.q) ? '<p class="cw-hint">Toque numa categoria. Só um troféu fica equipado, e ele aparece no seu perfil.</p>' : "";
+  return head + (hasAny ? "" : '<p class="cw-empty">' + esc(CROW.vazio_tro) + '</p>') + search + body + note;
+}
+
 function pageApp() {
   var s = S(), n = Object.keys(s.collection || {}).length, eq = equipped(), it = eq && byItem(eq);
   return '<div class="cw-head"><h2>Aparências</h2><span>' + n + ' de ' + cat().length + '</span></div>' +
@@ -230,7 +272,10 @@ function act(kind, el) {
     else if (!CF().equipTrophy(S(), key, trophyRecs(), now)) { root.alert && root.alert("Esse troféu ainda não foi desbloqueado."); return; }
     save(); return renderPage();
   }
-  if (kind === "tro-info") { root.alert && root.alert(el.getAttribute("data-text")); return; }
+  if (kind === "tr-cat") { trSt.view = "cat"; trSt.cat = el.getAttribute("data-cat"); trSt.open = null; return renderPage(); }
+  if (kind === "tr-back") { trSt.view = "cats"; trSt.cat = null; trSt.open = null; return renderPage(); }
+  if (kind === "tr-open") { var oid = el.getAttribute("data-id"); trSt.open = trSt.open === oid ? null : oid; return renderPage(); }
+  if (kind === "tr-f") { trSt.f = el.getAttribute("data-f"); return renderPage(); }
   if (kind === "box") return openBoxNow(el.getAttribute("data-box"));
   if (kind === "noz") { var k = String(el.getAttribute("data-box")).replace(/^noz:/, ""); closePage(); if (typeof root.openNozScreen === "function") root.openNozScreen(k); }
 }
@@ -288,6 +333,10 @@ function hookSave() {
 }
 function init() {
   bar();
+  doc.addEventListener("input", function (e) {
+    var q = e.target && e.target.matches && e.target.matches("[data-tr-q]"); if (!q) return;
+    trSt.q = e.target.value; trSt.focusQ = true; renderPage();
+  });
   doc.addEventListener("click", function (e) {
     var t = e.target.closest && e.target.closest(".cw-bar [data-tab]"); if (t) return openPage(t.getAttribute("data-tab"));
     var bub = e.target.closest && e.target.closest("[data-bub]"); if (bub) return bubbleToggle(bub);
