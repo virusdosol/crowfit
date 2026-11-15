@@ -249,3 +249,10 @@ body.cw-home .cw-bar{display:grid}
 .bib-story-img { width: min(62vw, 240px); height: auto; margin: 8px 0; }
 .bib-story-btn { width: 100%; max-width: 360px; height: 52px; border: 0; border-radius: 99px; background: #E3182D; color: #fff; font: 800 16px Nunito, sans-serif; text-transform: uppercase; letter-spacing: .4px; box-shadow: 0 5px 0 #B8121F; cursor: pointer; }
 .bib-story-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #B8121F; }
+
+/* Amigos: cartão do jogador encontrado e dicas de estado */
+.am-found { margin: 4px 0 14px; padding: 14px 16px; border-radius: 18px; background: #F8F8FB; box-shadow: 0 3px 0 #E6E6EE; display: flex; flex-direction: column; gap: 10px; }
+.am-found .am-who b { font: 800 16px Nunito, sans-serif; color: #17171C; }
+.am-found .am-who span { font: 700 13px Nunito, sans-serif; color: #6A6A75; }
+.am-found .am-acts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.am-hint { font: 700 13px Nunito, sans-serif; color: #6A6A75; }
