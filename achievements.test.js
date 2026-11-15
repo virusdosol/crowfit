@@ -26,9 +26,9 @@ describe("catálogo", () => {
 });
 
 describe("requisitos e desbloqueio", () => {
-  test("nível: nada no nível 2; nível 3 exige 430 XP", () => {
-    assert.equal(CF.achMet(CF.ACH.find((a) => a.id === "nivel_3"), base({ points: 429 })), false);
-    assert.equal(CF.achMet(CF.ACH.find((a) => a.id === "nivel_3"), base({ points: 430 })), true);
+  test("nível: nada no nível 2; nível 3 exige 4935 XP", () => {
+    assert.equal(CF.achMet(CF.ACH.find((a) => a.id === "nivel_3"), base({ points: 4934 })), false);
+    assert.equal(CF.achMet(CF.ACH.find((a) => a.id === "nivel_3"), base({ points: 4935 })), true);
   });
   test("sequência: consistência insana exige 21 dias (S.best)", () => {
     const a = CF.ACH.find((x) => x.id === "consistencia_insana");
@@ -167,7 +167,7 @@ describe("não altera XP nem troféus", () => {
 
 describe("notificações pendentes (persistidas)", () => {
   test("cada conquista nova entra na fila; várias de uma vez ficam todas", () => {
-    const S = base({ best: 21, points: 430, done: { "2026-11-10": true } });
+    const S = base({ best: 21, points: 4935, done: { "2026-11-10": true } });
     CF.unlockAchievements(S, DAY, AT);
     const ids = CF.achPendingEvents(S).map((e) => e.id).sort();
     assert.deepEqual(ids, ["consistencia_insana", "nivel_3", "primeiro_treino"]);
@@ -179,7 +179,7 @@ describe("notificações pendentes (persistidas)", () => {
     assert.equal(S.achPending.length, 1);
   });
   test("ack remove só o que foi mostrado; repetir o ack não faz nada", () => {
-    const S = base({ best: 21, points: 430 });
+    const S = base({ best: 21, points: 4935 });
     CF.unlockAchievements(S, DAY, AT);
     assert.equal(CF.achAck(S, ["nivel_3"]), 1);
     assert.deepEqual(CF.achPendingEvents(S).map((e) => e.id), ["consistencia_insana"]);

@@ -8,26 +8,28 @@ const { CF } = H;
 const ROOT = path.join(__dirname, "..");
 
 describe("níveis de XP (curva exponencial)", () => {
-  /* Valores calculados à mão: passos 200, 230, 265, 305, 350, 400; início do nível 2, 3, 4, 5, 6 = 200, 430, 695, 1000, 1350. */
+  /* Valores calculados à mão (curva lote 4: base 2349, crescimento 1,10): passos 2350, 2585, 2840, 3125, 3440, 3785;
+     início do nível 2, 3, 4, 5, 6 = 2350, 4935, 7775, 10900, 14340. */
   test("limites de nível", () => {
     assert.equal(CF.xpLevelOf(0), 1);
-    assert.equal(CF.xpLevelOf(199), 1);
-    assert.equal(CF.xpLevelOf(200), 2);
-    assert.equal(CF.xpLevelOf(429), 2);
-    assert.equal(CF.xpLevelOf(430), 3);
-    assert.equal(CF.xpLevelOf(999), 4);
-    assert.equal(CF.xpLevelOf(1000), 5);
-    assert.equal(CF.xpLevelOf(1349), 5);
-    assert.equal(CF.xpLevelOf(1350), 6);
+    assert.equal(CF.xpLevelOf(2349), 1);
+    assert.equal(CF.xpLevelOf(2350), 2);
+    assert.equal(CF.xpLevelOf(4934), 2);
+    assert.equal(CF.xpLevelOf(4935), 3);
+    assert.equal(CF.xpLevelOf(7774), 3);
+    assert.equal(CF.xpLevelOf(7775), 4);
+    assert.equal(CF.xpLevelOf(10900), 5);
+    assert.equal(CF.xpLevelOf(14339), 5);
+    assert.equal(CF.xpLevelOf(14340), 6);
   });
   test("passos crescem: cada nível exige mais XP que o anterior", () => {
-    assert.deepEqual(H.plain([1, 2, 3, 4, 5, 6].map((l) => CF.xpNeed(l))), [200, 230, 265, 305, 350, 400]);
+    assert.deepEqual(H.plain([1, 2, 3, 4, 5, 6].map((l) => CF.xpNeed(l))), [2350, 2585, 2840, 3125, 3440, 3785]);
     for (let l = 2; l <= 40; l++) assert.ok(CF.xpNeed(l) >= CF.xpNeed(l - 1), "nível " + l);
   });
-  test("progresso dentro do nível (250 XP: nível 2, faltam 180 para o 3)", () => {
-    const i = CF.xpLevelInfo(250);
-    assert.equal(i.level, 2); assert.equal(i.into, 50); assert.equal(i.need, 230); assert.equal(i.nextAt, 430);
-    assert.ok(Math.abs(i.pct - 21.7391) < 0.001);
+  test("progresso dentro do nível (2400 XP: nível 2, 50 dentro do nível, faltam 2535 para o 3)", () => {
+    const i = CF.xpLevelInfo(2400);
+    assert.equal(i.level, 2); assert.equal(i.into, 50); assert.equal(i.need, 2585); assert.equal(i.nextAt, 4935);
+    assert.ok(Math.abs(i.pct - 1.9342) < 0.001);
   });
 });
 
@@ -56,28 +58,28 @@ describe("títulos hierárquicos", () => {
 });
 
 describe("eventos de subida de nível", () => {
-  test("ganhar 240 XP de 190 para 430 cruza os níveis 2 e 3, sem mudar de título", () => {
-    const ev = CF.levelUpEvents(190, 430);
+  test("ganhar XP de 2300 para 4935 cruza os níveis 2 e 3, sem mudar de título", () => {
+    const ev = CF.levelUpEvents(2300, 4935);
     assert.deepEqual(H.plain(ev.map((e) => e.level)), [2, 3]);
     assert.ok(ev.every((e) => e.titleChanged === false));
   });
   test("cruzar o nível 5 marca mudança de título", () => {
-    const ev = CF.levelUpEvents(190, 1010);
+    const ev = CF.levelUpEvents(2300, 10900);
     assert.deepEqual(H.plain(ev.map((e) => e.level)), [2, 3, 4, 5]);
     const c = ev.find((e) => e.level === 5);
     assert.equal(c.titleChanged, true); assert.equal(c.title, "Aprendiz");
   });
   test("sem ganho, ou perda de XP, não há evento", () => {
-    assert.deepEqual(H.plain(CF.levelUpEvents(200, 200)), []);
-    assert.deepEqual(H.plain(CF.levelUpEvents(400, 300)), []);
+    assert.deepEqual(H.plain(CF.levelUpEvents(2350, 2350)), []);
+    assert.deepEqual(H.plain(CF.levelUpEvents(4000, 3000)), []);
   });
 });
 
 describe("persistência do XP", () => {
   test("pontos salvos voltam iguais após validar o estado", () => {
-    const r = CF.validateState({ version: 2, points: 1234 });
+    const r = CF.validateState({ version: 2, points: 12000 });
     assert.equal(r.ok, true);
-    assert.equal(r.state.points, 1234);
+    assert.equal(r.state.points, 12000);
     assert.equal(CF.xpLevelInfo(r.state.points).level, 5);
   });
 });

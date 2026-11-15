@@ -10,12 +10,12 @@ const T1 = "2026-11-05T10:00:00.000Z", T2 = "2026-11-06T10:00:00.000Z", T3 = "20
 describe("1. envio de progresso completo", () => {
   test("pontos, recompensas, dias, plano e melhor ofensiva chegam ao servidor", async () => {
     const db = makeServer();
-    const S = freshState({ points: 80, best: 5, last: "2026-11-12", done: { "2026-11-10": true, "2026-11-12": true },
+    const S = freshState({ points: 150, best: 5, last: "2026-11-12", done: { "2026-11-10": true, "2026-11-12": true },
       rewards: { "sess:2026-11-10": true }, planHistory: [{ from: "2026-11-01", dias: 4 }] });
     const d = makeDevice({ S, client: serverClient(db) });
     await d.run(true); await d.idle();
-    assert.equal(db.progress.base_points, 60);             /* 80 - 20 (recompensa de sessão) */
-    assert.equal(db.progress.points, 80);
+    assert.equal(db.progress.base_points, 100);            /* 150 - 50 (recompensa de treino completo) */
+    assert.equal(db.progress.points, 150);
     assert.deepEqual(H.plain(db.progress.done_dates), ["2026-11-10", "2026-11-12"]);
     assert.equal(db.progress.best_streak, 5);
     assert.equal(db.progress.last_workout_date, "2026-11-12");

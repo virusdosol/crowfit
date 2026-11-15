@@ -19,8 +19,15 @@
 --   C) Limites coerentes: data da sessão numa janela de 30 dias para trás e 1 dia para
 --      frente (sessões offline antigas são guardadas, sem XP); duração até 4 h;
 --      término não pode estar mais de 10 min no futuro. Fora disso, sem XP.
---   D) Exercício concluído precisa de pelo menos uma série marcada como completed.
---      Bônus de sessão (20 XP) só se a sessão teve ao menos um exercício pago.
+--   D) REGRA OFICIAL DE XP (lote 4, reduzida):
+--      - 5 XP por série concluída (chave set:DATA:EXERCICIO:ORDEM);
+--      - 10 XP de bônus ao terminar o grupo de séries do exercício (grp:DATA:EXERCICIO);
+--      - 50 XP ao terminar o treino completo (sess:DATA), só se houve exercício pago.
+--   G) CURVA DE NÍVEL (lote 4): base 2349, crescimento 1,10. Nível máximo = 64, com o
+--      XP acumulado até o 64 em cerca de 9,5 milhões (abaixo do teto de 10.000.000).
+--      cf_xp_need é reescrita para bater com core.js (XP_LEVEL).
+--   H) NOZ DOURADA (box_config): ganho reduzido pela metade (base 15, por nível 30).
+--      Série só paga se marcada como completed. Exercício com mais de 20 séries não paga.
 --   E) Estatísticas competitivas são DERIVADAS no servidor, por trigger em user_progress:
 --      - best_streak = max(valor anterior, maior sequência real em done_dates).
 --        O valor enviado pelo cliente nunca sobe além da sequência comprovada.
@@ -201,6 +208,27 @@ create trigger cf_guard_progress
   for each row execute function public.cf_guard_progress();
 
 -- ---------------------------------------------------------------------
+-- 2c) Curva de nível (lote 4): mesma fórmula de core.js (XP_LEVEL: base 2349, crescimento 1,10)
+-- ---------------------------------------------------------------------
+create or replace function public.cf_xp_need(l integer)
+returns integer
+language sql
+immutable
+strict
+parallel safe
+set search_path = ''
+as $$
+  select (pg_catalog.floor(2349 * pg_catalog.power(1.10::double precision, l - 1) / 5 + 0.5))::integer * 5
+$$;
+revoke all on function public.cf_xp_need(integer) from public, anon, authenticated;
+
+-- ---------------------------------------------------------------------
+-- 2d) Noz Dourada: ganho pela metade (parâmetros do servidor)
+-- ---------------------------------------------------------------------
+update public.box_config set value = 15 where key = 'xp_base';
+update public.box_config set value = 30 where key = 'xp_por_nivel';
+
+-- ---------------------------------------------------------------------
 -- 3) upsert_my_sessions v8: validação completa + XP só na primeira gravação
 -- ---------------------------------------------------------------------
 create or replace function public.upsert_my_sessions(p jsonb)
@@ -226,7 +254,10 @@ declare
   v_lim      date := (now() at time zone 'America/Sao_Paulo')::date + 1;
   v_min      date := (now() at time zone 'America/Sao_Paulo')::date - 30;
   v_paid     integer;
+  v_ex_id    text;
+  v_done_sets integer;
   ex_el      jsonb;
+  s_el       record;
 begin
   if uid is null then
     raise exception 'not_authenticated' using errcode = '28000';
@@ -310,14 +341,26 @@ begin
            and jsonb_typeof(ex_el -> 'exerciseId') = 'string'
            and (ex_el ->> 'exerciseId') in (select c.id from public.exercise_catalog c)
            and jsonb_typeof(ex_el -> 'sets') = 'array'
-           and exists (select 1 from jsonb_array_elements(ex_el -> 'sets') s
-                        where jsonb_typeof(s.value) = 'object' and (s.value ->> 'completed') = 'true') then
-          perform public.cf_grant_xp(uid, 'ex:' || to_char(v_date, 'YYYY-MM-DD') || ':' || (ex_el ->> 'exerciseId'), 10, 'app');
-          v_paid := v_paid + 1;
+           and jsonb_array_length(ex_el -> 'sets') between 1 and 20 then
+          v_ex_id := ex_el ->> 'exerciseId';
+          v_done_sets := 0;
+          -- 5 XP por série concluída. A ordem vem da posição no array (não do cliente).
+          for s_el in select value, ord from jsonb_array_elements(ex_el -> 'sets') with ordinality as t(value, ord) loop
+            if jsonb_typeof(s_el.value) = 'object' and (s_el.value ->> 'completed') = 'true' then
+              perform public.cf_grant_xp(uid, 'set:' || to_char(v_date, 'YYYY-MM-DD') || ':' || v_ex_id || ':' || s_el.ord::text, 5, 'app');
+              v_done_sets := v_done_sets + 1;
+            end if;
+          end loop;
+          if v_done_sets > 0 then
+            -- 10 XP de bônus ao terminar o grupo de séries do exercício.
+            perform public.cf_grant_xp(uid, 'grp:' || to_char(v_date, 'YYYY-MM-DD') || ':' || v_ex_id, 10, 'app');
+            v_paid := v_paid + 1;
+          end if;
         end if;
       end loop;
+      -- 50 XP ao terminar o treino completo (só com exercício pago).
       if v_status = 'completed' and v_paid > 0 then
-        perform public.cf_grant_xp(uid, 'sess:' || to_char(v_date, 'YYYY-MM-DD'), 20, 'app');
+        perform public.cf_grant_xp(uid, 'sess:' || to_char(v_date, 'YYYY-MM-DD'), 50, 'app');
       end if;
     end if;
     n := n + 1;
@@ -341,4 +384,7 @@ select
   and exists (select 1 from pg_trigger where tgname = 'cf_guard_progress' and tgrelid = 'public.user_progress'::regclass)
   and position('exercise_catalog' in pg_get_functiondef('public.upsert_my_sessions(jsonb)'::regprocedure)) > 0
   and position('v_existed' in pg_get_functiondef('public.upsert_my_sessions(jsonb)'::regprocedure)) > 0
+  and position('set:' in pg_get_functiondef('public.upsert_my_sessions(jsonb)'::regprocedure)) > 0
+  and public.cf_xp_need(1) = 2350
+  and (select value from public.box_config where key = 'xp_base') = 15
   as v8_aplicada;

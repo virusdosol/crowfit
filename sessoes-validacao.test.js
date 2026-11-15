@@ -37,7 +37,7 @@ describe("regras de XP em upsert_my_sessions", () => {
     assert.match(body, /v_ok := \(not v_existed\)/);
   });
   test("concessão de XP fica dentro de if v_ok", () => {
-    const ok = body.indexOf("if v_ok then"), grant = body.indexOf("cf_grant_xp(uid, 'ex:'");
+    const ok = body.indexOf("if v_ok then"), grant = body.indexOf("cf_grant_xp(uid, 'set:'");
     assert.ok(ok > 0 && grant > ok, "cf_grant_xp só aparece depois de if v_ok");
   });
   test("janela de datas: 30 dias para trás, 1 dia para frente", () => {
@@ -49,8 +49,20 @@ describe("regras de XP em upsert_my_sessions", () => {
     assert.match(body, /v_dur <= 14400/);
     assert.match(body, /interval '10 minutes'/);
   });
+  test("cada série concluída paga 5 XP, com chave própria por ordem", () => {
+    assert.match(body, /'set:' \|\| to_char\(v_date, 'YYYY-MM-DD'\) \|\| ':' \|\| v_ex_id \|\| ':' \|\| s_el\.ord::text, 5/);
+  });
+  test("grupo de séries concluído paga 10 de bônus", () => {
+    assert.match(body, /'grp:' \|\| to_char\(v_date, 'YYYY-MM-DD'\) \|\| ':' \|\| v_ex_id, 10/);
+  });
+  test("treino completo paga 50 XP", () => {
+    assert.match(body, /'sess:' \|\| to_char\(v_date, 'YYYY-MM-DD'\), 50/);
+  });
+  test("exercício com mais de 20 séries não paga", () => {
+    assert.match(body, /jsonb_array_length\(ex_el -> 'sets'\) between 1 and 20/);
+  });
   test("exercício concluído exige série marcada como completed", () => {
-    assert.match(body, /\(s\.value ->> 'completed'\) = 'true'/);
+    assert.match(body, /\(s_el\.value ->> 'completed'\) = 'true'/);
   });
   test("bônus de sessão só se houve exercício pago", () => {
     assert.match(body, /v_status = 'completed' and v_paid > 0/);

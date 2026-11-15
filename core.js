@@ -256,10 +256,10 @@ function nozOpened(S, sat) { return typeof S.nozes[sat] === "number"; }
 /* ---- XP e níveis (experiência acumulada do usuário) ----
    Não confundir com o "nível de treino" (levelFor), que define a dificuldade do plano.
    Curva exponencial: XP para subir do nível l ao l+1 = base * growth^(l-1), arredondado a múltiplos de 5.
-   Ex.: 200, 230, 265, 305, 350, 400... Alterar base ou growth muda o nível de quem já tem XP. */
+   Ex.: 2350, 2585, 2845, 3130... Nível máximo 64: a soma até o 64 fica abaixo do teto de 10.000.000 de pontos. */
 var XP_LEVEL = {
-  base: 200,
-  growth: 1.15,
+  base: 2349,
+  growth: 1.10,
   titles: [
     { from: 1, name: "Iniciante" },
     { from: 5, name: "Aprendiz" },
@@ -357,11 +357,23 @@ function grant(S, ses, id, pts) {
   if (!isInt(pts, 1, 1000) || S.rewards[id] === true) return 0;
   S.rewards[id] = true; S.points += pts; ses.points += pts; return pts;
 }
+/* XP (regra oficial): 5 por série concluída; 10 de bônus quando o grupo de séries (exercício) termina.
+   Chaves: set:DATA:EXERCICIO:ORDEM e grp:DATA:EXERCICIO. Espelha a regra do servidor (supabase-xp-v8-sessoes.sql). */
 function grantExercise(S, ses, ex) {
   if (ex.status !== "completed") return 0;
-  var g = grant(S, ses, "ex:" + ses.date + ":" + ex.exerciseId, 10); if (g) ex.points = g; return g;
+  var total = 0;
+  (ex.sets || []).forEach(function (st, i) {
+    if (st && st.completed === true) total += grant(S, ses, "set:" + ses.date + ":" + ex.exerciseId + ":" + (i + 1), 5);
+  });
+  if (total > 0) total += grant(S, ses, "grp:" + ses.date + ":" + ex.exerciseId, 10);
+  if (total > 0) ex.points = total;
+  return total;
 }
-function grantSessionBonus(S, ses) { return ses.status === "completed" ? grant(S, ses, "sess:" + ses.date, 20) : 0; }
+/* Bônus de treino completo: 50 XP, só se a sessão foi concluída e teve ao menos um exercício pago. */
+function grantSessionBonus(S, ses) {
+  var paid = (ses.exercises || []).some(function (x) { return x && x.points > 0; });
+  return ses.status === "completed" && paid ? grant(S, ses, "sess:" + ses.date, 50) : 0;
+}
 /* Registro de eventos de dia (fase 1). Cada mudança real de S.done vira um evento com id único.
    O servidor deriva o estado do dia a partir dos eventos; o cliente nunca envia conjuntos de dias para o critério. */
 function newEventId() { return "e" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }

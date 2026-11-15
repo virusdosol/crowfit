@@ -51,8 +51,10 @@ function trailAmount(E, S, k, n) {
 function amountFor(E, S, key, known) {
   var v = known && known[key]; if (isInt(v, 1, 1000)) return v; /* valor que o servidor já guarda prevalece */
   var m;
-  if (/^ex:\d{4}-\d{2}-\d{2}:[A-Za-z0-9_|.-]+$/.test(key)) return 10;
-  if (/^sess:\d{4}-\d{2}-\d{2}$/.test(key)) return 20;
+  if (/^ex:\d{4}-\d{2}-\d{2}:[A-Za-z0-9_|.-]+$/.test(key)) return 10;            /* legado (regra anterior) */
+  if (/^set:\d{4}-\d{2}-\d{2}:[A-Za-z0-9_|.-]+:\d{1,2}$/.test(key)) return 5;   /* série concluída */
+  if (/^grp:\d{4}-\d{2}-\d{2}:[A-Za-z0-9_|.-]+$/.test(key)) return 10;          /* grupo de séries concluído */
+  if (/^sess:\d{4}-\d{2}-\d{2}$/.test(key)) return 50;                          /* treino completo */
   if ((m = /^tr:s(\d{1,3})u(\d{1,3})$/.exec(key))) return trailAmount(E, S, +m[1], +m[2]);
   return null;
 }
