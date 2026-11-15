@@ -17,7 +17,7 @@ var MSG = {
   profile_missing: "Seu perfil ainda não está pronto. Tente de novo em instantes."
 };
 var ESC = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
-var box = null, busy = false, flash = "", lastData = null, filterText = "", found = null;
+var box = null, busy = false, flash = "", lastData = null, filterText = "", found = null, lastLb = null, rankMode = "xp", view = null;
 
 function validHandle(h) { return typeof h === "string" && HANDLE_RE.test(h); }
 function normHandle(h) { return String(h == null ? "" : h).trim().toLowerCase(); }
@@ -75,7 +75,7 @@ function html(d) {
   return '<div class="cw-head"><h2>Amigos</h2><span>' + (d.friends || []).length + '</span></div>' +
     idBlock + findForm + searchBox +
     (flash ? '<p class="am-flash" role="status">' + esc(flash) + '</p>' : '') +
-    (d.incoming && d.incoming.length ? section("Pedidos recebidos", d.incoming, function (p) {
+    rankingHtml() + (d.incoming && d.incoming.length ? section("Pedidos recebidos", d.incoming, function (p) {
       return row(p, '<button type="button" class="am-btn am-pri" data-act="accept" data-h="' + esc(p.handle) + '">Aceitar</button>' +
         '<button type="button" class="am-btn" data-act="decline" data-h="' + esc(p.handle) + '">Recusar</button>');
     }, "") : '') +
@@ -83,21 +83,63 @@ function html(d) {
       return row(p, '<button type="button" class="am-btn" data-act="remove" data-h="' + esc(p.handle) + '">Cancelar</button>');
     }, "") : '') +
     section("Seus amigos", friends, function (p) {
-      return row(p, '<button type="button" class="am-btn" data-act="remove" data-h="' + esc(p.handle) + '">Remover</button>');
+      return row(p, '<button type="button" class="am-btn" data-act="perfil" data-h="' + esc(p.handle) + '">Ver perfil</button>' + '<button type="button" class="am-btn" data-act="remove" data-h="' + esc(p.handle) + '">Remover</button>');
     }, q ? "Nenhum amigo encontrado para essa busca." : "Ainda sem amigos. Compartilhe seu ID para alguém te adicionar.");
 }
 
 /* ---------- fluxo ---------- */
 async function load() {
   if (!box) return;
+  if (view) return loadPerfil();
   try {
     var d = await call("get_my_social");
+    var lb = await call("get_leaderboard");
     lastData = d || {};
+    lastLb = lb || { rows: [] };
     box.innerHTML = html(lastData);
   } catch (e) {
     box.innerHTML = '<p class="am-flash" role="alert">' + esc(msgFor(e)) + '</p>';
   }
 }
+/* Perfil de um amigo: só leitura, não mexe nos dados da própria conta. */
+function fmtDia(iso) { if (!iso) return "ainda não treinou"; var p = String(iso).split("-"); return p.length === 3 ? p[2] + "/" + p[1] + "/" + p[0] : iso; }
+async function loadPerfil() {
+  try {
+    var p = await call("get_friend_profile", { p: { handle: view.h } });
+    box.innerHTML = '<button type="button" class="cw-back-ico am-voltar" data-act="voltar" aria-label="Voltar">' +
+      '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>' +
+      '<section class="am-perfil"><h2>' + esc(p.name || "Atleta") + '</h2><p class="am-perfil-h">@' + esc(p.handle) + '</p>' +
+      '<div class="am-stats"><div><b>Nv ' + esc(p.level) + '</b><span>nível</span></div>' +
+      '<div><b>' + esc(p.xp) + '</b><span>XP total</span></div>' +
+      '<div><b>' + esc(p.best_streak) + '</b><span>melhor ofensiva</span></div></div>' +
+      '<p class="am-hint">Último treino: ' + esc(fmtDia(p.last_workout)) + '</p>' +
+      '<p class="am-hint">Amigos desde ' + esc(fmtDia(p.since)) + '</p></section>';
+  } catch (e) {
+    view = null;
+    box.innerHTML = '<p class="am-flash" role="alert">' + esc(msgFor(e)) + '</p>';
+  }
+}
+
+/* Classificação entre amigos. Ordena por XP (padrão) ou melhor ofensiva. Em empate, ordem alfabética do ID. */
+function rankingHtml() {
+  var rows = (lastLb && lastLb.rows) || [];
+  if (rows.length < 2) return '<p class="am-hint">Adicione amigos para ver a classificação.</p>';
+  var sorted = rows.slice().sort(function (a, b) {
+    var ka = rankMode === "streak" ? a.best_streak : a.xp, kb = rankMode === "streak" ? b.best_streak : b.xp;
+    return (kb - ka) || (a.handle < b.handle ? -1 : a.handle > b.handle ? 1 : 0);
+  });
+  var me = sorted.findIndex(function (r) { return r.me; });
+  var tabs = '<div class="am-tabs" role="group" aria-label="Critério">' +
+    '<button type="button" class="am-tab' + (rankMode === "xp" ? " on" : "") + '" data-act="rank" data-m="xp">XP</button>' +
+    '<button type="button" class="am-tab' + (rankMode === "streak" ? " on" : "") + '" data-act="rank" data-m="streak">Ofensiva</button></div>';
+  var list = sorted.map(function (r, i) {
+    var val = rankMode === "streak" ? r.best_streak + " dias" : r.xp + " XP";
+    return '<li class="am-rk' + (r.me ? " me" : "") + '"><b>' + (i + 1) + '</b><span class="am-rk-w">' + esc(r.name || "Atleta") + '<small>@' + esc(r.handle) + '</small></span><span class="am-rk-v">' + esc(val) + '</span></li>';
+  }).join("");
+  var foot = me >= 0 ? '<p class="am-hint">Você está em ' + (me + 1) + 'º de ' + sorted.length + '.</p>' : "";
+  return '<h3 class="am-sec">Classificação</h3>' + tabs + '<ul class="am-rank">' + list + '</ul>' + foot;
+}
+
 async function act(fn, ok) {
   if (busy) return; busy = true; flash = "";
   try { await fn(); flash = ok || ""; }
@@ -111,6 +153,9 @@ function confirmar(texto) { try { return root.confirm ? !!root.confirm(texto) : 
 function onClick(ev) {
   var b = ev.target.closest && ev.target.closest("[data-act]"); if (!b) return;
   var a = b.getAttribute("data-act"), h = b.getAttribute("data-h");
+  if (a === "perfil") { view = { h: h }; box.innerHTML = '<p class="cw-empty">Carregando…</p>'; return load(); }
+  if (a === "voltar") { view = null; return load(); }
+  if (a === "rank") { rankMode = b.getAttribute("data-m") === "streak" ? "streak" : "xp"; box.innerHTML = html(lastData); return; }
   if (a === "copy") {
     var txt = "@" + (box.querySelector(".am-id b") || { textContent: "" }).textContent.replace(/^@/, "");
     try { root.navigator.clipboard.writeText(txt); flash = "ID copiado."; } catch (e) { flash = "Copie seu ID: " + txt; }
@@ -151,7 +196,7 @@ function onInput(ev) {
 
 function mount(el) {
   if (!el) return;
-  box = el; flash = ""; found = null;
+  box = el; flash = ""; found = null; view = null;
   el.addEventListener("click", onClick);
   el.addEventListener("submit", onSubmit);
   el.addEventListener("input", onInput);

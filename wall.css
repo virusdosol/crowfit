@@ -256,3 +256,21 @@ body.cw-home .cw-bar{display:grid}
 .am-found .am-who span { font: 700 13px Nunito, sans-serif; color: #6A6A75; }
 .am-found .am-acts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .am-hint { font: 700 13px Nunito, sans-serif; color: #6A6A75; }
+
+/* Amigos: classificação, perfil do amigo */
+.am-tabs { display: flex; gap: 8px; margin: 8px 0 10px; }
+.am-tab { height: 34px; padding: 0 14px; border: 2px solid #E6E6EE; border-radius: 99px; background: #fff; font: 800 13px Nunito, sans-serif; color: #303036; cursor: pointer; }
+.am-tab.on { background: #E3182D; border-color: #E3182D; color: #fff; }
+.am-rank { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.am-rk { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 16px; background: #F8F8FB; }
+.am-rk b { font: 800 15px Nunito, sans-serif; color: #17171C; }
+.am-rk.me { outline: 2px solid #E3182D; background: #fff; }
+.am-rk-w { font: 800 14px Nunito, sans-serif; color: #17171C; display: flex; flex-direction: column; }
+.am-rk-w small { font: 700 12px Nunito, sans-serif; color: #6A6A75; }
+.am-rk-v { font: 800 13px Nunito, sans-serif; color: #303036; white-space: nowrap; }
+.am-perfil h2 { margin: 12px 0 2px; font: 800 24px Fredoka, Nunito, sans-serif; color: #17171C; }
+.am-perfil-h { margin: 0 0 14px; font: 700 14px Nunito, sans-serif; color: #6A6A75; }
+.am-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.am-stats div { display: flex; flex-direction: column; align-items: center; padding: 12px 6px; border-radius: 16px; background: #F8F8FB; }
+.am-stats b { font: 800 17px Nunito, sans-serif; color: #17171C; }
+.am-stats span { font: 700 11px Nunito, sans-serif; color: #6A6A75; text-align: center; }
