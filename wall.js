@@ -90,7 +90,8 @@ function openPage(kind) {
   else renderPage();
   syncBar();
 }
-function pageBib() { if (root.CFBib && bibSt.story != null) return root.CFBib.storyHtml(bibSt.story); return root.CFBib ? root.CFBib.html(root.CFP.LIB, root.BIB_TXT || {}, bibSt) : "<p class=\"cw-hint\">Biblioteca indisponível.</p>"; }
+function bibFavs() { try { var a = JSON.parse(localStorage.getItem("crowfit-bib-fav") || "[]"); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+function pageBib() { if (root.CFBib && bibSt.story != null) return root.CFBib.storyHtml(bibSt.story); return root.CFBib ? root.CFBib.html(root.CFP.LIB, root.BIB_TXT || {}, Object.assign({}, bibSt, { fav: bibFavs() })) : "<p class=\"cw-hint\">Biblioteca indisponível.</p>"; }
 function renderPage() {
   if (!curPage || !S()) return;
   var k = curPage.kind, body = curPage.el.querySelector(".cw-pagebody");
@@ -264,6 +265,9 @@ function bubbleToggle(btn) {
 /* ---------- ações ---------- */
 function act(kind, el) {
   if (kind === "bib-cat") { bibSt = { view: "cat", cat: el.getAttribute("data-cat") }; return renderPage(); }
+  if (kind === "bib-fav") { var fid = el.getAttribute("data-ex"), fl = bibFavs(), fi = fl.indexOf(fid); if (fi >= 0) fl.splice(fi, 1); else fl.push(fid); try { localStorage.setItem("crowfit-bib-fav", JSON.stringify(fl)); } catch (e) {} return renderPage(); }
+  if (kind === "bib-fav-open") { bibSt = { view: "fav" }; return renderPage(); }
+  if (kind === "bib-kind") { bibSt.kind = el.getAttribute("data-kind") || ""; return renderPage(); }
   if (kind === "bib-ex") { bibSt = { view: "ex", cat: bibSt.cat, ex: el.getAttribute("data-ex") }; return renderPage(); }
   if (kind === "bib-story-next") { bibSt.story = bibSt.story + 1 >= root.CFBib.STORY.length ? null : bibSt.story + 1; if (bibSt.story === null) markBibIntro(); return renderPage(); }
   if (kind === "bib-story-skip") { bibSt.story = null; markBibIntro(); return renderPage(); }
@@ -367,6 +371,8 @@ function hookSave() {
 function init() {
   bar();
   doc.addEventListener("input", function (e) {
+    var bq = e.target && e.target.matches && e.target.matches("[data-bib-q]");
+    if (bq) { bibSt.q = e.target.value; renderPage(); var qi = doc.querySelector("[data-bib-q]"); if (qi) { qi.focus(); try { qi.setSelectionRange(qi.value.length, qi.value.length); } catch (x) {} } return; }
     var q = e.target && e.target.matches && e.target.matches("[data-tr-q]"); if (!q) return;
     trSt.q = e.target.value; trSt.focusQ = true; renderPage();
   });

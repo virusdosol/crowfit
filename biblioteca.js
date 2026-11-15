@@ -33,35 +33,90 @@
   function typeText(kind) { return kind === "s" ? "Tempo" : "Repetições"; }
   function baseText(kind, v) { return kind === "s" ? (v >= 60 ? Math.round(v / 60) + " min" : v + " s") : v + " repetições"; }
 
-  /* state: { view: "cats" | "cat" | "ex", cat: id, ex: id } */
+  /* Normaliza para busca: minúsculas e sem acento. */
+  function norm(s) { return String(s == null ? "" : s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim(); }
+
+  /* Filtra exercícios. o = { q: texto, kind: "r" | "s" | "", cat: id da categoria, favs: [ids] }. Mantém a ordem das categorias. */
+  function filterLib(LIB, CATS, o) {
+    o = o || {};
+    var q = norm(o.q), out = [];
+    CATS.forEach(function (c) {
+      if (o.cat && c.id !== o.cat) return;
+      c.ids.forEach(function (id) {
+        var e = LIB[id];
+        if (!e) return;
+        if (o.kind && e[1] !== o.kind) return;
+        if (q && norm(e[0]).indexOf(q) < 0) return;
+        if (o.favs && o.favs.indexOf(id) < 0) return;
+        if (out.indexOf(id) < 0) out.push(id);
+      });
+    });
+    return out;
+  }
+
+  function heart(id, on) {
+    return '<button type="button" class="bib-heart' + (on ? " on" : "") + '" data-act="bib-fav" data-ex="' + esc(id) + '" aria-pressed="' + (on ? "true" : "false") + '" aria-label="' + (on ? "Remover dos favoritos" : "Adicionar aos favoritos") + '">' + (on ? "♥" : "♡") + "</button>";
+  }
+  function row(id, LIB, favs, extra) {
+    var e = LIB[id];
+    return '<li class="bib-li"><button type="button" class="bib-row" data-act="bib-ex" data-ex="' + esc(id) + '"><span class="bib-row-n">' + esc(e[0]) + "</span><small>" +
+      (extra ? esc(extra) + " · " : "") + typeText(e[1]) + " · " + esc(baseText(e[1], e[2])) + "</small></button>" + heart(id, favs.indexOf(id) >= 0) + "</li>";
+  }
+  function chip(k, label, cur) {
+    return '<button type="button" class="bib-chip" data-act="bib-kind" data-kind="' + k + '" aria-pressed="' + (cur === k) + '">' + label + "</button>";
+  }
+  function searchBar(state) {
+    return '<div class="bib-search"><input type="search" data-bib-q value="' + esc(state.q || "") + '" placeholder="Buscar exercício" aria-label="Buscar exercício" autocomplete="off"></div>' +
+      '<div class="bib-chips" role="group" aria-label="Tipo de exercício">' + chip("", "Todos", state.kind || "") + chip("r", "Repetições", state.kind || "") + chip("s", "Tempo", state.kind || "") + "</div>";
+  }
+  function catOf(id) {
+    for (var i = 0; i < CATS.length; i++) if (CATS[i].ids.indexOf(id) >= 0) return CATS[i].n;
+    return "";
+  }
+
+  /* state: { view: "cats" | "cat" | "ex" | "fav", cat, ex, q, kind, fav: [ids] } */
   function html(LIB, TXT, state) {
     state = state || { view: "cats" };
+    var favs = state.fav || [];
     var back = '<button type="button" class="cw-back-ico bib-back" data-act="bib-back" aria-label="Voltar"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>';
     if (state.view === "ex" && LIB[state.ex]) {
       var e = LIB[state.ex], t = TXT[state.ex] || ["", "", ""];
       var passos = t[0].split(" | ").map(function (p) { return "<li>" + esc(p) + "</li>"; }).join("");
       var erros = t[2].split(" | ").map(function (p) { return "<li>" + esc(p) + "</li>"; }).join("");
-      return '<div class="bib-top">' + back + '</div><article class="bib-ex">' +
-        '<h2>' + esc(e[0]) + '</h2><p class="bib-meta">' + typeText(e[1]) + ' · valor base ' + esc(baseText(e[1], e[2])) + '</p>' +
+      return '<div class="bib-top">' + back + heart(state.ex, favs.indexOf(state.ex) >= 0) + '</div><article class="bib-ex">' +
+        "<h2>" + esc(e[0]) + '</h2><p class="bib-meta">' + esc(catOf(state.ex)) + " · " + typeText(e[1]) + " · valor base " + esc(baseText(e[1], e[2])) + "</p>" +
         '<p class="bib-orient">' + esc(e[3]) + '</p>' +
-        '<h3>Passo a passo</h3><ol class="bib-list">' + passos + '</ol>' +
-        '<h3>Respiração</h3><p>' + esc(t[1]) + '</p>' +
-        '<h3>Erros comuns</h3><ul class="bib-list">' + erros + '</ul></article>';
+        '<h3>Passo a passo</h3><ol class="bib-list">' + passos + "</ol>" +
+        "<h3>Respiração</h3><p>" + esc(t[1]) + "</p>" +
+        '<h3>Erros comuns</h3><ul class="bib-list">' + erros + "</ul></article>";
     }
     if (state.view === "cat") {
       var cat = CATS.filter(function (c) { return c.id === state.cat; })[0];
-      if (!cat) return html(LIB, TXT, { view: "cats" });
-      var items = cat.ids.filter(function (id) { return LIB[id]; }).map(function (id) {
-        var e = LIB[id];
-        return '<li><button type="button" class="bib-row" data-act="bib-ex" data-ex="' + esc(id) + '"><span class="bib-row-n">' + esc(e[0]) + '</span><small>' + typeText(e[1]) + ' · ' + esc(baseText(e[1], e[2])) + '</small></button></li>';
-      }).join("");
-      return '<div class="bib-top">' + back + '</div><h2 class="bib-title">' + esc(cat.n) + '</h2><ul class="bib-rows">' + items + '</ul>';
+      if (!cat) return html(LIB, TXT, { view: "cats", fav: favs });
+      var items = cat.ids.filter(function (id) { return LIB[id]; }).map(function (id) { return row(id, LIB, favs); }).join("");
+      return '<div class="bib-top">' + back + '</div><h2 class="bib-title">' + esc(cat.n) + '</h2><ul class="bib-rows">' + items + "</ul>";
+    }
+    if (state.view === "fav") {
+      var ids = filterLib(LIB, CATS, { favs: favs, kind: state.kind, q: state.q });
+      var body = ids.length
+        ? '<ul class="bib-rows">' + ids.map(function (id) { return row(id, LIB, favs, catOf(id)); }).join("") + "</ul>"
+        : '<p class="bib-empty">' + (favs.length ? "Nenhum favorito combina com a busca ou o filtro." : "Você ainda não marcou favoritos. Toque no coração em um exercício.") + "</p>";
+      return '<div class="bib-top">' + back + '</div><h2 class="bib-title">Favoritos</h2>' + searchBar(state) + body;
+    }
+    /* Início: com busca ou filtro ativo mostra os resultados; sem isso, mostra as categorias. */
+    if (state.q || state.kind) {
+      var res = filterLib(LIB, CATS, { q: state.q, kind: state.kind });
+      var list = res.length
+        ? '<ul class="bib-rows">' + res.map(function (id) { return row(id, LIB, favs, catOf(id)); }).join("") + "</ul>"
+        : '<p class="bib-empty">Nenhum exercício encontrado.</p>';
+      return hero() + searchBar(state) + list;
     }
     var cards = CATS.map(function (c) {
       return '<button type="button" class="bib-card" data-act="bib-cat" data-cat="' + esc(c.id) + '">' + catIcon(c) +
-        '<span class="bib-card-n">' + esc(c.n) + '</span><small>' + c.ids.filter(function (id) { return LIB[id]; }).length + ' exercícios</small></button>';
+        '<span class="bib-card-n">' + esc(c.n) + "</span><small>" + c.ids.filter(function (id) { return LIB[id]; }).length + " exercícios</small></button>";
     }).join("");
-    return hero() + '<h2 class="bib-title">Biblioteca</h2><div class="bib-grid">' + cards + '</div>';
+    var favCard = '<button type="button" class="bib-card bib-card-fav" data-act="bib-fav-open"><span class="bib-card-n">♥ Favoritos</span><small>' + favs.length + " salvo" + (favs.length === 1 ? "" : "s") + "</small></button>";
+    return hero() + searchBar(state) + '<h2 class="bib-title">Biblioteca</h2><div class="bib-grid">' + cards + favCard + "</div>";
   }
 
   /* História da primeira vez: Bóris apresenta a biblioteca. */
@@ -87,7 +142,12 @@
     return '<div class="bib-hero"><img src="boris-frente.png" alt="Bóris, o instrutor"><div><b>Bóris</b><small>Instrutor da biblioteca. Toque numa categoria.</small></div></div>';
   }
 
-  var api = { CATS: CATS, catIcon: catIcon, html: html, STORY: STORY, storyHtml: storyHtml, hero: hero };
+  if (typeof document !== "undefined" && !document.getElementById("bib-search-css")) {
+    var bst = document.createElement("style"); bst.id = "bib-search-css";
+    bst.textContent = ".bib-search{margin:8px 0 10px}.bib-search input{width:100%;box-sizing:border-box;border:2px solid var(--line);border-radius:14px;padding:12px 14px;font:inherit;font-size:16px;background:#fff;color:#17171C}.bib-chips{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}.bib-chip{border:2px solid var(--line);border-radius:999px;background:#fff;color:var(--mute);padding:6px 14px;font:inherit;font-size:14px;font-weight:700;cursor:pointer}.bib-chip[aria-pressed=true]{background:#E3182D;border-color:#E3182D;color:#fff}.bib-li{display:flex;align-items:center;gap:8px}.bib-li .bib-row{flex:1}.bib-heart{flex:none;border:0;background:none;font-size:22px;line-height:1;color:var(--mute);cursor:pointer;padding:8px}.bib-heart.on{color:#E3182D}.bib-empty{color:var(--mute);font-size:15px;margin:16px 0}.bib-card-fav{grid-column:1/-1}";
+    document.head.appendChild(bst);
+  }
+  var api = { CATS: CATS, catIcon: catIcon, html: html, STORY: STORY, storyHtml: storyHtml, hero: hero, filterLib: filterLib, norm: norm };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.CFBib = api;
 })(typeof window !== "undefined" ? window : globalThis);

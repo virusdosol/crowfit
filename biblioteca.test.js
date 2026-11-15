@@ -65,3 +65,30 @@ describe("história do Bóris", () => {
     assert.match(B2.html(LIB, TXT, { view: "cats" }), /boris-frente\.png/);
   });
 });
+
+describe("busca e filtros", () => {
+  const { filterLib, norm, CATS } = require("./biblioteca.js");
+  test("busca ignora maiúsculas e acentos", () => {
+    assert.equal(norm("Agachamento Ápice"), "agachamento apice");
+    const ids = filterLib(LIB, CATS, { q: "polichinelo" });
+    assert.ok(ids.includes("po"));
+  });
+  test("filtro por tipo devolve só repetições ou só tempo", () => {
+    const r = filterLib(LIB, CATS, { kind: "r" });
+    const s = filterLib(LIB, CATS, { kind: "s" });
+    assert.ok(r.length > 0 && s.length > 0);
+    assert.ok(r.every((id) => LIB[id][1] === "r"));
+    assert.ok(s.every((id) => LIB[id][1] === "s"));
+  });
+  test("favoritos filtram só os ids marcados", () => {
+    assert.deepEqual(filterLib(LIB, CATS, { favs: ["po", "bu"] }).sort(), ["bu", "po"]);
+  });
+  test("busca sem resultado devolve lista vazia", () => {
+    assert.deepEqual(filterLib(LIB, CATS, { q: "zzzzzz_inexistente" }), []);
+  });
+  test("não repete exercício nem devolve id inexistente", () => {
+    const todos = filterLib(LIB, CATS, {});
+    assert.equal(new Set(todos).size, todos.length);
+    assert.ok(todos.every((id) => LIB[id]));
+  });
+});
