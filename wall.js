@@ -79,7 +79,7 @@ function closePage() { if (curPage && curPage.el) curPage.el.remove(); curPage =
 function openPage(kind) {
   if (kind === "home") { closePage(); if (typeof root.renderHome === "function") root.renderHome(); return; }
   closePage();
-  if (kind === "bib") bibSt = { view: "cats" };
+  if (kind === "bib") bibSt = { view: "cats", story: localStorage.getItem("crowfit-bib-intro") === "1" ? null : 0 };
   if (kind === "tro") { trSt.last = null; trSt.focusQ = false; }
   var el = doc.createElement("div"); el.className = "cw-full"; el.setAttribute("role", "dialog");
   el.innerHTML = '<div class="cf-bar cf-topbar"><button type="button" class="cw-back-ico" data-full-close aria-label="Voltar"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button></div><div class="cw-pagebody"></div>';
@@ -90,7 +90,7 @@ function openPage(kind) {
   else renderPage();
   syncBar();
 }
-function pageBib() { return root.CFBib ? root.CFBib.html(root.CFP.LIB, root.BIB_TXT || {}, bibSt) : "<p class=\"cw-hint\">Biblioteca indisponível.</p>"; }
+function pageBib() { if (root.CFBib && bibSt.story != null) return root.CFBib.storyHtml(bibSt.story); return root.CFBib ? root.CFBib.html(root.CFP.LIB, root.BIB_TXT || {}, bibSt) : "<p class=\"cw-hint\">Biblioteca indisponível.</p>"; }
 function renderPage() {
   if (!curPage || !S()) return;
   var k = curPage.kind, body = curPage.el.querySelector(".cw-pagebody");
@@ -265,6 +265,8 @@ function bubbleToggle(btn) {
 function act(kind, el) {
   if (kind === "bib-cat") { bibSt = { view: "cat", cat: el.getAttribute("data-cat") }; return renderPage(); }
   if (kind === "bib-ex") { bibSt = { view: "ex", cat: bibSt.cat, ex: el.getAttribute("data-ex") }; return renderPage(); }
+  if (kind === "bib-story-next") { bibSt.story = bibSt.story + 1 >= root.CFBib.STORY.length ? null : bibSt.story + 1; if (bibSt.story === null) markBibIntro(); return renderPage(); }
+  if (kind === "bib-story-skip") { bibSt.story = null; markBibIntro(); return renderPage(); }
   if (kind === "bib-back") { bibSt = bibSt.view === "ex" && bibSt.cat ? { view: "cat", cat: bibSt.cat } : { view: "cats" }; return renderPage(); }
   if (kind === "equip") { CF().equipar(S(), el.getAttribute("data-id"), new Date().toISOString()); save(); return renderPage(); }
   if (kind === "unequip") { CF().desequipar(S(), new Date().toISOString()); save(); return renderPage(); }
@@ -281,6 +283,7 @@ function act(kind, el) {
   if (kind === "box") return openBoxNow(el.getAttribute("data-box"));
   if (kind === "noz") { var k = String(el.getAttribute("data-box")).replace(/^noz:/, ""); closePage(); if (typeof root.openNozScreen === "function") root.openNozScreen(k); }
 }
+function markBibIntro() { try { localStorage.setItem("crowfit-bib-intro", "1"); } catch (e) {} }
 function openBoxNow(id) {
   var res = CF().openBox(S(), id, new Date().toISOString());
   if (!res) return; save();

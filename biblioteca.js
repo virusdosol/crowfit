@@ -61,10 +61,33 @@
       return '<button type="button" class="bib-card" data-act="bib-cat" data-cat="' + esc(c.id) + '">' + catIcon(c) +
         '<span class="bib-card-n">' + esc(c.n) + '</span><small>' + c.ids.filter(function (id) { return LIB[id]; }).length + ' exercícios</small></button>';
     }).join("");
-    return '<h2 class="bib-title">Biblioteca</h2><p class="bib-hint">Toque numa categoria para ver os exercícios.</p><div class="bib-grid">' + cards + '</div>';
+    return hero() + '<h2 class="bib-title">Biblioteca</h2><div class="bib-grid">' + cards + '</div>';
   }
 
-  var api = { CATS: CATS, catIcon: catIcon, html: html };
+  /* História da primeira vez: Bóris apresenta a biblioteca. */
+  var STORY = [
+    { img: "boris-frente.png", fala: "Oi! Eu sou o Bóris. Eu cuido da biblioteca." },
+    { img: "boris-comemora.png", fala: "Aqui estão todos os exercícios do Crowfit, organizados por categoria: peito, braços, pernas e mais." },
+    { img: "boris-pensa.png", fala: "Antes de treinar, entenda o movimento. Não é só fazer. É fazer direito." },
+    { img: "boris-bracos.png", fala: "Cada exercício tem o passo a passo, a respiração e os erros mais comuns." },
+    { img: "boris-incentiva.png", fala: "Forma antes de carga. Se algo estiver errado, eu aviso!" },
+    { img: "boris-perfil.png", fala: "Escolha uma categoria e bora treinar!" }
+  ];
+  function storyHtml(i) {
+    var s = STORY[i], last = i === STORY.length - 1, dots = "";
+    for (var k = 0; k < STORY.length; k++) dots += '<i class="' + (k < i ? "done" : k === i ? "on" : "") + '"></i>';
+    return '<section class="bib-story" aria-live="polite"><div class="bib-story-top"><div class="in-dots bib-story-dots">' + dots + '</div>' +
+      '<button type="button" class="bib-skip" data-act="bib-story-skip">Pular</button></div>' +
+      '<div class="bib-story-bubble">' + esc(s.fala) + '</div>' +
+      '<img class="bib-story-img" src="' + esc(s.img) + '" alt="Bóris">' +
+      '<button type="button" class="bib-story-btn" data-act="bib-story-next">' + (last ? "Começar" : "Continuar") + '</button></section>';
+  }
+  /* Cabeçalho da biblioteca com o Bóris, o instrutor. */
+  function hero() {
+    return '<div class="bib-hero"><img src="boris-frente.png" alt="Bóris, o instrutor"><div><b>Bóris</b><small>Instrutor da biblioteca. Toque numa categoria.</small></div></div>';
+  }
+
+  var api = { CATS: CATS, catIcon: catIcon, html: html, STORY: STORY, storyHtml: storyHtml, hero: hero };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.CFBib = api;
 })(typeof window !== "undefined" ? window : globalThis);

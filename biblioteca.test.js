@@ -45,3 +45,23 @@ describe("páginas", () => {
     assert.doesNotMatch(out, /<script/);
   });
 });
+
+describe("história do Bóris", () => {
+  const fs2 = require("fs");
+  const B2 = require("./biblioteca.js");
+  test("tem falas e cada imagem existe no projeto", () => {
+    assert.ok(B2.STORY.length >= 4);
+    B2.STORY.forEach((s) => {
+      assert.ok(s.fala.length > 0);
+      assert.ok(fs2.existsSync(s.img), s.img);
+    });
+  });
+  test("tela da história tem botão de continuar e de pular", () => {
+    const out = B2.storyHtml(0);
+    assert.match(out, /data-act="bib-story-next"/);
+    assert.match(out, /data-act="bib-story-skip"/);
+  });
+  test("cabeçalho da biblioteca mostra o Bóris", () => {
+    assert.match(B2.html(LIB, TXT, { view: "cats" }), /boris-frente\.png/);
+  });
+});

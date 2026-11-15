@@ -235,3 +235,17 @@ body.cw-home .cw-bar{display:grid}
 .cw-back-ico svg { display: block; }
 .cw-back-ico:focus-visible { outline: 3px solid #E3182D; outline-offset: 2px; }
 .cf-topbar[hidden] { display: none !important; }
+
+/* Bóris: história da primeira vez e cabeçalho da biblioteca */
+.bib-hero { display: flex; align-items: center; gap: 12px; margin: 4px 0 14px; padding: 10px 14px; border-radius: 20px; background: #F8F8FB; box-shadow: 0 3px 0 #E6E6EE; }
+.bib-hero img { width: 64px; height: 64px; object-fit: contain; flex: 0 0 auto; }
+.bib-hero b { display: block; font: 800 17px Nunito, sans-serif; color: #17171C; }
+.bib-hero small { font: 700 13px Nunito, sans-serif; color: #6A6A75; }
+.bib-story { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 8px 0 18px; text-align: center; }
+.bib-story-top { width: 100%; display: flex; align-items: center; justify-content: space-between; }
+.bib-story-dots { margin: 0; justify-content: flex-start; }
+.bib-skip { border: 0; background: none; font: 800 14px Nunito, sans-serif; color: #6A6A75; cursor: pointer; padding: 6px; }
+.bib-story-bubble { max-width: 92%; padding: 16px 18px; border: 2px solid #C9C9D6; border-radius: 22px; background: #fff; font: 800 18px/1.35 Nunito, sans-serif; color: #303036; }
+.bib-story-img { width: min(62vw, 240px); height: auto; margin: 8px 0; }
+.bib-story-btn { width: 100%; max-width: 360px; height: 52px; border: 0; border-radius: 99px; background: #E3182D; color: #fff; font: 800 16px Nunito, sans-serif; text-transform: uppercase; letter-spacing: .4px; box-shadow: 0 5px 0 #B8121F; cursor: pointer; }
+.bib-story-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #B8121F; }
