@@ -6,7 +6,7 @@
 // STATUS: não testado aqui. Testar no projeto de TESTE antes da produção.
 import webpush from "npm:web-push@3.6.7";
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { selectToSend, pushPayload } from "./select.ts";
+import { selectToSend, pushPayload } from "./select.js";
 
 const MAX_PER_DAY = 3;      /* mesmo limite da central */
 const WINDOW_HOURS = 72;    /* só envia eventos recentes: nada de avisos antigos */
@@ -38,8 +38,11 @@ Deno.serve(async (req: Request) => {
   const counts = new Map<string, number>();
   (sent || []).forEach((s: any) => counts.set(s.user_id, (counts.get(s.user_id) || 0) + 1));
   const subUsers = new Set<string>((subs || []).map((s: any) => s.user_id));
+  const { data: prefs } = await sb.from("notif_prefs").select("user_id,social");
+  const offCats = new Map<string, Set<string>>();
+  (prefs || []).forEach((r: any) => { if (r.social === false) offCats.set(r.user_id, new Set(["social"])); });
 
-  const plan = selectToSend({ events: events || [], sentKeys, subUsers, counts, max: MAX_PER_DAY });
+  const plan = selectToSend({ events: events || [], sentKeys, subUsers, counts, max: MAX_PER_DAY, offCats });
   let delivered = 0, removed = 0;
 
   for (const ev of plan) {

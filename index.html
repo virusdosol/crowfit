@@ -464,7 +464,7 @@ function secNotif(host){
   h+='<p class="cf-sec-note">No máximo '+NOTIF.MAX_DEVICE_PER_DAY+' avisos por dia.</p></div>';
   host.innerHTML=h;
   function save(){ntSave(inbox)}
-  Array.prototype.forEach.call(host.querySelectorAll("[data-cf-cat]"),function(x){x.onchange=function(){inbox.prefs.cats[x.getAttribute("data-cf-cat")]=x.checked;save()}});
+  Array.prototype.forEach.call(host.querySelectorAll("[data-cf-cat]"),function(x){x.onchange=function(){var k=x.getAttribute("data-cf-cat");inbox.prefs.cats[k]=x.checked;save();if(k==="social"){var c=window.CrowfitAuth&&CrowfitAuth.getClient&&CrowfitAuth.getClient();if(c)c.rpc("set_my_notif_prefs",{p:{social:x.checked}}).then(function(r){if(r.error)console.warn("Crowfit: preferência não salva na conta",r.error.message)}).catch(function(){});}}});
   var rem=host.querySelector("#cf-rem");rem.onchange=function(){inbox.prefs.reminder.on=rem.checked;save();secNotif(host)};
   var tm=host.querySelector("#cf-time");if(tm)tm.onchange=function(){inbox.prefs.reminder.time=tm.value||"19:00";save()};
   Array.prototype.forEach.call(host.querySelectorAll("[data-cf-day]"),function(b){b.onclick=function(){var d=+b.getAttribute("data-cf-day"),ds=inbox.prefs.reminder.days,i=ds.indexOf(d);if(i>=0)ds.splice(i,1);else ds.push(d);ds.sort();save();secNotif(host)}});
