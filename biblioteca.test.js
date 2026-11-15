@@ -92,3 +92,18 @@ describe("busca e filtros", () => {
     assert.ok(todos.every((id) => LIB[id]));
   });
 });
+
+describe("nível de dificuldade por cor", () => {
+  const B = require("./biblioteca.js");
+  test("todo exercício tem nível (i, m ou a) e nenhum id sobrando", () => {
+    const sem = Object.keys(LIB).filter((id) => !["i", "m", "a"].includes(B.BIB_NIVEL[id]));
+    const sobra = Object.keys(B.BIB_NIVEL).filter((id) => !LIB[id]);
+    assert.deepEqual({ sem, sobra }, { sem: [], sobra: [] });
+  });
+  test("exercícios do grupo removido não aparecem mais no catálogo", () => {
+    ["bi_toalha", "bi_mochila", "bi_mochila_l", "bi_mochila_u", "stiff_mo", "rem_toalha"].forEach((id) => {
+      assert.equal(LIB[id], undefined);
+      assert.equal(B.CATS.some((c) => c.ids.includes(id)), false);
+    });
+  });
+});

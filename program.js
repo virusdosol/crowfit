@@ -37,6 +37,9 @@ corrida_l:["Corrida no lugar","s",40,"Passos rápidos e leves, tronco firme."],
 joelho_a:["Joelho alto","s",30,"Suba o joelho até a altura do quadril em ritmo constante."],
 bu:["Burpee","r",5,"Agache, leve os pés para trás, volte e salte. Vá no seu ritmo."],
 al:["Alongamento final","s",40,"Respire devagar. Alongue os músculos que trabalhou, sem dor."],
+parede_bi:["Isometria de bíceps na parede","s",30,"Cotovelo dobrado e força contra a parede, sem mover o braço. Ativação leve, para treinar onde não há mesa."],
+chao_bi:["Isometria de bíceps no chão","s",30,"Cotovelo dobrado e força contra o chão, sem mover o braço. Ativação leve, sem equipamento."],
+stiff_par:["Stiff unilateral com apoio na parede","r",8,"Uma mão encostada na parede para equilíbrio. Dobradiça de quadril, costas retas."],
 /* peito */
 fl_inc:["Flexão inclinada (mãos no sofá)","r",10,"Mãos num apoio firme e alto. Corpo reto da cabeça aos calcanhares."],
 fl_j:["Flexão com joelhos no chão","r",8,"Corpo reto dos joelhos à cabeça. Desça até o peito quase tocar o chão."],
@@ -55,10 +58,6 @@ fl_fec_j:["Flexão fechada com joelhos","r",8,"Mãos próximas sob o peito, coto
 fl_fec:["Flexão fechada","r",8,"Mãos próximas sob o peito, cotovelos junto ao corpo."],
 fl_dia:["Flexão diamante","r",6,"Mãos juntas formando um diamante. Foco no tríceps."],
 fl_dia_dec:["Flexão diamante declinada","r",5,"Pés num apoio baixo e estável. Controle na descida."],
-bi_toalha:["Rosca isométrica com toalha","s",20,"Pise na toalha, puxe as pontas para cima com os cotovelos a 90° e segure."],
-bi_mochila:["Rosca com mochila","r",10,"Segure a mochila carregada pela alça e dobre os cotovelos devagar."],
-bi_mochila_l:["Rosca lenta com mochila","r",8,"Suba em 2 segundos e desça em 3."],
-bi_mochila_u:["Rosca unilateral com mochila","r",8,"Um braço por vez; faça as repetições nos dois lados."],
 chin_mesa:["Remada supinada sob a mesa","r",6,"Use uma mesa bem firme. Palmas para você e corpo reto; suba o peito até a borda."],
 tri_par:["Extensão de tríceps na parede","r",12,"Mãos na parede, desça a testa dobrando os cotovelos e empurre de volta."],
 mg:["Mergulho no sofá ou cadeira firme","r",6,"Use um apoio estável. Desça dobrando os cotovelos para trás."],
@@ -90,9 +89,7 @@ pr_rev_p:["Prancha reversa com elevação de perna","r",8,"Alterne as pernas sem
 bomdia:["Bom dia (dobradiça de quadril)","r",12,"Mãos atrás da cabeça e joelhos levemente flexionados; incline o tronco com as costas retas."],
 bomdia_l:["Bom dia lento","r",10,"Desça em 3 segundos e suba com controle."],
 stiff_u:["Stiff unilateral sem peso","r",8,"Equilíbrio em uma perna, quadril para trás, costas retas."],
-stiff_mo:["Stiff unilateral com mochila","r",8,"Mochila leve nas mãos, costas retas."],
 esc_ret:["Retração escapular deitado","r",12,"Deitado de bruços, aproxime as escápulas sem elevar os ombros."],
-rem_toalha:["Remada com toalha na porta","r",10,"Prenda a toalha numa porta fechada e firme; incline-se para trás e puxe."],
 /* abdômen */
 ab_cur:["Abdominal curto","r",12,"Eleve só as escápulas, sem puxar o pescoço."],
 ab:["Abdominal tradicional","r",10,"Mãos cruzadas no peito. Suba a escápula, sem puxar o pescoço."],
@@ -142,10 +139,10 @@ resp:["Respiração diafragmática","s",60,"Inspire pelo nariz expandindo a barr
 var CARD = ["marcha", "po", "corrida_l", "joelho_a", "bu"], AL = ["al"];
 var PLAN = {
   P: [CARD, ["fl_inc","fl_j","fl","fl_dec","fl_arq"], ["fl_inc|fl_j","fl_j|fl_lar","fl_lar|fl_pau","fl_pau|fl_dec","fl_dec|fl_exp"], ["pr_alta","pr_alta|pr_toque","pr_toque","pr_toque|pr_flx","pr_flx"], ["fl_iso","fl_iso|fl_lar","fl_lar","fl_pau","fl_exp|fl_arq"], AL],
-  B: [CARD, ["fl_fec_j","fl_fec","fl_dia","fl_dia|fl_dia_dec","fl_dia_dec"], ["bi_toalha","bi_mochila","bi_mochila_l","bi_mochila_u","chin_mesa"], ["pr_alta","pr_toque","pr_toque|pr_flx","pr_flx","pr_flx"], ["tri_par","mg","mg|mg_ret","mg_ret","mg_ret|mg_1"], AL],
+  B: [CARD, ["fl_fec_j","fl_fec","fl_dia","fl_dia|fl_dia_dec","fl_dia_dec"], ["parede_bi","parede_bi|chao_bi","chao_bi","chao_bi|chin_mesa","chin_mesa"], ["pr_alta","pr_toque","pr_toque|pr_flx","pr_flx","pr_flx"], ["tri_par","mg","mg|mg_ret","mg_ret","mg_ret|mg_1"], AL],
   A: [CARD, ["ab_cur","ab","ab_cruz","ab_v","ab_v|ab_hol"], ["pr_j","pr","pr_c","pr_c|pr_toque","pr_ant"], ["pe_j","pe","pe|bi","bi","bi|tes"], ["pr_lat_j","pr_lat","pr_lat","pr_lat|mc","mc|pr_lat_el"], AL],
   L: [CARD, ["ag_ap","ag","ag_pau","ag_bul","ag_pist"], ["af_est","af","af_rev","af_cam","af_salto"], ["pg","pg_pau","pg_u","pg_u|pg_el","pg_el"], ["pa","ag_s","pa_u","ag_salto","ag_salto|pa_u"], AL],
-  C: [CARD, ["sup","sup_alt","nadad","sup_seg","rem_mesa"], ["bird","bird|pr_rev_j","pr_rev_j","pr_rev","pr_rev|pr_rev_p"], ["bomdia","bomdia_l","stiff_u","stiff_u|sup_seg","stiff_mo"], ["esc_ret","esc_ret|rem_toalha","rem_toalha","rem_toalha|rem_mesa","rem_mesa"], AL],
+  C: [CARD, ["sup","sup_alt","nadad","sup_seg","rem_mesa"], ["bird","bird|pr_rev_j","pr_rev_j","pr_rev","pr_rev|pr_rev_p"], ["bomdia","bomdia_l","stiff_u","stiff_u|stiff_par","stiff_par"], ["esc_ret","esc_ret|sup_seg","sup_seg","sup_seg|rem_mesa","rem_mesa"], AL],
   O: [CARD, ["pk_par","pk","pk_lent","pk_ele","pk_ele_l"], ["cir_br","elev_lat","elev_lat|pr_toque","pr_toque","urso_t"], ["ytw","ytw|desl_par","ytw_seg","ytw_seg|desl_par","parada"], ["pr_alta","pr_toque","urso_t","pr_flx","parada"], AL],
   R: [["cam_lev"], ["mob_quad"], ["gato_vaca"], ["cri"], ["resp"], AL]
 };

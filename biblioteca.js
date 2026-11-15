@@ -3,9 +3,9 @@
 (function (root) {
   var CATS = [
     { id: "peito", n: "Peito", c: "#E3182D", ids: ["fl_inc", "fl_j", "fl", "fl_dec", "fl_arq", "fl_lar", "fl_pau", "fl_exp", "fl_iso", "pr_alta", "pr_toque", "pr_flx"] },
-    { id: "bracos", n: "Braços", c: "#303036", ids: ["fl_fec_j", "fl_fec", "fl_dia", "fl_dia_dec", "bi_toalha", "bi_mochila", "bi_mochila_l", "bi_mochila_u", "chin_mesa", "tri_par", "mg", "mg_ret", "mg_1"] },
+    { id: "bracos", n: "Braços", c: "#303036", ids: ["fl_fec_j", "fl_fec", "fl_dia", "fl_dia_dec", "parede_bi", "chao_bi", "chin_mesa", "tri_par", "mg", "mg_ret", "mg_1"] },
     { id: "ombros", n: "Ombros", c: "#E3182D", ids: ["pk_par", "pk", "pk_lent", "pk_ele", "pk_ele_l", "cir_br", "elev_lat", "urso_t", "ytw", "ytw_seg", "desl_par", "parada"] },
-    { id: "costas", n: "Costas", c: "#303036", ids: ["sup", "sup_alt", "nadad", "sup_seg", "rem_mesa", "bird", "pr_rev_j", "pr_rev", "pr_rev_p", "bomdia", "bomdia_l", "stiff_u", "stiff_mo", "esc_ret", "rem_toalha"] },
+    { id: "costas", n: "Costas", c: "#303036", ids: ["sup", "sup_alt", "nadad", "sup_seg", "rem_mesa", "bird", "pr_rev_j", "pr_rev", "pr_rev_p", "bomdia", "bomdia_l", "stiff_u", "stiff_par", "esc_ret"] },
     { id: "abdomen", n: "Abdômen", c: "#E3182D", ids: ["ab_cur", "ab", "ab_cruz", "ab_v", "ab_hol", "pr_j", "pr", "pr_c", "pr_ant", "pe_j", "pe", "bi", "tes", "pr_lat_j", "pr_lat", "pr_lat_el", "mc"] },
     { id: "pernas", n: "Pernas", c: "#303036", ids: ["ag_ap", "ag", "ag_pau", "ag_bul", "ag_pist", "af_est", "af", "af_rev", "af_cam", "af_salto", "pg", "pg_pau", "pg_u", "pg_el", "pa", "ag_s", "pa_u", "ag_salto"] },
     { id: "geral", n: "Geral", c: "#E3182D", ids: ["marcha", "po", "corrida_l", "joelho_a", "bu", "al", "cam_lev"] },
@@ -54,12 +54,36 @@
     return out;
   }
 
+  /* Nível de dificuldade por cor: i = iniciante (verde), m = intermediário (âmbar), a = avançado (vermelho). Proposta aprovada. */
+  var NIVEL = {
+    i: { cor: "#2E9E5B", n: "Iniciante" },
+    m: { cor: "#E0A800", n: "Intermediário" },
+    a: { cor: "#E3182D", n: "Avançado" }
+  };
+  var BIB_NIVEL = {
+    marcha: "i", po: "i", corrida_l: "i", joelho_a: "i", al: "i", cam_lev: "i", mob_quad: "i", gato_vaca: "i", cri: "i", resp: "i",
+    fl_inc: "i", fl_j: "i", pr_j: "i", pr: "i", pr_lat_j: "i", pr_alta: "i", pg: "i", ag: "i", af_est: "i", pa: "i", cir_br: "i",
+    sup: "i", sup_seg: "i", esc_ret: "i", ytw: "i", desl_par: "i", tri_par: "i", mg: "i", pk_par: "i", parede_bi: "i", chao_bi: "i",
+    ag_ap: "i", pe_j: "i", bird: "i", ag_s: "i", nadad: "i",
+    bu: "m", fl: "m", fl_lar: "m", fl_pau: "m", fl_iso: "m", fl_fec_j: "m", fl_fec: "m", fl_dia: "m", fl_exp: "m", pr_toque: "m", pr_flx: "m",
+    pr_ant: "m", pr_c: "m", pr_lat: "m", pr_rev_j: "m", pr_rev: "m", ab_cur: "m", ab: "m", ab_cruz: "m", ab_v: "m", bi: "m", tes: "m",
+    mc: "m", af: "m", af_rev: "m", af_cam: "m", pg_pau: "m", pg_u: "m", pa_u: "m", ag_pau: "m", ag_bul: "m", ag_pist: "m", pk: "m",
+    pk_lent: "m", ytw_seg: "m", stiff_u: "m", stiff_par: "m", bomdia: "m", bomdia_l: "m", chin_mesa: "m", rem_mesa: "m", sup_alt: "m",
+    pe: "m", ab_hol: "m", pr_lat_el: "m", mg_ret: "m", elev_lat: "m", pr_rev_p: "m", pg_el: "m", urso_t: "m",
+    fl_dec: "a", fl_arq: "a", fl_dia_dec: "a", pk_ele: "a", pk_ele_l: "a", parada: "a", ag_salto: "a", af_salto: "a", mg_1: "a",
+  };
+  function nivelOf(id) { return NIVEL[BIB_NIVEL[id]] || null; }
+  function dot(id) {
+    var n = nivelOf(id); if (!n) return "";
+    return '<i class="bib-lvl" style="background:' + n.cor + '" role="img" aria-label="Nível: ' + n.n + '"></i>';
+  }
+
   function heart(id, on) {
     return '<button type="button" class="bib-heart' + (on ? " on" : "") + '" data-act="bib-fav" data-ex="' + esc(id) + '" aria-pressed="' + (on ? "true" : "false") + '" aria-label="' + (on ? "Remover dos favoritos" : "Adicionar aos favoritos") + '">' + (on ? "♥" : "♡") + "</button>";
   }
   function row(id, LIB, favs, extra) {
     var e = LIB[id];
-    return '<li class="bib-li"><button type="button" class="bib-row" data-act="bib-ex" data-ex="' + esc(id) + '"><span class="bib-row-n">' + esc(e[0]) + "</span><small>" +
+    return '<li class="bib-li"><button type="button" class="bib-row" data-act="bib-ex" data-ex="' + esc(id) + '">' + dot(id) + '<span class="bib-row-n">' + esc(e[0]) + "</span><small>" +
       (extra ? esc(extra) + " · " : "") + typeText(e[1]) + " · " + esc(baseText(e[1], e[2])) + "</small></button>" + heart(id, favs.indexOf(id) >= 0) + "</li>";
   }
   function chip(k, label, cur) {
@@ -84,7 +108,7 @@
       var passos = t[0].split(" | ").map(function (p) { return "<li>" + esc(p) + "</li>"; }).join("");
       var erros = t[2].split(" | ").map(function (p) { return "<li>" + esc(p) + "</li>"; }).join("");
       return '<div class="bib-top">' + back + heart(state.ex, favs.indexOf(state.ex) >= 0) + '</div><article class="bib-ex">' +
-        "<h2>" + esc(e[0]) + '</h2><p class="bib-meta">' + esc(catOf(state.ex)) + " · " + typeText(e[1]) + " · valor base " + esc(baseText(e[1], e[2])) + "</p>" +
+        "<h2>" + esc(e[0]) + '</h2><p class="bib-meta">' + dot(state.ex) + (nivelOf(state.ex) ? esc(nivelOf(state.ex).n) + " · " : "") + esc(catOf(state.ex)) + " · " + typeText(e[1]) + " · valor base " + esc(baseText(e[1], e[2])) + "</p>" +
         '<p class="bib-orient">' + esc(e[3]) + '</p>' +
         '<h3>Passo a passo</h3><ol class="bib-list">' + passos + "</ol>" +
         "<h3>Respiração</h3><p>" + esc(t[1]) + "</p>" +
@@ -144,10 +168,10 @@
 
   if (typeof document !== "undefined" && !document.getElementById("bib-search-css")) {
     var bst = document.createElement("style"); bst.id = "bib-search-css";
-    bst.textContent = ".bib-search{margin:8px 0 10px}.bib-search input{width:100%;box-sizing:border-box;border:2px solid var(--line);border-radius:14px;padding:12px 14px;font:inherit;font-size:16px;background:#fff;color:#17171C}.bib-chips{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}.bib-chip{border:2px solid var(--line);border-radius:999px;background:#fff;color:var(--mute);padding:6px 14px;font:inherit;font-size:14px;font-weight:700;cursor:pointer}.bib-chip[aria-pressed=true]{background:#E3182D;border-color:#E3182D;color:#fff}.bib-li{display:flex;align-items:center;gap:8px}.bib-li .bib-row{flex:1}.bib-heart{flex:none;border:0;background:none;font-size:22px;line-height:1;color:var(--mute);cursor:pointer;padding:8px}.bib-heart.on{color:#E3182D}.bib-empty{color:var(--mute);font-size:15px;margin:16px 0}.bib-card-fav{grid-column:1/-1}";
+    bst.textContent = ".bib-search{margin:8px 0 10px}.bib-search input{width:100%;box-sizing:border-box;border:2px solid var(--line);border-radius:14px;padding:12px 14px;font:inherit;font-size:16px;background:#fff;color:#17171C}.bib-chips{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}.bib-chip{border:2px solid var(--line);border-radius:999px;background:#fff;color:var(--mute);padding:6px 14px;font:inherit;font-size:14px;font-weight:700;cursor:pointer}.bib-chip[aria-pressed=true]{background:#E3182D;border-color:#E3182D;color:#fff}.bib-li{display:flex;align-items:center;gap:8px}.bib-li .bib-row{flex:1}.bib-heart{flex:none;border:0;background:none;font-size:22px;line-height:1;color:var(--mute);cursor:pointer;padding:8px}.bib-heart.on{color:#E3182D}.bib-empty{color:var(--mute);font-size:15px;margin:16px 0}.bib-card-fav{grid-column:1/-1}.bib-lvl{display:inline-block;flex:none;width:10px;height:10px;border-radius:50%;margin-right:8px;vertical-align:middle}";
     document.head.appendChild(bst);
   }
-  var api = { CATS: CATS, catIcon: catIcon, html: html, STORY: STORY, storyHtml: storyHtml, hero: hero, filterLib: filterLib, norm: norm };
+  var api = { BIB_NIVEL: BIB_NIVEL, NIVEL: NIVEL, CATS: CATS, catIcon: catIcon, html: html, STORY: STORY, storyHtml: storyHtml, hero: hero, filterLib: filterLib, norm: norm };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.CFBib = api;
 })(typeof window !== "undefined" ? window : globalThis);
