@@ -5,6 +5,7 @@
 "use strict";
 var doc = root.document, RAR = { comum: "Comum", epica: "Épica", rara: "Rara", lendaria: "Lendária" };
 var I = {
+  book: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M4 5a2 2 0 0 1 2-2h13v15H6a2 2 0 0 0-2 2z"/><path d="M4 19a2 2 0 0 1 2-2h13v4H6a2 2 0 0 1-2-2z"/></svg>',
   home: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
   medal: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><circle cx="12" cy="9" r="6"/><path d="M8.5 14.2 7 21l5-2.5 5 2.5-1.5-6.8"/></svg>',
   grid: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>',
@@ -14,7 +15,8 @@ var I = {
   users: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.4 3.2-5.5 6.5-5.5s5.9 2.1 6.5 5.5"/><circle cx="17" cy="9" r="2.6"/><path d="M17.5 14.6c2.3.3 3.8 2 4.2 4.4"/></svg>',
   crow: '<img src="mascot.png" alt="Crow">'
 };
-var TABS = [["home", "home", "Trilha"], ["ach", "medal", "Conquistas"], ["app", "grid", "Aparências"], ["noz", "noz", "Nozes"], ["amigos", "users", "Amigos"]];
+var TABS = [["home", "home", "Trilha"], ["ach", "medal", "Conquistas"], ["app", "grid", "Aparências"], ["bib", "book", "Biblioteca"], ["noz", "noz", "Nozes"], ["amigos", "users", "Amigos"]];
+var bibSt = { view: "cats" };
 var CROW = {
   vazio_ach: "Nenhuma conquista ainda. Não é pra olhar, é pra fazer.",
   vazio_tro: "Nenhum troféu. Treinar também é uma opção.",
@@ -77,6 +79,7 @@ function closePage() { if (curPage && curPage.el) curPage.el.remove(); curPage =
 function openPage(kind) {
   if (kind === "home") { closePage(); if (typeof root.renderHome === "function") root.renderHome(); return; }
   closePage();
+  if (kind === "bib") bibSt = { view: "cats" };
   var el = doc.createElement("div"); el.className = "cw-full"; el.setAttribute("role", "dialog");
   el.innerHTML = '<div class="cf-bar cf-topbar"><button type="button" class="cf-back" data-full-close>← Voltar</button></div><div class="cw-pagebody"></div>';
   doc.body.appendChild(el);
@@ -86,11 +89,12 @@ function openPage(kind) {
   else renderPage();
   syncBar();
 }
+function pageBib() { return root.CFBib ? root.CFBib.html(root.CFP.LIB, root.BIB_TXT || {}, bibSt) : "<p class=\"cw-hint\">Biblioteca indisponível.</p>"; }
 function renderPage() {
   if (!curPage || !S()) return;
   var k = curPage.kind, body = curPage.el.querySelector(".cw-pagebody");
   if (k === "amigos") return; /* página de amigos cuida do próprio conteúdo (busca no servidor) */
-  var html = k === "ach" ? pageAch() : k === "app" ? pageApp() : k === "tro" ? pageTro() : k === "noz" ? pageNoz() : pageLevel();
+  var html = k === "ach" ? pageAch() : k === "app" ? pageApp() : k === "tro" ? pageTro() : k === "noz" ? pageNoz() : k === "bib" ? pageBib() : pageLevel();
   body.innerHTML = html;
   if (sel && sel.kind === "app") detailApp(sel.id);
 }
@@ -215,6 +219,9 @@ function bubbleToggle(btn) {
 
 /* ---------- ações ---------- */
 function act(kind, el) {
+  if (kind === "bib-cat") { bibSt = { view: "cat", cat: el.getAttribute("data-cat") }; return renderPage(); }
+  if (kind === "bib-ex") { bibSt = { view: "ex", cat: bibSt.cat, ex: el.getAttribute("data-ex") }; return renderPage(); }
+  if (kind === "bib-back") { bibSt = bibSt.view === "ex" && bibSt.cat ? { view: "cat", cat: bibSt.cat } : { view: "cats" }; return renderPage(); }
   if (kind === "equip") { CF().equipar(S(), el.getAttribute("data-id"), new Date().toISOString()); save(); return renderPage(); }
   if (kind === "unequip") { CF().desequipar(S(), new Date().toISOString()); save(); return renderPage(); }
   if (kind === "tro-eq") {

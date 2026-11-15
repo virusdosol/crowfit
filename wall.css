@@ -165,3 +165,22 @@ body.cw-home .cw-bar{display:grid}
 .cw-tro-btn.sel { border-color: #E3182D; }
 .cw-tro-btn small { font: 700 12px Nunito, sans-serif; color: #303036; }
 .cw-glyph.trophy.off { opacity: .32; filter: grayscale(1); }
+
+/* Biblioteca de exercícios */
+.bib-title { margin: 8px 0 4px; font: 800 26px Fredoka, Nunito, sans-serif; color: #17171C; }
+.bib-hint { margin: 0 0 14px; font: 700 14px Nunito, sans-serif; color: #6A6A75; }
+.bib-top { margin-bottom: 6px; }
+.bib-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.bib-card { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 10px; border: 0; border-radius: 22px; background: #F8F8FB; box-shadow: 0 4px 0 #E6E6EE; cursor: pointer; font-family: inherit; }
+.bib-ico { width: 64px; height: 64px; }
+.bib-card-n { font: 800 16px Nunito, sans-serif; color: #17171C; }
+.bib-card small, .bib-row small { font: 700 12px Nunito, sans-serif; color: #6A6A75; }
+.bib-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.bib-row { width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 14px 16px; border: 0; border-radius: 16px; background: #F8F8FB; box-shadow: 0 3px 0 #E6E6EE; text-align: left; cursor: pointer; font-family: inherit; }
+.bib-row-n { font: 800 16px Nunito, sans-serif; color: #17171C; }
+.bib-ex h2 { margin: 6px 0 4px; font: 800 24px Fredoka, Nunito, sans-serif; color: #17171C; }
+.bib-ex h3 { margin: 18px 0 6px; font: 800 16px Nunito, sans-serif; color: #E3182D; text-transform: uppercase; letter-spacing: .4px; }
+.bib-ex p, .bib-ex li { font: 600 15px/1.5 Nunito, sans-serif; color: #303036; }
+.bib-meta { color: #6A6A75 !important; font-weight: 700 !important; }
+.bib-orient { padding: 10px 14px; border-radius: 14px; background: #F8F8FB; }
+.bib-list { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
