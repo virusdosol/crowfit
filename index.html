@@ -200,6 +200,7 @@ setTimeout(rm,1000);var i=s.querySelector("img");if(i)i.addEventListener("error"
 <script src="painel.js"></script>
 <script src="desafios.js"></script>
 <script src="notif.js"></script>
+<script src="notif-push.js"></script>
 
 <script src="biblioteca-conteudo.js"></script>
 <script src="biblioteca.js"></script>
@@ -454,7 +455,7 @@ function openNotifs(){var inbox=ntLoad(),c=ntClock();view('<div id="nt-box"></di
   var rem=box.querySelector("#nt-rem");rem.onchange=function(){inbox.prefs.reminder.on=rem.checked;save();draw()};
   var tm=box.querySelector("#nt-time");if(tm)tm.onchange=function(){inbox.prefs.reminder.time=tm.value||"19:00";save()};
   Array.prototype.forEach.call(box.querySelectorAll("[data-nt-day]"),function(b){b.onclick=function(){var d=+b.getAttribute("data-nt-day"),ds=inbox.prefs.reminder.days,i=ds.indexOf(d);if(i>=0)ds.splice(i,1);else ds.push(d);ds.sort();save();draw()}});
-  var pb=box.querySelector("#nt-perm");if(pb)pb.onclick=function(){if(typeof Notification==="undefined")return;Notification.requestPermission().then(function(p){if(p==="granted")inbox.prefs.deviceOn=true;save();draw()}).catch(function(){draw()})};
+  var pb=box.querySelector("#nt-perm");if(pb)pb.onclick=function(){if(!window.NOTIFPUSH||!window.CrowfitAuth)return;window.NOTIFPUSH.enable(CrowfitAuth.getClient()).then(function(){inbox.prefs.deviceOn=true;save();draw()}).catch(function(e){var m=e&&e.message;alert(m==="permission_denied"?"Permissão negada no navegador.":"Não foi possível ativar: "+(m||"erro"));draw()})};
  }
  draw();
 }
