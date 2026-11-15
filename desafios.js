@@ -67,6 +67,32 @@ function esc(v) { return String(v == null ? "" : v).replace(/[&<>"']/g, function
 /* Quantos a meta falta para quem ainda não chegou. */
 function remaining(progress, target) { return Math.max(0, target - (progress || 0)); }
 
+/* ---------- datas e resultado (puras) ---------- */
+function fmtDate(iso) {
+  var d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+/* Janela do desafio, sempre visível: início e término (horário deste aparelho). */
+function windowLine(ch) {
+  return "Início " + fmtDate(ch.starts_at) + " · Término " + fmtDate(ch.ends_at);
+}
+/* Quem entra depois do início tem menos tempo: avisa antes de aceitar. */
+function lateNote(ch, now) {
+  return new Date(now).getTime() > new Date(ch.starts_at).getTime()
+    ? "Você entra depois do início: sua contagem começa agora e terá menos tempo que os demais."
+    : "";
+}
+var PRIVACY_NOTE = "Os nomes e o progresso dos participantes ficam visíveis para quem está no desafio.";
+/* Resultado final de um desafio encerrado. */
+function resultText(members) {
+  var rk = rank(members);
+  if (!rk.length || rk[0].progress <= 0) return "Ninguém registrou progresso neste desafio.";
+  var leaders = rk.filter(function (r) { return r.leader; });
+  if (leaders.length > 1) return "Empate entre " + leaders.map(function (r) { return esc(r.name || r.handle); }).join(" e ") + " com " + rk[0].progress + ".";
+  return "🏆 " + esc(leaders[0].name || leaders[0].handle) + " venceu com " + leaders[0].progress + ".";
+}
+
 /* ---------- apresentação ---------- */
 var TABS = [
   { k: "received", label: "Recebidos" },
@@ -82,12 +108,17 @@ function card(ch, now, tab) {
   var myProg = mine && mine.status === "accepted" ? (mine.progress || 0) : null;
   var h = '<article class="dg-card" data-dg="' + esc(ch.id) + '">';
   h += '<header><b>' + esc(ch.title) + '</b><span class="dg-tag">' + esc(m.name) + ' · meta ' + esc(ch.target) + ' ' + esc(m.unit) + '</span></header>';
+  h += '<p class="dg-sub dg-win">' + esc(windowLine(ch)) + '</p>';
   if (tab === "received") {
     h += '<p class="dg-sub">Convidado por <b>' + esc(ch.creator_name || ch.creator_handle || "um amigo") + '</b>. ' + esc(timeLeft(ch.ends_at, now)) + '.</p>';
+    var late = lateNote(ch, now);
+    if (late) h += '<p class="dg-note">' + esc(late) + '</p>';
+    h += '<p class="dg-sub">' + esc(PRIVACY_NOTE) + '</p>';
     h += '<div class="dg-row"><button type="button" class="btn" data-dg-act="accept" data-dg-id="' + esc(ch.id) + '">Aceitar</button>' +
          '<button type="button" class="btn sec" data-dg-act="decline" data-dg-id="' + esc(ch.id) + '">Recusar</button></div>';
   } else {
-    h += '<p class="dg-sub">' + esc(timeLeft(ch.ends_at, now)) + '</p>';
+    if (tab === "finished") h += '<p class="dg-sub"><b>Encerrado.</b> ' + resultText(ch.members) + '</p>';
+    else h += '<p class="dg-sub">' + esc(timeLeft(ch.ends_at, now)) + '</p>';
     if (myProg != null) {
       h += '<div class="dg-track"><i style="width:' + pct(myProg, ch.target) + '%"></i></div>' +
            '<p class="dg-sub">Você: ' + myProg + ' de ' + esc(ch.target) + ' ' + esc(m.unit) +
@@ -206,7 +237,7 @@ function open(box, client, after) {
         '</div><p class="dg-lbl">Amigos (até ' + MAX_FRIENDS + ')</p>' +
         (friends.length ? friends.map(function (x) { return '<label class="dg-chk"><input type="checkbox" value="' + esc(x.handle) + '"> ' + esc(x.name || x.handle) + '</label>'; }).join("")
           : '<p class="dg-sub">Você ainda não tem amigos para desafiar.</p>') +
-        '<p class="dg-sub">Os números vêm do servidor. Quem aceita depois do início entra com menos tempo.</p>' +
+        '<p class="dg-sub">' + esc(PRIVACY_NOTE) + '</p><p class="dg-sub">A contagem começa ao criar o desafio e vale para todos. Quem aceita depois do início terá menos tempo.</p>' +
         '<div class="dg-row"><button type="button" class="btn" id="dg-send">Enviar convites</button></div><p class="dg-note" id="dg-err"></p></div>';
       box.innerHTML = mhtml;
       function unitTxt() { var m = METRIC[f.metric]; box.querySelector("#dg-unit").textContent = m.unit + ", de " + m.min + " a " + m.max; }
