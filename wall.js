@@ -15,7 +15,7 @@ var I = {
   users: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.4 3.2-5.5 6.5-5.5s5.9 2.1 6.5 5.5"/><circle cx="17" cy="9" r="2.6"/><path d="M17.5 14.6c2.3.3 3.8 2 4.2 4.4"/></svg>',
   crow: '<img src="mascot.png" alt="Crow">'
 };
-var TABS = [["home", "home", "Trilha"], ["ach", "medal", "Conquistas"], ["app", "grid", "Aparências"], ["bib", "book", "Biblioteca"], ["noz", "noz", "Nozes"], ["amigos", "users", "Amigos"]];
+var TABS = [["home", "home", "Trilha"], ["app", "grid", "Aparências"], ["bib", "book", "Biblioteca"], ["noz", "noz", "Nozes"], ["amigos", "users", "Amigos"]];
 var bibSt = { view: "cats" };
 var CROW = {
   vazio_ach: "Nenhuma conquista ainda. Não é pra olhar, é pra fazer.",

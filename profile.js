@@ -225,6 +225,7 @@
       else if (t.hasAttribute('data-prof-back')) go('profile');
       else if (t.hasAttribute('data-prof-go')) { var g = t.getAttribute('data-prof-go'); if (SCREENS[g]) go(g); }
       else if (t.hasAttribute('data-prof-switch')) switchAcc();
+      else if (t.closest && t.closest('[data-prof-nivel]')) { if (window.CrowWall) window.CrowWall.openPage('nivel'); }
       else if (t.hasAttribute('data-prof-retry')) { uiMsg = null; refresh(); }
     });
     panel.addEventListener('submit', onExtraSubmit);
@@ -414,7 +415,7 @@
       h = '<div class="cf-wrap">' + BAR +
         '<h1 class="cf-title cf-name" tabindex="-1" data-name></h1>' +
         '<p class="cf-sub"><span class="cf-acct" data-acct></span></p>' +
-        '<div class="cf-stats"><div class="cf-stat"><span class="cf-stat-v" data-level>–</span><span class="cf-stat-l">Nível</span></div>' +
+        '<div class="cf-stats"><button type="button" class="cf-stat cf-stat-btn" data-prof-nivel><span class="cf-stat-v" data-level>–</span><span class="cf-stat-l">Nível</span></button>' +
         '<div class="cf-stat"><span class="cf-stat-v" data-xp>–</span><span class="cf-stat-l">XP total</span></div></div>' +
         CLOSE + '</div>';
     } else if (st === 'error') {
