@@ -370,7 +370,7 @@ function renderHome(){var li=lvlInfo(),t=today(),a=S.active,b4=S.streak+"/"+S.be
  if($("rs"))$("rs").onclick=function(){S.active.status="in_progress";renderEx()};
  if($("ab"))$("ab").onclick=function(){if(confirm("Abandonar este treino? As séries feitas ficam no histórico, mas sem bônus de conclusão.")){CF.abandonSession(S,S.active,Date.now());S.active=null;save();renderHome()}};
  if($("pf"))$("pf").onclick=function(){if(window.CrowfitProfile)CrowfitProfile.open($("pf"))};if($("ach"))$("ach").onclick=function(){if(window.CrowWall)CrowWall.openPage("ach")};if($("tr"))$("tr").onclick=function(){if(window.CrowWall)CrowWall.openPage("tro")};
- if($("of"))$("of").onclick=renderOfensivas;
+ if($("of"))$("of").onclick=openOfensivas;
  CFT.mount($("trail"),trailCtx());if(window.CrowAmigos&&CrowAmigos.pushStats)CrowAmigos.pushStats()}
 
 /* ---------- Ofensivas (tela própria; calendário e detalhes entram nas próximas etapas) ---------- */
@@ -411,6 +411,8 @@ function ofClick(e){var b=e.target.closest&&e.target.closest("[data-nav],[data-d
  $("of-cal").innerHTML=ofCal(today())+nozHTML(today());
  if(!b.hasAttribute("data-nav")){var n=$("of-cal").querySelector('[data-ds="'+OF.sel+'"]');if(n)n.focus({preventScroll:true})}
  else{var nb=$("of-cal").querySelector('[data-nav="'+b.getAttribute("data-nav")+'"]');if(nb)nb.focus({preventScroll:true})}}
+/* Abre ofensivas sempre no topo (a rolagem da trilha não deve ser herdada). */
+function openOfensivas(){renderOfensivas();window.scrollTo(0,0)}
 function renderOfensivas(){var t=today();OF=null;var b4=S.streak+"/"+S.best;CF.refreshStreak(S,t);if(b4!==S.streak+"/"+S.best)save();var n=S.streak;
  view('<div class="of-wrap">'+
  '<div class="of-top"><button type="button" class="of-x" id="of-bk" aria-label="Voltar para a trilha"><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M3 3l16 16M19 3L3 19" stroke="#17171C" stroke-width="2.6" stroke-linecap="round"/></svg></button><img class="of-logo" src="logo-dark.png" alt="Crowfit"><span class="of-sp"></span></div>'+
