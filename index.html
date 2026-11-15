@@ -173,6 +173,7 @@ input{width:100%;border:2px solid var(--line);border-radius:14px;padding:12px;fo
 <link rel="stylesheet" href="trail.css">
 <link rel="stylesheet" href="painel.css">
 <link rel="stylesheet" href="desafios.css">
+<link rel="stylesheet" href="notif.css">
 </head>
 <body>
 <div id="splash" aria-hidden="true"><img src="splash.jpg" alt=""></div>
@@ -198,6 +199,7 @@ setTimeout(rm,1000);var i=s.querySelector("img");if(i)i.addEventListener("error"
 <script src="trail.js"></script>
 <script src="painel.js"></script>
 <script src="desafios.js"></script>
+<script src="notif.js"></script>
 
 <script src="biblioteca-conteudo.js"></script>
 <script src="biblioteca.js"></script>
@@ -376,6 +378,8 @@ function renderHome(){var li=lvlInfo(),t=today(),a=S.active,b4=S.streak+"/"+S.be
  if($("pf"))$("pf").onclick=function(){if(window.CrowfitProfile)CrowfitProfile.open($("pf"))};if($("ach"))$("ach").onclick=function(){if(window.CrowWall)CrowWall.openPage("ach")};if($("tr"))$("tr").onclick=function(){if(window.CrowWall)CrowWall.openPage("tro")};
  if($("of"))$("of").onclick=openOfensivas;
 var pbBtn=$("of");if(pbBtn&&window.PAINEL&&!$("pn")){var pnb=document.createElement("button");pnb.type="button";pnb.id="pn";pnb.className=pbBtn.className;pnb.setAttribute("aria-label","Minha evolução");pnb.title="Minha evolução";pnb.innerHTML='<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M3 18V11M9 18V6M15 18V9M21 18V3" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg>';pbBtn.parentNode.insertBefore(pnb,pbBtn.nextSibling);pnb.onclick=function(){openPainel()}}
+var ntA=$("pn")||pbBtn;if(ntA&&window.NOTIF&&!$("nt")){var ntb=document.createElement("button");ntb.type="button";ntb.id="nt";ntb.className=ntA.className;ntb.setAttribute("aria-label","Notificações");ntb.title="Notificações";ntb.innerHTML='<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16V11a6 6 0 1 1 12 0v5l2 2H4l2-2zM10 20a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>';ntA.parentNode.insertBefore(ntb,ntA.nextSibling);ntb.onclick=function(){openNotifs()}}
+try{ntScan()}catch(e){}
  CFT.mount($("trail"),trailCtx());if(window.CrowAmigos&&CrowAmigos.pushStats)CrowAmigos.pushStats()}
 
 /* ---------- Ofensivas (tela própria; calendário e detalhes entram nas próximas etapas) ---------- */
@@ -416,6 +420,44 @@ function ofClick(e){var b=e.target.closest&&e.target.closest("[data-nav],[data-d
  $("of-cal").innerHTML=ofCal(today())+nozHTML(today());
  if(!b.hasAttribute("data-nav")){var n=$("of-cal").querySelector('[data-ds="'+OF.sel+'"]');if(n)n.focus({preventScroll:true})}
  else{var nb=$("of-cal").querySelector('[data-nav="'+b.getAttribute("data-nav")+'"]');if(nb)nb.focus({preventScroll:true})}}
+/* ---------- Central de notificações (dados por conta, no aparelho) ---------- */
+function ntKey(){return "crowfit-notif:"+curUid}
+function ntLoad(){try{var raw=localStorage.getItem(ntKey());if(raw){var o=JSON.parse(raw);if(o&&o.v===1)return o}}catch(e){}return NOTIF.emptyInbox()}
+function ntSave(o){try{localStorage.setItem(ntKey(),JSON.stringify(o))}catch(e){}}
+function ntClock(){var d=new Date();return{today:today(),iso:d.toISOString(),weekday:d.getDay(),minutes:d.getHours()*60+d.getMinutes()}}
+function ntPerm(){return typeof Notification==="undefined"?"unsupported":Notification.permission}
+function ntBadge(n){var b=$("nt");if(b)b.setAttribute("data-count",n>0?(n>9?"9+":String(n)):"")}
+function ntDeviceShow(it){try{var o={body:it.body,tag:it.key,icon:"icon-192.png"};if(navigator.serviceWorker&&navigator.serviceWorker.getRegistration){navigator.serviceWorker.getRegistration().then(function(r){if(r&&r.showNotification)r.showNotification(it.title,o);else new Notification(it.title,o)}).catch(function(){})}else new Notification(it.title,o)}catch(e){}}
+function ntFinish(inbox,before,c){if(ntPerm()==="granted"&&inbox.prefs.deviceOn){inbox.items.forEach(function(it){if(!before[it.id]&&NOTIF.shouldDeliver(inbox,it,"granted",c)){ntDeviceShow(it);NOTIF.markDelivered(inbox,it,c)}})}ntSave(inbox);ntBadge(NOTIF.unread(inbox))}
+function ntIds(inbox){var m={};inbox.items.forEach(function(it){m[it.id]=1});return m}
+/* Varredura: local sempre; social só com rede e sessão. Falha de rede nunca bloqueia a home. */
+function ntScan(){if(!curUid||!window.NOTIF)return;var c=ntClock(),inbox=ntLoad(),before=ntIds(inbox);
+ try{NOTIF.scanLocal(inbox,S,c,{CF:CF,trophies:CF.trophyCount(CFT.trophyRecords(trailCtx()))})}catch(e){}
+ if(NOTIF.reminderDue(inbox,S,c))NOTIF.addReminder(inbox,c);
+ NOTIF.clearOld(inbox,c);ntFinish(inbox,before,c);
+ var A=window.CrowfitAuth,cl=A&&A.getClient?A.getClient():null;if(!cl)return;
+ Promise.all([cl.rpc("get_my_social",{}),cl.rpc("list_my_challenges",{p:{}})]).then(function(r){
+  if(r[0].error||r[1].error)return;
+  var inb=ntLoad(),b2=ntIds(inb);NOTIF.scanSocial(inb,r[0].data||{},r[1].data||{},c);ntFinish(inb,b2,c);
+ }).catch(function(){});
+}
+function openNotifs(){var inbox=ntLoad(),c=ntClock();view('<div id="nt-box"></div>');var box=$("nt-box");window.scrollTo(0,0);
+ function save(){ntSave(inbox);ntBadge(NOTIF.unread(inbox))}
+ function go(a){if(a==="painel")openPainel();else if(a==="ofensivas")openOfensivas();else renderHome()}
+ function draw(){box.innerHTML=NOTIF.html(inbox,CF,c.today,ntPerm(),{});bind()}
+ function bind(){
+  box.querySelector("#nt-bk").onclick=renderHome;
+  box.querySelector("#nt-readall").onclick=function(){NOTIF.markAllRead(inbox);save();draw()};
+  box.querySelector("#nt-clear").onclick=function(){NOTIF.clearOld(inbox,c);save();draw()};
+  Array.prototype.forEach.call(box.querySelectorAll("[data-nt-go]"),function(b){b.onclick=function(){NOTIF.markRead(inbox,b.getAttribute("data-nt-id"));save();go(b.getAttribute("data-nt-go"))}});
+  Array.prototype.forEach.call(box.querySelectorAll("[data-nt-cat]"),function(x){x.onchange=function(){inbox.prefs.cats[x.getAttribute("data-nt-cat")]=x.checked;save()}});
+  var rem=box.querySelector("#nt-rem");rem.onchange=function(){inbox.prefs.reminder.on=rem.checked;save();draw()};
+  var tm=box.querySelector("#nt-time");if(tm)tm.onchange=function(){inbox.prefs.reminder.time=tm.value||"19:00";save()};
+  Array.prototype.forEach.call(box.querySelectorAll("[data-nt-day]"),function(b){b.onclick=function(){var d=+b.getAttribute("data-nt-day"),ds=inbox.prefs.reminder.days,i=ds.indexOf(d);if(i>=0)ds.splice(i,1);else ds.push(d);ds.sort();save();draw()}});
+  var pb=box.querySelector("#nt-perm");if(pb)pb.onclick=function(){if(typeof Notification==="undefined")return;Notification.requestPermission().then(function(p){if(p==="granted")inbox.prefs.deviceOn=true;save();draw()}).catch(function(){draw()})};
+ }
+ draw();
+}
 /* Painel de Evolução: lê o estado local (trilha, pontos, dias feitos). Não grava nada. */
 function openPainel(period){var t=today(),trn=0;try{trn=CF.trophyCount(CFT.trophyRecords(trailCtx()))}catch(e){}
  var ach=Object.keys(S.achievements||{}).length,st=PAINEL.compute(S,t,{CF:CF,CFP:CFP,T:CFT},{trophies:trn,achievements:ach});
