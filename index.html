@@ -172,6 +172,7 @@ input{width:100%;border:2px solid var(--line);border-radius:14px;padding:12px;fo
 <link rel="stylesheet" href="wall.css">
 <link rel="stylesheet" href="trail.css">
 <link rel="stylesheet" href="painel.css">
+<link rel="stylesheet" href="desafios.css">
 </head>
 <body>
 <div id="splash" aria-hidden="true"><img src="splash.jpg" alt=""></div>
@@ -196,6 +197,7 @@ setTimeout(rm,1000);var i=s.querySelector("img");if(i)i.addEventListener("error"
 <script src="program.js"></script>
 <script src="trail.js"></script>
 <script src="painel.js"></script>
+<script src="desafios.js"></script>
 
 <script src="biblioteca-conteudo.js"></script>
 <script src="biblioteca.js"></script>
@@ -374,6 +376,7 @@ function renderHome(){var li=lvlInfo(),t=today(),a=S.active,b4=S.streak+"/"+S.be
  if($("pf"))$("pf").onclick=function(){if(window.CrowfitProfile)CrowfitProfile.open($("pf"))};if($("ach"))$("ach").onclick=function(){if(window.CrowWall)CrowWall.openPage("ach")};if($("tr"))$("tr").onclick=function(){if(window.CrowWall)CrowWall.openPage("tro")};
  if($("of"))$("of").onclick=openOfensivas;
 var pbBtn=$("of");if(pbBtn&&window.PAINEL&&!$("pn")){var pnb=document.createElement("button");pnb.type="button";pnb.id="pn";pnb.className=pbBtn.className;pnb.setAttribute("aria-label","Minha evolução");pnb.title="Minha evolução";pnb.innerHTML='<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M3 18V11M9 18V6M15 18V9M21 18V3" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg>';pbBtn.parentNode.insertBefore(pnb,pbBtn.nextSibling);pnb.onclick=function(){openPainel()}}
+var dgA=$("pn")||pbBtn;if(dgA&&window.CrowDesafios&&!$("dg")){var dgb=document.createElement("button");dgb.type="button";dgb.id="dg";dgb.className=dgA.className;dgb.setAttribute("aria-label","Desafios entre amigos");dgb.title="Desafios";dgb.innerHTML='<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M4 20V3M4 4h12l-3 4 3 4H4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>';dgA.parentNode.insertBefore(dgb,dgA.nextSibling);dgb.onclick=function(){openDesafios()}}
  CFT.mount($("trail"),trailCtx());if(window.CrowAmigos&&CrowAmigos.pushStats)CrowAmigos.pushStats()}
 
 /* ---------- Ofensivas (tela própria; calendário e detalhes entram nas próximas etapas) ---------- */
@@ -414,6 +417,10 @@ function ofClick(e){var b=e.target.closest&&e.target.closest("[data-nav],[data-d
  $("of-cal").innerHTML=ofCal(today())+nozHTML(today());
  if(!b.hasAttribute("data-nav")){var n=$("of-cal").querySelector('[data-ds="'+OF.sel+'"]');if(n)n.focus({preventScroll:true})}
  else{var nb=$("of-cal").querySelector('[data-nav="'+b.getAttribute("data-nav")+'"]');if(nb)nb.focus({preventScroll:true})}}
+/* Desafios entre amigos: a tela busca tudo no servidor. Aqui só se abre e se volta. */
+function openDesafios(){view('<div id="dg-box"></div>');var A=window.CrowfitAuth,c=A&&A.getClient?A.getClient():null,box=$("dg-box");window.scrollTo(0,0);
+ if(!c||!window.CrowDesafios){box.innerHTML='<div class="dg-wrap"><p class="dg-note">Entre na sua conta para usar os desafios.</p><div class="dg-row"><button type="button" class="btn sec" id="dg-bk">Voltar</button></div></div>';$("dg-bk").onclick=renderHome;return}
+ CrowDesafios.open(box,c,renderHome)}
 /* Painel de Evolução: lê o estado local (trilha, pontos, dias feitos). Não grava nada. */
 function openPainel(period){var t=today(),trn=0;try{trn=CF.trophyCount(CFT.trophyRecords(trailCtx()))}catch(e){}
  var ach=Object.keys(S.achievements||{}).length,st=PAINEL.compute(S,t,{CF:CF,CFP:CFP,T:CFT},{trophies:trn,achievements:ach});

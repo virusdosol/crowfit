@@ -1,0 +1,29 @@
+/* Desafios entre amigos: mesmo tema escuro do app. */
+.dg-wrap{padding:14px 16px 90px;max-width:560px;margin:0 auto}
+.dg-top{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.dg-top h2{margin:0;font-family:Fredoka,Nunito,sans-serif;font-size:22px}
+.dg-tabs{display:flex;gap:6px;overflow-x:auto;margin:8px 0 12px;padding-bottom:4px}
+.dg-tab{flex:0 0 auto;padding:8px 12px;border-radius:999px;border:1px solid var(--line,#2a2a2f);background:transparent;color:inherit;font:600 13px Nunito,sans-serif;cursor:pointer;white-space:nowrap}
+.dg-tab[aria-selected="true"]{background:#D92332;border-color:#D92332;color:#fff}
+.dg-new{width:100%;margin:0 0 12px}
+.dg-card{background:var(--card,#141418);border:1px solid var(--line,#2a2a2f);border-radius:18px;padding:14px;margin-bottom:12px}
+.dg-card header{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+.dg-card header b{font:700 16px Nunito,sans-serif}
+.dg-tag{font-size:12px;opacity:.7}
+.dg-sub{font-size:13px;opacity:.85;margin:6px 0}
+.dg-track{height:10px;border-radius:99px;background:var(--line,#2a2a2f);overflow:hidden;margin:8px 0 4px}
+.dg-track i{display:block;height:100%;background:#D92332;border-radius:99px}
+.dg-rank{list-style:none;padding:0;margin:8px 0 0}
+.dg-rank li{display:flex;justify-content:space-between;padding:7px 10px;border-radius:12px;background:rgba(255,255,255,.03);margin-bottom:6px;font-size:14px}
+.dg-rank li.me{border:1px solid #D92332}
+.dg-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.dg-row .btn{flex:1}
+.dg-empty{text-align:center;opacity:.8;padding:18px}
+.dg-note{font-size:12px;background:rgba(217,35,50,.12);border-radius:12px;padding:8px 10px;margin:8px 0}
+.dg-lbl{display:block;font:600 13px Nunito,sans-serif;margin:12px 0 6px}
+.dg-lbl input{display:block;width:100%;box-sizing:border-box;margin-top:6px;padding:10px;border-radius:12px;border:1px solid var(--line,#2a2a2f);background:transparent;color:inherit;font:15px Nunito,sans-serif}
+.dg-opts{display:flex;flex-wrap:wrap;gap:6px}
+.dg-opt{padding:8px 12px;border-radius:999px;border:1px solid var(--line,#2a2a2f);background:transparent;color:inherit;font:600 13px Nunito,sans-serif;cursor:pointer}
+.dg-opt[aria-pressed="true"]{background:#D92332;border-color:#D92332;color:#fff}
+.dg-chk{display:flex;align-items:center;gap:8px;padding:8px 0;font-size:14px}
+@media (prefers-reduced-motion:reduce){.dg-track i{transition:none}}
