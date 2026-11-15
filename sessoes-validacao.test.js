@@ -115,3 +115,22 @@ describe("referência do cálculo de sequência", () => {
     assert.equal(longestRun(["2026-10-31", "2026-11-01"]), 2);
   });
 });
+
+describe("paridade da curva de nível (SQL x JS)", () => {
+  const C = require("./core.js");
+  const sqlNeed = fnBody("cf_xp_need");
+  test("a fórmula do servidor usa os mesmos parâmetros de XP_LEVEL", () => {
+    assert.match(sqlNeed, new RegExp("\\(" + C.XP_LEVEL.base + " \\+ " + C.XP_LEVEL.factor + " \\* (pg_catalog\\.)?power"));
+    assert.match(sqlNeed, new RegExp(String(C.XP_LEVEL.expo).replace(".", "\\.") + "::double"));
+  });
+  test("o servidor limita o nível em 64", () => {
+    assert.match(fnBody("cf_level_for"), new RegExp("l >= " + C.XP_LEVEL.max));
+  });
+  test("passos calculados no SQL (fórmula equivalente) batem com o cliente nos níveis 1 a 64", () => {
+    for (let l = 1; l <= 64; l++) {
+      const x = C.XP_LEVEL.base + C.XP_LEVEL.factor * Math.pow(l - 1, C.XP_LEVEL.expo);
+      const sqlStyle = Math.floor(x / 5 + 0.5) * 5;   /* o que o SQL calcula */
+      assert.equal(sqlStyle, C.xpNeed(l), "nível " + l);
+    }
+  });
+});

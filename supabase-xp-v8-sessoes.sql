@@ -23,9 +23,9 @@
 --      - 5 XP por série concluída (chave set:DATA:EXERCICIO:ORDEM);
 --      - 10 XP de bônus ao terminar o grupo de séries do exercício (grp:DATA:EXERCICIO);
 --      - 50 XP ao terminar o treino completo (sess:DATA), só se houve exercício pago.
---   G) CURVA DE NÍVEL (lote 4): base 2349, crescimento 1,10. Nível máximo = 64, com o
---      XP acumulado até o 64 em cerca de 9,5 milhões (abaixo do teto de 10.000.000).
---      cf_xp_need é reescrita para bater com core.js (XP_LEVEL).
+--   G) CURVA DE NÍVEL (lote 5): base 350, factor 18, expo 1,2. Nível máximo 64.
+--      XP acumulado até o 64: cerca de 95 mil (~476 treinos de 200 XP).
+--      cf_xp_need e cf_level_for são reescritas; o nível guardado é recalculado.
 --   H) NOZ DOURADA (box_config): ganho reduzido pela metade (base 15, por nível 30).
 --      Série só paga se marcada como completed. Exercício com mais de 20 séries não paga.
 --   E) Estatísticas competitivas são DERIVADAS no servidor, por trigger em user_progress:
@@ -208,7 +208,8 @@ create trigger cf_guard_progress
   for each row execute function public.cf_guard_progress();
 
 -- ---------------------------------------------------------------------
--- 2c) Curva de nível (lote 4): mesma fórmula de core.js (XP_LEVEL: base 2349, crescimento 1,10)
+-- 2c) Curva de nível (lote 5): base + factor x (nível-1)^expo, arredondada a múltiplos de 5.
+--     Mesma fórmula de core.js (XP_LEVEL: base 350, factor 18, expo 1.2). Nível máximo: 64.
 -- ---------------------------------------------------------------------
 create or replace function public.cf_xp_need(l integer)
 returns integer
@@ -218,9 +219,37 @@ strict
 parallel safe
 set search_path = ''
 as $$
-  select (pg_catalog.floor(2349 * pg_catalog.power(1.10::double precision, l - 1) / 5 + 0.5))::integer * 5
+  select (pg_catalog.floor((350 + 18 * pg_catalog.power((l - 1)::double precision, 1.2::double precision)) / 5 + 0.5))::integer * 5
 $$;
 revoke all on function public.cf_xp_need(integer) from public, anon, authenticated;
+
+create or replace function public.cf_level_for(points integer)
+returns integer
+language plpgsql
+immutable
+strict
+parallel safe
+set search_path = ''
+as $$
+declare
+  l   integer := 1;
+  acc bigint  := 0;
+  n   integer;
+begin
+  loop
+    exit when l >= 64;                       -- nível máximo
+    n := public.cf_xp_need(l);
+    exit when acc + n > points;
+    acc := acc + n;
+    l := l + 1;
+  end loop;
+  return l;
+end;
+$$;
+revoke all on function public.cf_level_for(integer) from public, anon, authenticated;
+
+-- Recalcula o nível guardado (coluna gerada e armazenada) com a curva nova.
+update public.user_progress set points = points;
 
 -- ---------------------------------------------------------------------
 -- 2d) Noz Dourada: ganho pela metade (parâmetros do servidor)
@@ -385,6 +414,6 @@ select
   and position('exercise_catalog' in pg_get_functiondef('public.upsert_my_sessions(jsonb)'::regprocedure)) > 0
   and position('v_existed' in pg_get_functiondef('public.upsert_my_sessions(jsonb)'::regprocedure)) > 0
   and position('set:' in pg_get_functiondef('public.upsert_my_sessions(jsonb)'::regprocedure)) > 0
-  and public.cf_xp_need(1) = 2350
+  and public.cf_xp_need(1) = 350 and public.cf_xp_need(64) = 2945
   and (select value from public.box_config where key = 'xp_base') = 15
   as v8_aplicada;

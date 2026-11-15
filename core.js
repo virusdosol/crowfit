@@ -255,11 +255,13 @@ function nozWeeks(S, today) {
 function nozOpened(S, sat) { return typeof S.nozes[sat] === "number"; }
 /* ---- XP e níveis (experiência acumulada do usuário) ----
    Não confundir com o "nível de treino" (levelFor), que define a dificuldade do plano.
-   Curva exponencial: XP para subir do nível l ao l+1 = base * growth^(l-1), arredondado a múltiplos de 5.
-   Ex.: 2350, 2585, 2845, 3130... Nível máximo 64: a soma até o 64 fica abaixo do teto de 10.000.000 de pontos. */
+   Curva suave: XP para subir do nível l ao l+1 = base + factor x (l-1)^expo, arredondado a múltiplos de 5.
+   Ex.: 350, 370, 395, 425... cada nível custa um pouco mais que o anterior. Nível máximo: XP_LEVEL.max (64). */
 var XP_LEVEL = {
-  base: 2349,
-  growth: 1.10,
+  base: 350,
+  factor: 18,
+  expo: 1.2,
+  max: 64,
   titles: [
     { from: 1, name: "Iniciante" },
     { from: 5, name: "Aprendiz" },
@@ -270,7 +272,8 @@ var XP_LEVEL = {
 };
 /* Valida a configuração (lança erro se algo estiver fora da regra). Roda uma vez ao carregar. */
 function checkXpConfig(cfg) {
-  if (!isInt(cfg.base, 1, 100000) || typeof cfg.growth !== "number" || !(cfg.growth >= 1 && cfg.growth <= 3)) throw new Error("curva de XP inválida");
+  if (!isInt(cfg.base, 1, 100000) || typeof cfg.factor !== "number" || !(cfg.factor >= 0 && cfg.factor <= 10000) ||
+      typeof cfg.expo !== "number" || !(cfg.expo >= 1 && cfg.expo <= 3) || !isInt(cfg.max, 2, 1000)) throw new Error("curva de XP inválida");
   if (!Array.isArray(cfg.titles) || !cfg.titles.length || cfg.titles[0].from !== 1) throw new Error("o primeiro título começa no nível 1");
   for (var i = 0; i < cfg.titles.length; i++) {
     var t = cfg.titles[i];
@@ -281,9 +284,9 @@ function checkXpConfig(cfg) {
 }
 checkXpConfig(XP_LEVEL);
 /* XP para subir do nível l ao l+1, e XP acumulado no início do nível l (cada um depende só da configuração). */
-function xpNeed(l) { return Math.round(XP_LEVEL.base * Math.pow(XP_LEVEL.growth, l - 1) / 5) * 5; }   /* arredonda para múltiplos de 5 */
+function xpNeed(l) { return Math.round((XP_LEVEL.base + XP_LEVEL.factor * Math.pow(l - 1, XP_LEVEL.expo)) / 5) * 5; }   /* arredonda para múltiplos de 5 */
 function xpStart(l) { var t = 0; for (var k = 1; k < l; k++) t += xpNeed(k); return t; }
-function xpLevelOf(points) { var l = 1; while (xpStart(l + 1) <= points && l < 100000) l++; return l; }
+function xpLevelOf(points) { var l = 1; while (l < XP_LEVEL.max && xpStart(l + 1) <= points) l++; return l; }
 function titleOf(level) {
   var name = XP_LEVEL.titles[0].name;
   XP_LEVEL.titles.forEach(function (t) { if (level >= t.from) name = t.name; });
@@ -292,7 +295,8 @@ function titleOf(level) {
 /* Situação do XP: nível, progresso dentro do nível e título. Não guarda nada: é derivado de points. */
 function xpLevelInfo(points) {
   var l = xpLevelOf(points), start = xpStart(l), into = points - start, need = xpNeed(l);
-  return { level: l, points: points, into: into, need: need, pct: into / need * 100, title: titleOf(l), nextAt: xpStart(l + 1) };
+  var maxed = l >= XP_LEVEL.max;
+  return { level: l, points: points, into: into, need: need, pct: maxed ? 100 : into / need * 100, title: titleOf(l), nextAt: maxed ? null : xpStart(l + 1), max: maxed };
 }
 /* Eventos de subida de nível entre dois totais de XP (para futuras conquistas). Função pura: não grava nada. */
 function levelUpEvents(before, after) {
