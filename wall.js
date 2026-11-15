@@ -94,15 +94,21 @@ function bibFavs() { try { var a = JSON.parse(localStorage.getItem("crowfit-bib-
 var bibPulled = false;
 function bibClient() { return root.CrowfitAuth && root.CrowfitAuth.getClient ? root.CrowfitAuth.getClient() : null; }
 /* Envia a lista local inteira para a conta. Erros não travam o app: a lista local continua valendo. */
+function bibDirty(v) { try { if (v === undefined) return localStorage.getItem("crowfit-bib-dirty") === "1"; localStorage.setItem("crowfit-bib-dirty", v ? "1" : "0"); } catch (e) {} return v; }
 function bibSync() {
   var c = bibClient(); if (!c) return;
-  c.rpc("replace_my_favorites", { p: { ids: bibFavs() } }).then(function (r) { if (r.error) console.warn("Crowfit: favoritos não sincronizados", r.error.message); }).catch(function () {});
+  bibDirty(true);
+  c.rpc("replace_my_favorites", { p: { ids: bibFavs() } }).then(function (r) {
+    if (r.error) { console.warn("Crowfit: favoritos não sincronizados", r.error.message); return; }
+    bibDirty(false);
+  }).catch(function () {});
 }
 /* Puxa da conta. Se a conta está vazia e o aparelho tem favoritos (primeiro uso), envia os locais. */
 function bibPull() {
   var c = bibClient(); if (!c) return;
   c.rpc("get_my_favorites").then(function (r) {
     if (r.error || !Array.isArray(r.data)) return;
+    if (bibDirty()) return bibSync();   /* alteração feita sem rede: envia antes de puxar, para não perder */
     if (r.data.length === 0 && bibFavs().length > 0) return bibSync();
     try { localStorage.setItem("crowfit-bib-fav", JSON.stringify(r.data)); } catch (e) {}
     if (curPage && curPage.kind === "bib") renderPage();
