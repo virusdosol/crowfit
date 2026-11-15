@@ -441,6 +441,39 @@ function ntScan(){if(!curUid||!window.NOTIF)return;var c=ntClock(),inbox=ntLoad(
   var inb=ntLoad(),b2=ntIds(inb);NOTIF.scanSocial(inb,r[0].data||{},r[1].data||{},c);ntFinish(inb,b2,c);
  }).catch(function(){});
 }
+/* Configurações > Notificações: liga/desliga por categoria, lembrete (horário e dias) e aviso com o app fechado. Mesmo armazenamento da central. */
+function secNotif(host){
+  if(!document.getElementById("cf-sw-css")){var st=document.createElement("style");st.id="cf-sw-css";st.textContent=".cf-sw{position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid var(--line);cursor:pointer}.cf-sw span{font-size:16px}.cf-sw input{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}.cf-sw i{position:relative;flex:none;width:52px;height:30px;border-radius:999px;background:#C9C9D1;transition:background .2s}.cf-sw i:after{content:\"\";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .2s}.cf-sw input:checked+i{background:#D92332}.cf-sw input:checked+i:after{transform:translateX(22px)}.cf-sw input:disabled+i{opacity:.4}.cf-sw input:focus-visible+i{outline:2px solid #D92332;outline-offset:2px}.cf-sec-note{color:var(--mute);font-size:14px;margin:10px 0 0}.cf-lbl{display:block;margin:14px 0 6px;color:var(--mute);font-size:14px}";document.head.appendChild(st)}
+  var inbox=ntLoad(),p=inbox.prefs,perm=ntPerm();
+  function sw(label,attr,on,dis){return '<label class="cf-sw"><span>'+label+'</span><input type="checkbox" role="switch" '+attr+(on?' checked':'')+(dis?' disabled':'')+'><i></i></label>';}
+  var h='<div class="cf-notif">';
+  h+=sw("Treino",'data-cf-cat="training"',p.cats.training);
+  h+=sw("Amigos",'data-cf-cat="social"',p.cats.social);
+  h+=sw("Recompensas",'data-cf-cat="rewards"',p.cats.rewards);
+  h+=sw("Lembrete de treino",'id="cf-rem"',p.reminder.on);
+  if(p.reminder.on){
+    h+='<div class="cf-rem-box"><label class="cf-lbl">Horário <input type="time" id="cf-time" value="'+String(p.reminder.time).replace(/[^0-9:]/g,'')+'"></label>'+
+       '<p class="cf-lbl">Dias</p><div class="nt-days">'+["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"].map(function(l,i){return '<button type="button" class="nt-day-b" data-cf-day="'+i+'" aria-pressed="'+(p.reminder.days.indexOf(i)>=0)+'">'+l+'</button>'}).join("")+'</div></div>';
+  }
+  var pushOn=!!(p.deviceOn&&perm==="granted");
+  h+=sw("Avisos com o app fechado",'id="cf-push"',pushOn,perm==="denied"||perm==="unsupported");
+  if(perm==="denied")h+='<p class="cf-sec-note">Bloqueado nas configurações do navegador. Libere lá para ativar.</p>';
+  else if(perm==="unsupported")h+='<p class="cf-sec-note">Não disponível neste navegador.</p>';
+  h+='<p class="cf-sec-note">No máximo '+NOTIF.MAX_DEVICE_PER_DAY+' avisos por dia.</p></div>';
+  host.innerHTML=h;
+  function save(){ntSave(inbox)}
+  Array.prototype.forEach.call(host.querySelectorAll("[data-cf-cat]"),function(x){x.onchange=function(){inbox.prefs.cats[x.getAttribute("data-cf-cat")]=x.checked;save()}});
+  var rem=host.querySelector("#cf-rem");rem.onchange=function(){inbox.prefs.reminder.on=rem.checked;save();secNotif(host)};
+  var tm=host.querySelector("#cf-time");if(tm)tm.onchange=function(){inbox.prefs.reminder.time=tm.value||"19:00";save()};
+  Array.prototype.forEach.call(host.querySelectorAll("[data-cf-day]"),function(b){b.onclick=function(){var d=+b.getAttribute("data-cf-day"),ds=inbox.prefs.reminder.days,i=ds.indexOf(d);if(i>=0)ds.splice(i,1);else ds.push(d);ds.sort();save();secNotif(host)}});
+  var pu=host.querySelector("#cf-push");
+  if(pu&&!pu.disabled)pu.onchange=function(){
+    var client=window.CrowfitAuth&&CrowfitAuth.getClient&&CrowfitAuth.getClient();
+    if(!window.NOTIFPUSH||!client){pu.checked=!pu.checked;return;}
+    var op=pu.checked?NOTIFPUSH.enable(client):NOTIFPUSH.disable(client);
+    op.then(function(){inbox.prefs.deviceOn=pu.checked;save()}).catch(function(e){var m=e&&e.message;pu.checked=!pu.checked;alert(m==="permission_denied"?"Permissão negada no navegador.":"Não foi possível alterar: "+(m||"erro"))});
+  };
+}
 function openNotifs(){var inbox=ntLoad(),c=ntClock();view('<div id="nt-box"></div>');var box=$("nt-box");window.scrollTo(0,0);
  function save(){ntSave(inbox);ntBadge(NOTIF.unread(inbox))}
  function go(a){if(a==="painel")openPainel();else if(a==="ofensivas")openOfensivas();else renderHome()}
@@ -563,7 +596,7 @@ function finish(){var a=S.active,st=CF.finishSession(S,a,Date.now(),today());S.a
 if(window.CrowfitProfile){
  /* Perfil lê nível e XP daqui (mesma fonte da home: S.points e lvlInfo). Sem conta carregada, devolve null. */
  CrowfitProfile.setStats(function(){return S&&S.profile?{level:lvlInfo().l,points:S.points}:null});
- CrowfitProfile.setSections(function(name,host,api){if(!S)return;if(name==="train")secTrain(host,api);else if(name==="data")secData(host,api)});
+ CrowfitProfile.setSections(function(name,host,api){if(!S)return;if(name==="train")secTrain(host,api);else if(name==="data")secData(host,api);else if(name==="notif")secNotif(host,api)});
  CrowfitProfile.setOnClose(function(){if(homeStale&&S&&S.profile){homeStale=false;renderHome()}})}
 /* Sincronização (supabase-sync.js): só lê/grava a conta ativa; respostas atrasadas de outra conta são descartadas pela geração (gen). */
 if(window.CFSync)CFSync.attach({state:function(){return S&&curUid&&!blocked?{S:S,uid:curUid,gen:gen}:null},save:save,today:today,
