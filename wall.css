@@ -223,3 +223,15 @@ body.cw-home .cw-bar{display:grid}
 .tr-eqbtn { height: 34px; padding: 0 10px; font-size: 13px; }
 .tr-back { margin-bottom: 6px; }
 @media (prefers-reduced-motion: reduce) { .tr-body, .tr-bar i { transition: none; } }
+
+/* Barra superior: todos os ícones no mesmo tamanho; a chama segue o tamanho dos outros */
+.top .pf, .top .achb, .top .trb, .top .ofb { height: 44px; min-width: 44px; display: flex; align-items: center; justify-content: center; gap: 4px; }
+.top .pf img, .top .achb svg, .top .trb svg { width: 28px; height: 28px; display: block; }
+.top .ofi { font-size: 26px; line-height: 1; display: inline-block; }
+.top .ofb, .top .trb { font: 800 20px Fredoka, Nunito, sans-serif; color: #17171C; }
+.top .trb b, .top .ofb { font-weight: 800; }
+/* Voltar: só uma seta, sem texto */
+.cw-back-ico { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 12px; background: none; color: #17171C; cursor: pointer; }
+.cw-back-ico svg { display: block; }
+.cw-back-ico:focus-visible { outline: 3px solid #E3182D; outline-offset: 2px; }
+.cf-topbar[hidden] { display: none !important; }

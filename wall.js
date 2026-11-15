@@ -82,7 +82,7 @@ function openPage(kind) {
   if (kind === "bib") bibSt = { view: "cats" };
   if (kind === "tro") { trSt.last = null; trSt.focusQ = false; }
   var el = doc.createElement("div"); el.className = "cw-full"; el.setAttribute("role", "dialog");
-  el.innerHTML = '<div class="cf-bar cf-topbar"><button type="button" class="cf-back" data-full-close>← Voltar</button></div><div class="cw-pagebody"></div>';
+  el.innerHTML = '<div class="cf-bar cf-topbar"><button type="button" class="cw-back-ico" data-full-close aria-label="Voltar"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button></div><div class="cw-pagebody"></div>';
   doc.body.appendChild(el);
   curPage = { kind: kind, el: el };
   el.querySelector("[data-full-close]").addEventListener("click", function () { if (typeof root.renderHome === "function") root.renderHome(); closePage(); });
@@ -98,6 +98,8 @@ function renderPage() {
   if (k === "tro" && body) { if (trSt.last !== null) trSt.sc[trSt.last] = body.scrollTop; }
   var html = k === "ach" ? pageAch() : k === "app" ? pageApp() : k === "tro" ? pageTro() : k === "noz" ? pageNoz() : k === "bib" ? pageBib() : pageLevel();
   body.innerHTML = html;
+  var topb = curPage.el.querySelector(".cf-topbar");
+  if (topb) topb.hidden = (k === "tro" && trSt.view === "cat" && !CFTrL.norm(trSt.q)) || (k === "bib" && bibSt.view !== "cats");
   if (k === "tro") {
     trSt.last = trKey(); body.scrollTop = trSt.sc[trKey()] || 0;
     if (trSt.focusQ) { var qi = body.querySelector("[data-tr-q]"); trSt.focusQ = false; if (qi) { qi.focus(); try { qi.setSelectionRange(qi.value.length, qi.value.length); } catch (e) {} } }
@@ -169,7 +171,7 @@ function pageTro() {
   } else if (trSt.view === "cat" && trSt.cat) {
     var cat = cats.filter(function (c) { return c.id === trSt.cat; })[0];
     var list = rows.filter(function (r) { return cat && cat.ids.indexOf(r.id) >= 0 && CFTrL.matches(r, trSt.f); });
-    body = '<button type="button" class="cf-back tr-back" data-act="tr-back">← Categorias</button>' +
+    body = '<button type="button" class="cw-back-ico tr-back" data-act="tr-back" aria-label="Voltar às categorias"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>' +
       '<h3 class="tr-cat-t">' + esc(cat ? cat.n : "") + '</h3>' + chips +
       (list.length ? '<div class="tr-list">' + list.map(function (r) { return trCard(r, eq); }).join("") + '</div>' : '<p class="cw-hint">Nenhum exercício nesse filtro.</p>');
   } else {

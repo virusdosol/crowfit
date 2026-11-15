@@ -36,7 +36,7 @@
   /* state: { view: "cats" | "cat" | "ex", cat: id, ex: id } */
   function html(LIB, TXT, state) {
     state = state || { view: "cats" };
-    var back = '<button type="button" class="cf-back bib-back" data-act="bib-back">← Voltar</button>';
+    var back = '<button type="button" class="cw-back-ico bib-back" data-act="bib-back" aria-label="Voltar"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>';
     if (state.view === "ex" && LIB[state.ex]) {
       var e = LIB[state.ex], t = TXT[state.ex] || ["", "", ""];
       var passos = t[0].split(" | ").map(function (p) { return "<li>" + esc(p) + "</li>"; }).join("");
