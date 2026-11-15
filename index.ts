@@ -6,7 +6,7 @@
 // STATUS: não testado aqui. Testar no projeto de TESTE antes da produção.
 import webpush from "npm:web-push@3.6.7";
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { selectToSend, pushPayload } from "./select.js";
+import { selectToSend, pushPayload } from "./select.ts";
 
 const MAX_PER_DAY = 3;      /* mesmo limite da central */
 const WINDOW_HOURS = 72;    /* só envia eventos recentes: nada de avisos antigos */
