@@ -101,6 +101,41 @@ async function load() {
     box.innerHTML = '<p class="am-flash" role="alert">' + esc(msgFor(e)) + '</p>';
   }
 }
+/* Envia ofensiva atual e troféus para o servidor (só quando mudam). Usa CF.trophyCatalog/CF.trophyCount já existentes. */
+var lastPush = "";
+function statsPayload() {
+  var st = root.S, CFx = root.CF, T = root.CFT, P = root.CFP;
+  if (!st || !CFx || !T || !P || !root.trailCtx) return null;
+  var recs = T.trophyRecords(root.trailCtx()), kinds = {}, levels = {};
+  Object.keys(P.LIB).forEach(function (id) { kinds[id] = P.LIB[id][1] === "s" ? "s" : "r"; });
+  CFx.trophyCatalog(recs, kinds).forEach(function (r) {
+    var w = r.levels.filter(function (l) { return l.unlocked; }).length;
+    if (w) levels[r.id] = w;
+  });
+  return { streak: Math.max(0, st.streak | 0), trophies: CFx.trophyCount(recs), levels: levels };
+}
+async function pushStats() {
+  try {
+    var p = statsPayload(); if (!p) return;
+    var key = JSON.stringify(p); if (key === lastPush) return;
+    var c = client(); if (!c) return;
+    var r = await c.rpc("set_my_social_stats", { p: p });
+    if (!r.error) lastPush = key;
+  } catch (e) { /* tenta de novo na próxima vez */ }
+}
+
+/* Conquistas e troféus do amigo (só leitura). Nomes vêm do catálogo do app. */
+function amigoExtras(p) {
+  var CFc = root.CF || {}, ach = (CFc.ACH || []), nomes = {};
+  ach.forEach(function (a) { nomes[a.id] = a.name; });
+  var TRN = ["Bronze", "Prata", "Ouro", "Diamante"];
+  var conq = (p.achievements || []).map(function (id) { return nomes[id] || null; }).filter(Boolean);
+  var tro = (p.trophies || []).slice(0, 12);
+  return '<h3 class="am-sec">Conquistas (' + (p.achievements || []).length + ')</h3>' +
+    (conq.length ? '<ul class="am-tags">' + conq.map(function (n) { return '<li>' + esc(n) + '</li>'; }).join("") + '</ul>' : '<p class="am-hint">Nenhuma conquista ainda.</p>') +
+    '<h3 class="am-sec">Troféus</h3>' +
+    (tro.length ? '<ul class="am-tags">' + tro.map(function (t) { return '<li>' + esc(t.ex.replace(/_/g, " ")) + ' · ' + esc(TRN[t.lv - 1] || "") + '</li>'; }).join("") + '</ul>' : '<p class="am-hint">Nenhum troféu ainda.</p>');
+}
 /* Perfil de um amigo: só leitura, não mexe nos dados da própria conta. */
 function fmtDia(iso) { if (!iso) return "ainda não treinou"; var p = String(iso).split("-"); return p.length === 3 ? p[2] + "/" + p[1] + "/" + p[0] : iso; }
 async function loadPerfil() {
@@ -111,7 +146,11 @@ async function loadPerfil() {
       '<section class="am-perfil"><h2>' + esc(p.name || "Atleta") + '</h2><p class="am-perfil-h">@' + esc(p.handle) + '</p>' +
       '<div class="am-stats"><div><b>Nv ' + esc(p.level) + '</b><span>nível</span></div>' +
       '<div><b>' + esc(p.xp) + '</b><span>XP total</span></div>' +
+      '<div><b>' + esc(p.trophies || 0) + '</b><span>troféus</span></div>' +
+      '<div><b>' + esc(p.streak || 0) + '</b><span>ofensiva atual</span></div>' +
+      '<div><b>' + esc(p.current_streak || 0) + '</b><span>ofensiva atual</span></div>' +
       '<div><b>' + esc(p.best_streak) + '</b><span>melhor ofensiva</span></div></div>' +
+      amigoExtras(p) +
       '<p class="am-hint">Último treino: ' + esc(fmtDia(p.last_workout)) + '</p>' +
       '<p class="am-hint">Amigos desde ' + esc(fmtDia(p.since)) + '</p></section>';
   } catch (e) {
@@ -124,16 +163,17 @@ async function loadPerfil() {
 function rankingHtml() {
   var rows = (lastLb && lastLb.rows) || [];
   if (rows.length < 2) return '<p class="am-hint">Adicione amigos para ver a classificação.</p>';
+  var key = { xp: "xp", streak: "streak", trophies: "trophies" }[rankMode] || "xp";
   var sorted = rows.slice().sort(function (a, b) {
-    var ka = rankMode === "streak" ? a.best_streak : a.xp, kb = rankMode === "streak" ? b.best_streak : b.xp;
-    return (kb - ka) || (a.handle < b.handle ? -1 : a.handle > b.handle ? 1 : 0);
+    return ((b[key] || 0) - (a[key] || 0)) || ((b.xp || 0) - (a.xp || 0)) || (a.handle < b.handle ? -1 : a.handle > b.handle ? 1 : 0);
   });
   var me = sorted.findIndex(function (r) { return r.me; });
   var tabs = '<div class="am-tabs" role="group" aria-label="Critério">' +
     '<button type="button" class="am-tab' + (rankMode === "xp" ? " on" : "") + '" data-act="rank" data-m="xp">XP</button>' +
-    '<button type="button" class="am-tab' + (rankMode === "streak" ? " on" : "") + '" data-act="rank" data-m="streak">Ofensiva</button></div>';
+    '<button type="button" class="am-tab' + (rankMode === "streak" ? " on" : "") + '" data-act="rank" data-m="streak">Ofensiva</button>' +
+    '<button type="button" class="am-tab' + (rankMode === "trophies" ? " on" : "") + '" data-act="rank" data-m="trophies">Troféus</button></div>';
   var list = sorted.map(function (r, i) {
-    var val = rankMode === "streak" ? r.best_streak + " dias" : r.xp + " XP";
+    var val = rankMode === "streak" ? (r.streak || 0) + " dias" : rankMode === "trophies" ? (r.trophies || 0) + " troféus" : r.xp + " XP";
     return '<li class="am-rk' + (r.me ? " me" : "") + '"><b>' + (i + 1) + '</b><span class="am-rk-w">' + esc(r.name || "Atleta") + '<small>@' + esc(r.handle) + '</small></span><span class="am-rk-v">' + esc(val) + '</span></li>';
   }).join("");
   var foot = me >= 0 ? '<p class="am-hint">Você está em ' + (me + 1) + 'º de ' + sorted.length + '.</p>' : "";
@@ -155,7 +195,7 @@ function onClick(ev) {
   var a = b.getAttribute("data-act"), h = b.getAttribute("data-h");
   if (a === "perfil") { view = { h: h }; box.innerHTML = '<p class="cw-empty">Carregando…</p>'; return load(); }
   if (a === "voltar") { view = null; return load(); }
-  if (a === "rank") { rankMode = b.getAttribute("data-m") === "streak" ? "streak" : "xp"; box.innerHTML = html(lastData); return; }
+  if (a === "rank") { var m = b.getAttribute("data-m"); rankMode = m === "streak" || m === "trophies" ? m : "xp"; box.innerHTML = html(lastData); return; }
   if (a === "copy") {
     var txt = "@" + (box.querySelector(".am-id b") || { textContent: "" }).textContent.replace(/^@/, "");
     try { root.navigator.clipboard.writeText(txt); flash = "ID copiado."; } catch (e) { flash = "Copie seu ID: " + txt; }
@@ -204,5 +244,5 @@ function mount(el) {
   load();
 }
 
-return { mount: mount, validHandle: validHandle, normHandle: normHandle, msgFor: msgFor, MSG: MSG };
+return { mount: mount, validHandle: validHandle, normHandle: normHandle, msgFor: msgFor, MSG: MSG, pushStats: pushStats };
 });

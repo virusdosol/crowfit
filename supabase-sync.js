@@ -372,6 +372,7 @@ function create(envIn) {
         if (!sameUser()) return;
         var r = await client.rpc("merge_my_progress", { p: b.payload }); if (!alive()) return;
         if (r.error) throw r.error;
+        try { await client.rpc("set_my_current_streak", { p: { current_streak: Math.min(100000, Math.max(0, S0.streak | 0)) } }); } catch (e) { /* a ofensiva atual é tentada de novo no próximo envio */ }
         row = Array.isArray(r.data) ? r.data[0] : r.data; if (!row || typeof row !== "object") throw new Error("resposta_invalida");
       }
       for (var i = 0; i < ps.items.length; i += BATCH) {

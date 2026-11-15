@@ -283,6 +283,21 @@ function act(kind, el) {
   if (kind === "box") return openBoxNow(el.getAttribute("data-box"));
   if (kind === "noz") { var k = String(el.getAttribute("data-box")).replace(/^noz:/, ""); closePage(); if (typeof root.openNozScreen === "function") root.openNozScreen(k); }
 }
+/* Envia ao servidor o nível de cada troféu (para o perfil dos amigos). Só envia quando muda. */
+var lastTrophyKey = null;
+function syncTrophies() {
+  try {
+    var A = root.CrowfitAuth, c = A && A.getClient ? A.getClient() : null; if (!c) return;
+    var items = trophyRows().filter(function (r) { return r.levels.some(function (l) { return l.unlocked; }); }).map(function (r) {
+      var won = r.levels.filter(function (l) { return l.unlocked; }).length;
+      return { ex: r.id, lv: won, value: Math.min(100000000, Math.max(0, Math.round(r.value || 0))) };
+    });
+    var key = JSON.stringify(items);
+    if (key === lastTrophyKey) return;
+    lastTrophyKey = key;
+    c.rpc("set_my_trophies", { p: { items: items } }).then(function (r) { if (r.error) lastTrophyKey = null; }).catch(function () { lastTrophyKey = null; });
+  } catch (e) { /* tenta de novo na próxima atualização */ }
+}
 function markBibIntro() { try { localStorage.setItem("crowfit-bib-intro", "1"); } catch (e) {} }
 function openBoxNow(id) {
   var res = CF().openBox(S(), id, new Date().toISOString());
@@ -358,5 +373,5 @@ function init() {
   if (root.CrowfitProfile && typeof root.CrowfitProfile.setExtras === "function") root.CrowfitProfile.setExtras(profileHtml);
 }
 if (doc) { if (doc.readyState === "loading") doc.addEventListener("DOMContentLoaded", init); else init(); }
-return { openPage: openPage, openLevel: openLevel, go: openPage, onAchievement: onAchievement, celebrate: celebrate, lvIco: lvIco, profileHtml: profileHtml };
+return { syncTrophies: syncTrophies, openPage: openPage, openLevel: openLevel, go: openPage, onAchievement: onAchievement, celebrate: celebrate, lvIco: lvIco, profileHtml: profileHtml };
 });

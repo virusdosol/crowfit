@@ -274,3 +274,5 @@ body.cw-home .cw-bar{display:grid}
 .am-stats div { display: flex; flex-direction: column; align-items: center; padding: 12px 6px; border-radius: 16px; background: #F8F8FB; }
 .am-stats b { font: 800 17px Nunito, sans-serif; color: #17171C; }
 .am-stats span { font: 700 11px Nunito, sans-serif; color: #6A6A75; text-align: center; }
+.am-tags { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.am-tags li { padding: 6px 10px; border-radius: 99px; background: #F8F8FB; font: 700 12px Nunito, sans-serif; color: #303036; }
