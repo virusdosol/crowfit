@@ -276,3 +276,16 @@ body.cw-home .cw-bar{display:grid}
 .am-stats span { font: 700 11px Nunito, sans-serif; color: #6A6A75; text-align: center; }
 .am-tags { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .am-tags li { padding: 6px 10px; border-radius: 99px; background: #F8F8FB; font: 700 12px Nunito, sans-serif; color: #303036; }
+
+/* Fase 3: perfil social e classificação com acesso ao perfil */
+.am-rk { display: block; padding: 0; background: transparent; }
+.am-rk-btn { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; border: 0; border-radius: 16px; background: #F8F8FB; text-align: left; cursor: pointer; font: inherit; color: inherit; }
+.am-rk-btn b { font: 800 15px Nunito, sans-serif; color: #17171C; }
+.am-rk-w { font: 800 14px Nunito, sans-serif; color: #17171C; display: flex; flex-direction: column; }
+.am-rk-w small { font: 700 12px Nunito, sans-serif; color: #6A6A75; }
+.am-rk-v { font: 800 13px Nunito, sans-serif; color: #303036; white-space: nowrap; }
+.am-rk.me .am-rk-btn { outline: 2px solid #E3182D; background: #fff; }
+.am-rk-btn:focus-visible { outline: 3px solid #E3182D; outline-offset: 2px; }
+.am-tag { display: inline-block; vertical-align: middle; margin-left: 6px; padding: 3px 9px; border-radius: 99px; background: #E3182D; color: #fff; font: 800 11px Nunito, sans-serif; }
+.am-perfil-acts { margin-top: 16px; }
+.am-meu { width: 100%; margin: 10px 0; }

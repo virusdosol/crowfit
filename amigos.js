@@ -73,7 +73,7 @@ function html(d) {
     ? '<form class="am-form am-add" data-form="find" novalidate><label>Encontrar jogador pelo ID<input name="handle" maxlength="21" autocomplete="off" autocapitalize="off" placeholder="@do_amigo"></label><button type="submit" class="am-btn am-pri">Buscar</button></form>' + foundCard()
     : '';
   return '<div class="cw-head"><h2>Amigos</h2><span>' + (d.friends || []).length + '</span></div>' +
-    idBlock + findForm + searchBox +
+    idBlock + (d.handle ? '<button type="button" class="am-btn am-pri am-meu" data-act="meu">Ver meu perfil</button>' : '') + findForm + searchBox +
     (flash ? '<p class="am-flash" role="status">' + esc(flash) + '</p>' : '') +
     rankingHtml() + (d.incoming && d.incoming.length ? section("Pedidos recebidos", d.incoming, function (p) {
       return row(p, '<button type="button" class="am-btn am-pri" data-act="accept" data-h="' + esc(p.handle) + '">Aceitar</button>' +
@@ -103,78 +103,114 @@ async function load() {
 }
 /* Envia ofensiva atual e troféus para o servidor (só quando mudam). Usa CF.trophyCatalog/CF.trophyCount já existentes. */
 var lastPush = "";
+/* Converte o catálogo de troféus do app no formato de set_my_trophies: { ex, lv (níveis desbloqueados, 1-4), value }. */
+function buildTrophyItems(catalog) {
+  return (catalog || []).map(function (r) {
+    var lv = (r.levels || []).filter(function (l) { return l.unlocked; }).length;
+    return { ex: String(r.id), lv: lv, value: Math.max(0, Math.floor(Number(r.value) || 0)) };
+  }).filter(function (i) { return i.lv >= 1 && i.lv <= 4; });
+}
 function statsPayload() {
   var st = root.S, CFx = root.CF, T = root.CFT, P = root.CFP;
   if (!st || !CFx || !T || !P || !root.trailCtx) return null;
-  var recs = T.trophyRecords(root.trailCtx()), kinds = {}, levels = {};
+  var recs = T.trophyRecords(root.trailCtx()), kinds = {};
   Object.keys(P.LIB).forEach(function (id) { kinds[id] = P.LIB[id][1] === "s" ? "s" : "r"; });
-  CFx.trophyCatalog(recs, kinds).forEach(function (r) {
-    var w = r.levels.filter(function (l) { return l.unlocked; }).length;
-    if (w) levels[r.id] = w;
-  });
-  return { streak: Math.max(0, st.streak | 0), trophies: CFx.trophyCount(recs), levels: levels };
+  return { streak: Math.max(0, st.streak | 0), items: buildTrophyItems(CFx.trophyCatalog(recs, kinds)) };
 }
+/* Envia ofensiva atual e troféus (v14: set_my_current_streak e set_my_trophies). Só envia quando algo muda. */
 async function pushStats() {
   try {
     var p = statsPayload(); if (!p) return;
     var key = JSON.stringify(p); if (key === lastPush) return;
     var c = client(); if (!c) return;
-    var r = await c.rpc("set_my_social_stats", { p: p });
-    if (!r.error) lastPush = key;
+    var r1 = await c.rpc("set_my_current_streak", { p: { current_streak: p.streak } });
+    if (r1.error) return;
+    var r2 = await c.rpc("set_my_trophies", { p: { items: p.items } });
+    if (!r2.error) lastPush = key;
   } catch (e) { /* tenta de novo na próxima vez */ }
 }
 
-/* Conquistas e troféus do amigo (só leitura). Nomes vêm do catálogo do app. */
-function amigoExtras(p) {
-  var CFc = root.CF || {}, ach = (CFc.ACH || []), nomes = {};
-  ach.forEach(function (a) { nomes[a.id] = a.name; });
-  var TRN = ["Bronze", "Prata", "Ouro", "Diamante"];
-  var conq = (p.achievements || []).map(function (id) { return nomes[id] || null; }).filter(Boolean);
+/* Perfil social (próprio ou de amigo). Dados vêm de get_friend_profile, que já recusa quem não é amigo.
+   Visível aos amigos: nome, ID, nível, XP, ofensiva atual e melhor, troféus, conquistas, último treino e data da amizade.
+   Nunca aparecem: e-mail, dados de login e configurações. */
+var TRN = ["Bronze", "Prata", "Ouro", "Diamante"];
+function nomeConquista(id) {
+  var ach = ((root.CF || {}).ACH || []), i;
+  for (i = 0; i < ach.length; i++) if (ach[i].id === id) return ach[i].name;
+  return null;
+}
+function totalTroféus(p) {
+  return (p.trophies || []).reduce(function (n, t) { return n + (t.lv | 0); }, 0);
+}
+function perfilHtml(p, isMe) {
+  var conq = (p.achievements || []).map(nomeConquista).filter(Boolean);
   var tro = (p.trophies || []).slice(0, 12);
-  return '<h3 class="am-sec">Conquistas (' + (p.achievements || []).length + ')</h3>' +
+  var acoes = isMe
+    ? '<button type="button" class="am-btn am-pri" data-act="editar">Editar nome e ID</button>'
+    : '<button type="button" class="am-btn" data-act="unfriend" data-h="' + esc(p.handle) + '">Remover amizade</button>';
+  return '<section class="am-perfil' + (isMe ? ' am-perfil-eu' : '') + '">' +
+    '<h2>' + esc(p.name || "Atleta") + (isMe ? ' <span class="am-tag">Você</span>' : '') + '</h2>' +
+    '<p class="am-perfil-h">@' + esc(p.handle) + '</p>' +
+    '<div class="am-stats">' +
+      '<div><b>Nv ' + esc(p.level) + '</b><span>nível</span></div>' +
+      '<div><b>' + esc(p.xp || 0) + '</b><span>XP total</span></div>' +
+      '<div><b>' + esc(totalTroféus(p)) + '</b><span>troféus</span></div>' +
+      '<div><b>' + esc(p.current_streak || 0) + '</b><span>ofensiva atual</span></div>' +
+      '<div><b>' + esc(p.best_streak || 0) + '</b><span>melhor ofensiva</span></div>' +
+      '<div><b>' + esc((p.achievements || []).length) + '</b><span>conquistas</span></div>' +
+    '</div>' +
+    '<h3 class="am-sec">Conquistas</h3>' +
     (conq.length ? '<ul class="am-tags">' + conq.map(function (n) { return '<li>' + esc(n) + '</li>'; }).join("") + '</ul>' : '<p class="am-hint">Nenhuma conquista ainda.</p>') +
     '<h3 class="am-sec">Troféus</h3>' +
-    (tro.length ? '<ul class="am-tags">' + tro.map(function (t) { return '<li>' + esc(t.ex.replace(/_/g, " ")) + ' · ' + esc(TRN[t.lv - 1] || "") + '</li>'; }).join("") + '</ul>' : '<p class="am-hint">Nenhum troféu ainda.</p>');
+    (tro.length ? '<ul class="am-tags">' + tro.map(function (t) { return '<li>' + esc(String(t.ex).replace(/_/g, " ")) + ' · ' + esc(TRN[t.lv - 1] || "") + '</li>'; }).join("") + '</ul>' : '<p class="am-hint">Nenhum troféu ainda.</p>') +
+    '<p class="am-hint">Último treino: ' + esc(fmtDia(p.last_workout)) + '</p>' +
+    '<p class="am-hint">' + (isMe ? 'Só seus amigos veem este perfil.' : 'Amigos desde ' + esc(fmtDia(p.since)) + '.') + '</p>' +
+    '<div class="am-acts am-perfil-acts">' + acoes + '</div>' +
+    '</section>';
 }
-/* Perfil de um amigo: só leitura, não mexe nos dados da própria conta. */
 function fmtDia(iso) { if (!iso) return "ainda não treinou"; var p = String(iso).split("-"); return p.length === 3 ? p[2] + "/" + p[1] + "/" + p[0] : iso; }
 async function loadPerfil() {
   try {
     var p = await call("get_friend_profile", { p: { handle: view.h } });
     box.innerHTML = '<button type="button" class="cw-back-ico am-voltar" data-act="voltar" aria-label="Voltar">' +
       '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>' +
-      '<section class="am-perfil"><h2>' + esc(p.name || "Atleta") + '</h2><p class="am-perfil-h">@' + esc(p.handle) + '</p>' +
-      '<div class="am-stats"><div><b>Nv ' + esc(p.level) + '</b><span>nível</span></div>' +
-      '<div><b>' + esc(p.xp) + '</b><span>XP total</span></div>' +
-      '<div><b>' + esc(p.trophies || 0) + '</b><span>troféus</span></div>' +
-      '<div><b>' + esc(p.streak || 0) + '</b><span>ofensiva atual</span></div>' +
-      '<div><b>' + esc(p.current_streak || 0) + '</b><span>ofensiva atual</span></div>' +
-      '<div><b>' + esc(p.best_streak) + '</b><span>melhor ofensiva</span></div></div>' +
-      amigoExtras(p) +
-      '<p class="am-hint">Último treino: ' + esc(fmtDia(p.last_workout)) + '</p>' +
-      '<p class="am-hint">Amigos desde ' + esc(fmtDia(p.since)) + '</p></section>';
+      perfilHtml(p, !!view.me);
   } catch (e) {
     view = null;
     box.innerHTML = '<p class="am-flash" role="alert">' + esc(msgFor(e)) + '</p>';
   }
 }
 
-/* Classificação entre amigos. Ordena por XP (padrão) ou melhor ofensiva. Em empate, ordem alfabética do ID. */
+/* Classificação entre amigos. Critérios: XP (padrão), melhor ofensiva e troféus (só se o servidor enviar troféus na lista).
+   Cada linha abre o perfil do jogador. Em empate, ordem alfabética do ID. */
+function rankKey(mode) { return mode === "streak" ? "best_streak" : mode === "trophies" ? "trophies" : "xp"; }
+function rankValue(r, mode) {
+  if (mode === "streak") return (r.best_streak || 0) + " dias";
+  if (mode === "trophies") return (r.trophies || 0) + " troféus";
+  return (r.xp || 0) + " XP";
+}
+function ordenaRank(rows, mode) {
+  var key = rankKey(mode);
+  return rows.slice().sort(function (a, b) {
+    return ((b[key] || 0) - (a[key] || 0)) || ((b.xp || 0) - (a.xp || 0)) || (a.handle < b.handle ? -1 : a.handle > b.handle ? 1 : 0);
+  });
+}
 function rankingHtml() {
   var rows = (lastLb && lastLb.rows) || [];
   if (rows.length < 2) return '<p class="am-hint">Adicione amigos para ver a classificação.</p>';
-  var key = { xp: "xp", streak: "streak", trophies: "trophies" }[rankMode] || "xp";
-  var sorted = rows.slice().sort(function (a, b) {
-    return ((b[key] || 0) - (a[key] || 0)) || ((b.xp || 0) - (a.xp || 0)) || (a.handle < b.handle ? -1 : a.handle > b.handle ? 1 : 0);
-  });
+  var temTroféus = rows.some(function (r) { return typeof r.trophies === "number"; });
+  var mode = (rankMode === "trophies" && !temTroféus) ? "xp" : rankMode;
+  var sorted = ordenaRank(rows, mode);
   var me = sorted.findIndex(function (r) { return r.me; });
   var tabs = '<div class="am-tabs" role="group" aria-label="Critério">' +
-    '<button type="button" class="am-tab' + (rankMode === "xp" ? " on" : "") + '" data-act="rank" data-m="xp">XP</button>' +
-    '<button type="button" class="am-tab' + (rankMode === "streak" ? " on" : "") + '" data-act="rank" data-m="streak">Ofensiva</button>' +
-    '<button type="button" class="am-tab' + (rankMode === "trophies" ? " on" : "") + '" data-act="rank" data-m="trophies">Troféus</button></div>';
+    '<button type="button" class="am-tab' + (mode === "xp" ? " on" : "") + '" data-act="rank" data-m="xp">XP</button>' +
+    '<button type="button" class="am-tab' + (mode === "streak" ? " on" : "") + '" data-act="rank" data-m="streak">Melhor ofensiva</button>' +
+    (temTroféus ? '<button type="button" class="am-tab' + (mode === "trophies" ? " on" : "") + '" data-act="rank" data-m="trophies">Troféus</button>' : '') +
+    '</div>';
   var list = sorted.map(function (r, i) {
-    var val = rankMode === "streak" ? (r.streak || 0) + " dias" : rankMode === "trophies" ? (r.trophies || 0) + " troféus" : r.xp + " XP";
-    return '<li class="am-rk' + (r.me ? " me" : "") + '"><b>' + (i + 1) + '</b><span class="am-rk-w">' + esc(r.name || "Atleta") + '<small>@' + esc(r.handle) + '</small></span><span class="am-rk-v">' + esc(val) + '</span></li>';
+    return '<li class="am-rk' + (r.me ? " me" : "") + '"><button type="button" class="am-rk-btn" data-act="perfil" data-h="' + esc(r.handle) + '" data-me="' + (r.me ? "1" : "") + '">' +
+      '<b>' + (i + 1) + '</b><span class="am-rk-w">' + esc(r.name || "Atleta") + (r.me ? " (você)" : "") + '<small>@' + esc(r.handle) + '</small></span>' +
+      '<span class="am-rk-v">' + esc(rankValue(r, mode)) + '</span></button></li>';
   }).join("");
   var foot = me >= 0 ? '<p class="am-hint">Você está em ' + (me + 1) + 'º de ' + sorted.length + '.</p>' : "";
   return '<h3 class="am-sec">Classificação</h3>' + tabs + '<ul class="am-rank">' + list + '</ul>' + foot;
@@ -193,7 +229,9 @@ function confirmar(texto) { try { return root.confirm ? !!root.confirm(texto) : 
 function onClick(ev) {
   var b = ev.target.closest && ev.target.closest("[data-act]"); if (!b) return;
   var a = b.getAttribute("data-act"), h = b.getAttribute("data-h");
-  if (a === "perfil") { view = { h: h }; box.innerHTML = '<p class="cw-empty">Carregando…</p>'; return load(); }
+  if (a === "perfil") { view = { h: h, me: b.getAttribute("data-me") === "1" || (lastData && h === lastData.handle) }; box.innerHTML = '<p class="cw-empty">Carregando…</p>'; return load(); }
+  if (a === "meu") { if (!lastData || !lastData.handle) return; view = { h: lastData.handle, me: true }; box.innerHTML = '<p class="cw-empty">Carregando…</p>'; return load(); }
+  if (a === "editar") { var P = root.CrowfitProfile; if (P && P.open) P.open(); return; }
   if (a === "voltar") { view = null; return load(); }
   if (a === "rank") { var m = b.getAttribute("data-m"); rankMode = m === "streak" || m === "trophies" ? m : "xp"; box.innerHTML = html(lastData); return; }
   if (a === "copy") {
@@ -206,7 +244,7 @@ function onClick(ev) {
   if (a === "remove") { if (!confirmar("Remover @" + h + " da sua lista de amigos?")) return; return act(function () { return call("remove_friend", { p: { handle: h } }); }, "Pronto."); }
   if (a === "ask") return act(function () { return call("send_friend_request", { p: { handle: h } }); }, "Pedido enviado.");
   if (a === "cancel") { if (!confirmar("Cancelar o pedido para @" + h + "?")) return; return act(function () { return call("remove_friend", { p: { handle: h } }); }, "Pedido cancelado."); }
-  if (a === "unfriend") { if (!confirmar("Remover @" + h + " da sua lista de amigos?")) return; return act(function () { return call("remove_friend", { p: { handle: h } }); }, "Amizade removida."); }
+  if (a === "unfriend") { if (!confirmar("Remover @" + h + " da sua lista de amigos?")) return; view = null; return act(function () { return call("remove_friend", { p: { handle: h } }); }, "Amizade removida."); }
 }
 function onSubmit(ev) {
   var f = ev.target; if (!f || !f.getAttribute) return;
@@ -244,5 +282,5 @@ function mount(el) {
   load();
 }
 
-return { mount: mount, validHandle: validHandle, normHandle: normHandle, msgFor: msgFor, MSG: MSG, pushStats: pushStats };
+return { mount: mount, validHandle: validHandle, normHandle: normHandle, msgFor: msgFor, MSG: MSG, pushStats: pushStats, perfilHtml: perfilHtml, buildTrophyItems: buildTrophyItems, ordenaRank: ordenaRank, rankValue: rankValue, rankKey: rankKey, totalTroféus: totalTroféus };
 });
