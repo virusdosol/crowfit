@@ -5,7 +5,7 @@
 "use strict";
 
 /* Preencher depois de gerar o par de chaves (ver instruções). Ex.: "BLx...". */
-var VAPID_PUBLIC_KEY = "BB4Ain0tXYpjZNsmHwKSmMqwI7nRJ4_vd6umNRI7wo19s4bIkv4oIr6uxkkI3-mqV7NV3nuQQQwbl7Eupzl5InI";
+var VAPID_PUBLIC_KEY = "BMwQQLHIdA-5l5Pj79zecWSj9L5sDTX-6iGE1WQspLphiKL5QJjl66bD1VVHD9d6uOODRfjpOlPNhix5ifHkHtk";
 
 function urlB64ToUint8Array(b64) {
   var pad = "=".repeat((4 - (b64.length % 4)) % 4);
