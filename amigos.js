@@ -13,6 +13,7 @@ var MSG = {
   request_not_found: "Esse pedido não existe mais.",
   too_many: "Limite de amigos atingido.",
   not_authenticated: "Entre na sua conta para usar amigos.",
+  handle_required: "Escolha seu ID antes de pedir amizade ou buscar jogadores.",
   profile_missing: "Seu perfil ainda não está pronto. Tente de novo em instantes."
 };
 var ESC = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
