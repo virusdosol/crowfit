@@ -301,3 +301,9 @@ body.cw-home .cw-bar{display:grid}
 .cw-full .cf-topbar{position:sticky;top:0;z-index:5;display:flex;align-items:center;min-height:60px;margin:-14px -18px 18px;padding:max(14px,env(safe-area-inset-top,0px)) 18px 10px;background:var(--bg,#F8F8FB)}
 .cw-full .cw-bar-title{position:absolute;left:50%;transform:translateX(-50%);font:800 20px Fredoka,Nunito,system-ui,sans-serif;pointer-events:none;white-space:nowrap}
 .cw-full .cw-back-ico{position:relative;z-index:1}
+
+/* v82: deslize tipo stories (perfil e amigos) e Crow nos Amigos */
+.cw-sl-vp{overflow:hidden;width:100%;position:relative}
+.cw-sl-tr{display:flex;width:200%;will-change:transform}
+.cw-sl-pg{width:50%;flex:0 0 50%;min-width:0;box-sizing:border-box}
+.am-crow{display:block;width:96px;height:auto;margin:4px auto 0;pointer-events:none}

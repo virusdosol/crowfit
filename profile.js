@@ -233,15 +233,7 @@
       else if (t.hasAttribute('data-prof-retry')) { uiMsg = null; refresh(); }
     });
     panel.addEventListener('submit', onExtraSubmit);
-    var swX = null, swY = null;
-    panel.addEventListener('touchstart', function (e) { var tc = e.changedTouches && e.changedTouches[0]; swX = tc ? tc.clientX : null; swY = tc ? tc.clientY : null; }, { passive: true });
-    panel.addEventListener('touchend', function (e) {
-      if (swX == null || saving) return; var tc = e.changedTouches && e.changedTouches[0]; if (!tc) return;
-      var dx = tc.clientX - swX, dy = tc.clientY - swY; swX = null;
-      if (Math.abs(dx) < 60 || Math.abs(dy) > 50) return;
-      if (dx < 0 && screen === 'profile') go('evo');
-      else if (dx > 0 && screen === 'evo') go('profile');
-    }, { passive: true });
+    if (global.CrowSwipe) global.CrowSwipe.attach(panel, { busy: function () { return saving; }, neighbour: profileNeighbour, commit: profileCommit });
     panel.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape' || saving) return;
       if (screen === 'settings') go('profile');
@@ -253,6 +245,26 @@
   function authOverlayOpen() { var a = doc.getElementById('cf-auth'); return !!(a && !a.hidden); }
   function setAppInert(on) { var a = doc.getElementById('app'); if (a) { if (on) a.setAttribute('inert', ''); else a.removeAttribute('inert'); } }
   function reapplyInert() { doc.documentElement.classList.add('cf-auth-open'); setAppInert(true); }
+
+  /* Deslize tipo stories entre Perfil e Evolução (sem volta infinita). */
+  var PROF_ORDER = ['profile', 'evo'];
+  function htmlFor(target) {
+    var savedPanel = panel, savedScreen = screen, tmp = doc.createElement('div');
+    tmp.className = 'cf-auth cf-prof';
+    try { panel = tmp; screen = target; renderPanel(false); return tmp.innerHTML; }
+    catch (e) { reportErr(e); return null; }
+    finally { panel = savedPanel; screen = savedScreen; }
+  }
+  function profileNeighbour(d) {
+    if (!panelOpen || saving) return null;
+    var i = PROF_ORDER.indexOf(screen), j = i + d;
+    if (i < 0 || j < 0 || j >= PROF_ORDER.length) return null;
+    return htmlFor(PROF_ORDER[j]);
+  }
+  function profileCommit(d) {
+    var i = PROF_ORDER.indexOf(screen); if (i < 0) return;
+    screen = PROF_ORDER[i + d]; draft = null; uiMsg = null; renderPanel(true);
+  }
 
   var slideDir = 0;
   function go(s) { var from = screen; screen = s; draft = null; uiMsg = null; slideDir = (from === 'profile' && s === 'evo') ? 1 : (from === 'evo' && s === 'profile') ? -1 : 0; renderPanel(true); }

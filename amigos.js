@@ -109,6 +109,21 @@ function openDesafios() {
   setTimeout(function () { var bk = sub && sub.querySelector("#dg-bk"); if (bk) bk.remove(); }, 0);
   return r;
 }
+function amigosNeighbour(d) {
+  var i = TAB_ORDER.indexOf(tab), j = i + d;
+  if (i < 0 || j < 0 || j >= TAB_ORDER.length) return null;
+  var target = TAB_ORDER[j];
+  if (target === "desafios") return tabsHtml("desafios") + '<p class="am-hint">Solte para abrir os desafios.</p>';
+  if (!lastData) return null;
+  var prev = tab; tab = target;
+  try { return html(lastData); } catch (e) { return null; } finally { tab = prev; }
+}
+function amigosCommit(d) {
+  var i = TAB_ORDER.indexOf(tab), target = TAB_ORDER[i + d];
+  if (!target) return;
+  if (target === "desafios") { tab = "desafios"; view = null; return openDesafios(); }
+  return switchTab(target);
+}
 function switchTab(k) {
   if (k === "desafios") return openDesafios();
   tab = k; view = null; return render();
@@ -318,7 +333,7 @@ function tabsHtml(on) {
   var dots = TAB_ORDER.map(function (k) {
     return '<button type="button" class="cf-pdot' + (on === k ? ' on' : '') + '" role="tab" aria-selected="' + (on === k) + '" aria-label="' + TAB_NAME[k] + '" data-act="tab-' + k + '"></button>';
   }).join("");
-  return '<div class="am-pager"><h2 class="am-ptitle">' + TAB_NAME[on] + '</h2><div class="cf-pager" role="tablist" aria-label="Seções">' + dots + '</div></div>';
+  return '<img class="am-crow" src="crow-1.png" alt="" aria-hidden="true"><div class="am-pager"><h2 class="am-ptitle">' + TAB_NAME[on] + '</h2><div class="cf-pager" role="tablist" aria-label="Seções">' + dots + '</div></div>';
 }
 function mount(el) {
   if (!el) return;
@@ -326,15 +341,7 @@ function mount(el) {
   /* deixa o navegador passar os gestos horizontais para o app (só a rolagem vertical fica com ele) */
   el.style.touchAction = "pan-y";
   var px = null, py = null, pid = null;
-  el.addEventListener("touchstart", function (e) { var t = e.touches && e.touches[0]; if (!t) return; px = t.clientX; py = t.clientY; }, { passive: true });
-  el.addEventListener("touchend", function (e) {
-    var t = e.changedTouches && e.changedTouches[0]; if (px == null || !t) return;
-    var dx = t.clientX - px, dy = t.clientY - py; px = null;
-    if (Math.abs(dx) < 50 || Math.abs(dy) > 60) return;
-    var i = TAB_ORDER.indexOf(tab), j = dx < 0 ? Math.min(TAB_ORDER.length - 1, i + 1) : Math.max(0, i - 1);
-    if (j !== i) switchTab(TAB_ORDER[j]);
-  }, { passive: true });
-  el.addEventListener("touchcancel", function () { px = null; }, { passive: true });
+  if (root.CrowSwipe) root.CrowSwipe.attach(el, { neighbour: amigosNeighbour, commit: amigosCommit });
   el.addEventListener("click", onClick);
   el.addEventListener("submit", onSubmit);
   el.addEventListener("input", onInput);
