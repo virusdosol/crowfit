@@ -414,7 +414,7 @@ function openNozScreen(k){var t=today();
  var xp=S.nozes[k];
  view('<div class="of-wrap"><div class="of-top"><button type="button" class="of-x" id="nz-bk" aria-label="Voltar para as ofensivas"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><img class="of-logo" src="logo-dark.png" alt="Crowfit"><span class="of-sp"></span></div>'+
  '<div class="nz-scr"><img class="nz-img" src="noz-aberta.png" alt="Noz aberta"><div class="nz-xp">+'+xp+' XP</div><p class="nz-msg">Sua noz da semana rendeu '+xp+' pontos de experiência.</p><button type="button" class="btn" id="nz-ok">Continuar</button></div></div>');
- window.scrollTo(0,0);$("nz-bk").onclick=renderOfensivas;$("nz-ok").onclick=renderHome}
+ window.scrollTo(0,0);$("nz-bk").onclick=renderHome;$("nz-ok").onclick=renderHome}
 function ofClick(e){var b=e.target.closest&&e.target.closest("[data-nav],[data-ds]");if(!b)return;
  if(b.hasAttribute("data-nav")){var mm=OF.m+(+b.getAttribute("data-nav"));OF.y+=Math.floor(mm/12);OF.m=((mm%12)+12)%12;}
  else OF.sel=b.getAttribute("data-ds");
@@ -499,6 +499,14 @@ function openPainel(period){var t=today(),trn=0;try{trn=CF.trophyCount(CFT.troph
  view('<div class="pn-wrap"><div class="pn-top"><button type="button" class="cw-back-ico" id="pn-bk" aria-label="Voltar" aria-label="Voltar para a trilha"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Minha evolução</h2></div>'+PAINEL.html(st,period||"semanal",{pending:pend})+'</div>');
  window.scrollTo(0,0);$("pn-bk").onclick=renderHome;
  Array.prototype.forEach.call(app.querySelectorAll("[data-pn-period]"),function(b){b.onclick=function(){openPainel(b.getAttribute("data-pn-period"))}})}
+/* Corpo da aba Evolução dentro do perfil: mesmo Painel de Evolução, sem cabeçalho de página. */
+window.crowEvoBody=function(period){var t=today(),trn=0;try{trn=CF.trophyCount(CFT.trophyRecords(trailCtx()))}catch(e){}
+ var ach=Object.keys(S.achievements||{}).length,st=PAINEL.compute(S,t,{CF:CF,CFP:CFP,T:CFT},{trophies:trn,achievements:ach});
+ var pend=false;try{pend=!!(window.CFSync&&CFSync.status&&CFSync.status().pending)}catch(e){}
+ return PAINEL.html(st,period||"semanal",{pending:pend})};
+/* Bolinhas vermelhas das abas: Perfil = notificações não lidas; Evolução = treino feito hoje. */
+window.crowAttention=function(){var out={perfil:false,evo:false};try{out.perfil=NOTIF.unread(ntLoad())>0}catch(e){}
+ try{out.evo=(S.done||[]).indexOf(today())>=0}catch(e){}return out};
 /* Abre ofensivas sempre no topo (a rolagem da trilha não deve ser herdada). */
 function openOfensivas(){renderOfensivas();window.scrollTo(0,0)}
 function renderOfensivas(){var t=today();OF=null;var b4=S.streak+"/"+S.best;CF.refreshStreak(S,t);if(b4!==S.streak+"/"+S.best)save();var n=S.streak;

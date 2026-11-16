@@ -196,6 +196,7 @@
   /* ---------- interface (reaproveita as classes cf-* de auth.css) ---------- */
   var panel = null, panelOpen = false, screen = 'profile', draft = null, uiMsg = null, opener = null, statsFn = null, sectionsFn = null, onCloseFn = null, extrasFn = null, extraHtml = '';
   var SCREENS = { account: 1, train: 1, data: 1, notif: 1 };
+  var evoPeriod = 'semanal';
   var TITLES = { train: 'Perfil de treino', data: 'Dados e backup', notif: 'Notificações' };
 
   function el(tag, cls) { var n = doc.createElement(tag); if (cls) n.className = cls; return n; }
@@ -223,13 +224,24 @@
       if (t.hasAttribute('data-prof-close')) closePanel(true);
       else if (t.hasAttribute('data-prof-settings') || t.hasAttribute('data-prof-menu')) go('settings');
       else if (t.hasAttribute('data-prof-back')) go('profile');
-      else if (t.hasAttribute('data-prof-evo')) { closePanel(false); if (window.openPainel) window.openPainel(); }
+      else if (t.hasAttribute('data-prof-perfil')) go('profile');
+      else if (t.hasAttribute('data-prof-evo')) go('evo');
+      else if (t.hasAttribute('data-pn-period')) { evoPeriod = t.getAttribute('data-pn-period'); renderPanel(false); }
       else if (t.hasAttribute('data-prof-go')) { var g = t.getAttribute('data-prof-go'); if (SCREENS[g]) go(g); }
       else if (t.hasAttribute('data-prof-switch')) switchAcc();
       else if (t.closest && t.closest('[data-prof-nivel]')) { if (window.CrowWall) window.CrowWall.openPage('nivel'); }
       else if (t.hasAttribute('data-prof-retry')) { uiMsg = null; refresh(); }
     });
     panel.addEventListener('submit', onExtraSubmit);
+    var swX = null, swY = null;
+    panel.addEventListener('touchstart', function (e) { var tc = e.changedTouches && e.changedTouches[0]; swX = tc ? tc.clientX : null; swY = tc ? tc.clientY : null; }, { passive: true });
+    panel.addEventListener('touchend', function (e) {
+      if (swX == null || saving) return; var tc = e.changedTouches && e.changedTouches[0]; if (!tc) return;
+      var dx = tc.clientX - swX, dy = tc.clientY - swY; swX = null;
+      if (Math.abs(dx) < 60 || Math.abs(dy) > 50) return;
+      if (dx < 0 && screen === 'profile') go('evo');
+      else if (dx > 0 && screen === 'evo') go('profile');
+    }, { passive: true });
     panel.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape' || saving) return;
       if (screen === 'settings') go('profile');
@@ -290,6 +302,9 @@
 
   if (typeof document !== 'undefined' && !document.getElementById('cf-tabs-css')) {
     var __st = document.createElement('style'); __st.id = 'cf-tabs-css'; __st.textContent = ".cf-tabs{display:flex;gap:6px;margin:4px 0 14px;background:#F0F0F3;border-radius:14px;padding:4px}.cf-tab{flex:1;border:0;background:transparent;border-radius:11px;padding:10px 8px;font:inherit;font-weight:700;color:#5A5A66;cursor:pointer}.cf-tab.on{background:#fff;color:#17171C;box-shadow:0 1px 3px rgba(0,0,0,.12)}.cf-tab:focus-visible{outline:2px solid #E3182D;outline-offset:2px}"; document.head.appendChild(__st);
+  }
+  if (typeof document !== 'undefined' && !document.getElementById('cf-dot-css')) {
+    var __d = document.createElement('style'); __d.id = 'cf-dot-css'; __d.textContent = '.cf-tab{position:relative}.cf-dot{position:absolute;top:6px;right:10px;width:8px;height:8px;border-radius:50%;background:#E3182D}'; document.head.appendChild(__d);
   }
   var GEAR = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
   var BAR = '<div class="cf-bar"><button class="cf-icon" type="button" data-prof-settings aria-label="Configurações">' + GEAR + '</button></div>';
@@ -385,7 +400,10 @@
       var cur = panel.querySelector('#cf-prof-name');
       if (cur) draft = cur.value;
     }
-    if (screen === 'settings') {
+    if (screen === 'evo') {
+      mode = 'evo';
+      h = '<div class="cf-wrap cf-evo"><div data-evo></div></div>';
+    } else if (screen === 'settings') {
       mode = 'menu';
       h = '<div class="cf-wrap cf-set"><h1 class="cf-title" tabindex="-1">Configurações</h1><p class="cf-sub">Escolha uma categoria.</p>' +
         '<div class="cf-menu">' + menuItem('account', 'Conta e perfil', 'Nome de exibição, conta e sair') +
@@ -439,13 +457,16 @@
     h = h.split(CLOSE).join('').split(BACK_MENU).join('').split(BAR).join('');
     var PROG = '<svg viewBox="0 0 22 22" width="22" height="22" aria-hidden="true"><path d="M3 18V11M9 18V6M15 18V9M21 18V3" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg>';
     var tbGear = mode === 'profile' ? '<button type="button" class="cf-icon" data-prof-settings aria-label="Configurações">' + GEAR + '</button>' : '';
-    var tb = '<div class="cf-bar cf-topbar"><button class="cw-back-ico" type="button" aria-label="Voltar" ' + tbBack + '>' +
+    var tb = mode === 'evo' ? '<div class="cf-bar cf-topbar"></div>' : '<div class="cf-bar cf-topbar"><button class="cw-back-ico" type="button" aria-label="Voltar" ' + tbBack + '>' +
       '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>' + tbGear + '</div>';
-    var TABS = mode === 'profile' ? '<div class="cf-tabs" role="tablist" aria-label="Perfil e evolução">' +
-      '<button type="button" class="cf-tab on" role="tab" aria-selected="true">Perfil</button>' +
-      '<button type="button" class="cf-tab" role="tab" aria-selected="false" data-prof-evo>Evolução</button></div>' : '';
+    var att = (window.crowAttention ? window.crowAttention() : { perfil: false, evo: false });
+    var dot = function (on) { return on ? '<i class="cf-dot" aria-hidden="true"></i>' : ''; };
+    var TABS = (mode === 'profile' || mode === 'evo') ? '<div class="cf-tabs" role="tablist" aria-label="Perfil e evolução">' +
+      '<button type="button" class="cf-tab' + (mode === 'profile' ? ' on' : '') + '" role="tab" aria-selected="' + (mode === 'profile') + '" data-prof-perfil>Perfil' + dot(att.perfil && mode !== 'profile') + '</button>' +
+      '<button type="button" class="cf-tab' + (mode === 'evo' ? ' on' : '') + '" role="tab" aria-selected="' + (mode === 'evo') + '" data-prof-evo>Evolução' + dot(att.evo && mode !== 'evo') + '</button></div>' : '';
     h = h.replace(/^<div class="cf-wrap[^"]*">/, function (m) { return m + tb + TABS; });
     panel.innerHTML = h;
+    if (mode === 'evo') { var evBox = panel.querySelector('[data-evo]'); if (evBox) { try { evBox.innerHTML = window.crowEvoBody ? window.crowEvoBody(evoPeriod) : '<p class="cf-msg">Evolução indisponível.</p>'; } catch (e) { evBox.textContent = 'Não foi possível carregar a evolução.'; reportErr(e); } } }
 
     var ac = panel.querySelector('[data-acct]');
     if (ac) ac.textContent = snap.user && snap.user.email ? 'Conta: ' + snap.user.email : '';
