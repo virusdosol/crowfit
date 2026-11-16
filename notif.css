@@ -25,3 +25,24 @@
 .nt-sub{font-size:12px;opacity:.7;margin:8px 0}
 #nt{position:relative}
 #nt[data-count]:not([data-count=""])::after{content:attr(data-count);position:absolute;top:2px;right:2px;min-width:16px;height:16px;padding:0 4px;border-radius:99px;background:#D92332;color:#fff;font:700 10px Nunito,sans-serif;display:flex;align-items:center;justify-content:center}
+
+/* Central de notificações: cartões organizados, barra de ações e ícones */
+.nt-bar{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 6px}
+.nt-chip{display:inline-flex;align-items:center;gap:6px;border:2px solid #E4E4EE;background:#fff;border-radius:999px;padding:7px 14px;font:inherit;font-size:14px;font-weight:700;color:#17171C;cursor:pointer}
+.nt-chip:focus-visible{outline:2px solid #E3182D;outline-offset:2px}
+.nt-trash{color:#E3182D;border-color:#F4C2C8}
+.nt-card{position:relative;display:grid;grid-template-columns:auto 44px 1fr auto;gap:12px;align-items:start;background:#F7F7FA;border:2px solid #E4E4EE;border-radius:20px;padding:14px 12px;margin:10px 0;box-shadow:0 4px 0 #E4E4EE}
+.nt-card.nt-unread{border-color:#E3182D}
+.nt-pick{display:flex;padding-top:4px;cursor:pointer}
+.nt-pick input{position:absolute;opacity:0;width:1px;height:1px}
+.nt-pick span{width:22px;height:22px;border-radius:7px;border:2px solid #B9B9C6;background:#fff;display:block}
+.nt-pick input:checked + span{background:#E3182D;border-color:#E3182D;box-shadow:inset 0 0 0 4px #fff}
+.nt-pick input:focus-visible + span{outline:2px solid #E3182D;outline-offset:2px}
+.nt-ico{width:44px;height:44px;border-radius:14px;background:#E3182D;color:#fff;display:grid;place-items:center}
+.nt-body{min-width:0;display:flex;flex-direction:column;gap:2px}
+.nt-tag{font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:#E3182D}
+.nt-body b{font-family:Fredoka,Nunito,sans-serif;font-size:17px;line-height:1.2;color:#17171C;overflow-wrap:anywhere}
+.nt-body p{margin:2px 0 0;font-size:14px;line-height:1.4;color:#4A4A57;overflow-wrap:anywhere}
+.nt-body small{font-size:12px;color:#7A7A88}
+.nt-x{border:0;background:#fff;border-radius:12px;width:36px;height:36px;display:grid;place-items:center;color:#5E5E73;cursor:pointer;box-shadow:0 2px 0 #E4E4EE}
+.nt-x:focus-visible{outline:2px solid #E3182D;outline-offset:2px}

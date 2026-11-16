@@ -18,6 +18,14 @@ var ACTION_OF = {
   friend_req: "amigos", friend_ok: "amigos", challenge_inv: "desafios", challenge_res: "desafios",
   noz_available: "ofensivas", noz_opened: "ofensivas", reward: "ofensivas"
 };
+var ICON_X = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+var TYPE_ICON = {
+  reminder: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="7"/><path d="M12 9v4l2.5 2M9 3h6"/></svg>',
+  friend_req: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6M17 8v6M14 11h6"/></svg>',
+  friend_ok: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6M15 11l2 2 4-4"/></svg>',
+  challenge_inv: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4h10v4a5 5 0 0 1-10 0V4zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M12 13v4M8 20h8"/></svg>',
+  challenge_res: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4h10v4a5 5 0 0 1-10 0V4zM12 13v4M8 20h8"/></svg>'
+};
 var CAT_LABEL = { training: "Treino", social: "Amigos", rewards: "Recompensas" };
 var TYPE_LABEL = {
   reminder: "Lembrete", goal: "Meta", level: "Nível", achievement: "Conquista", trophy: "Troféu",
@@ -202,20 +210,23 @@ function html(inbox, CF, today, perm, opts) {
   opts = opts || {};
   var h = '<div class="nt-wrap"><div class="nt-top"><button type="button" class="cw-back-ico" id="nt-bk" aria-label="Voltar"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Notificações</h2></div>';
   if (opts.pending) h += '<p class="nt-note">Sem conexão: notificações sociais aparecem quando você voltar a ter sinal.</p>';
-  h += '<div class="nt-actions"><button type="button" class="link" id="nt-selall">Selecionar tudo</button>' +
-       '<button type="button" class="link" id="nt-readsel">Marcar como lida</button>' +
-       '<button type="button" class="link" id="nt-delsel">Excluir</button></div>';
+  h += '<div class="nt-bar" role="toolbar" aria-label="Ações">' +
+       '<button type="button" class="nt-chip" id="nt-selall">Selecionar tudo</button>' +
+       '<button type="button" class="nt-chip" id="nt-readsel">Marcar como lida</button>' +
+       '<button type="button" class="nt-chip nt-trash" id="nt-delsel" aria-label="Excluir selecionados"><svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13\"/></svg> Excluir</button></div>';
 
   if (!inbox.items.length) h += '<div class="nt-empty"><p>Nada por aqui. Quando algo acontecer na sua trilha ou com seus amigos, aparece aqui.</p></div>';
   groupByDay(inbox.items, CF, today).forEach(function (g) {
     h += '<h3 class="nt-day">' + esc(g.label) + '</h3>';
     g.items.forEach(function (it) {
       var time = (it.at || "").slice(11, 16);
-      h += '<article class="nt-item' + (it.read ? '' : ' nt-unread') + '" data-nt="' + esc(it.id) + '"><input type="checkbox" class="nt-sel" data-nt-sel="' + esc(it.id) + '" aria-label="Selecionar">' +
-        '<span class="nt-tag">' + esc(TYPE_LABEL[it.type] || "Aviso") + '</span>' +
-        '<div class="nt-body"><b>' + esc(it.title) + '</b><p>' + esc(it.body) + '</p>' +
+      var ico = TYPE_ICON[it.type] || TYPE_ICON.reminder;
+      h += '<article class="nt-card' + (it.read ? '' : ' nt-unread') + '" data-nt="' + esc(it.id) + '">' +
+        '<label class="nt-pick"><input type="checkbox" class="nt-sel" data-nt-sel="' + esc(it.id) + '" aria-label="Selecionar"><span></span></label>' +
+        '<span class="nt-ico" aria-hidden="true">' + ico + '</span>' +
+        '<div class="nt-body"><span class="nt-tag">' + esc(TYPE_LABEL[it.type] || "Aviso") + '</span><b>' + esc(it.title) + '</b><p>' + esc(it.body) + '</p>' +
         '<small>' + esc(time) + (it.read ? '' : ' · não lida') + '</small></div>' +
-        '<button type="button" class="nt-go" data-nt-go="' + esc(it.action) + '" data-nt-id="' + esc(it.id) + '">Abrir</button></article>';
+        '<button type="button" class="nt-x" data-nt-x="' + esc(it.id) + '" aria-label="Fechar aviso">' + ICON_X + '</button></article>';
     });
   });
 
