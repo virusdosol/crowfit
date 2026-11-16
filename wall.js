@@ -5,15 +5,15 @@
 "use strict";
 var doc = root.document, RAR = { comum: "Comum", epica: "Épica", rara: "Rara", lendaria: "Lendária" };
 var I = {
-  bell: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>',
-  book: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M4 5a2 2 0 0 1 2-2h13v15H6a2 2 0 0 0-2 2z"/><path d="M4 19a2 2 0 0 1 2-2h13v4H6a2 2 0 0 1-2-2z"/></svg>',
-  home: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
+  bell: '<img class="cw-art" src="menu_bell.png" alt="" width="26" height="26">',
+  book: '<img class="cw-art" src="menu_dumbbell.png" alt="" width="26" height="26">',
+  home: '<img class="cw-art" src="menu_mountain.png" alt="" width="26" height="26">',
   medal: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><circle cx="12" cy="9" r="6"/><path d="M8.5 14.2 7 21l5-2.5 5 2.5-1.5-6.8"/></svg>',
   grid: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>',
   // noz descascada: casca aberta com a semente à mostra
-  noz: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M12 2.8c-4.6 0-7.6 3.6-7.6 8.2 0 3.9 2.3 6.9 4.7 8.4.8.5 1.6.5 2.3 0 .5-.3 1-.3 1.5 0 .7.5 1.5.5 2.3 0 2.4-1.5 4.8-4.5 4.8-8.4 0-4.6-3-8.2-7.9-8.2z"/><path d="M8.6 9.2c1.3 1.1 1.4 3.6.2 5.2M15.4 9.2c-1.3 1.1-1.4 3.6-.2 5.2"/></svg>',
-  trophy: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/><path d="M12 14v4M8 20h8M9 18h6"/></svg>',
-  users: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.4 3.2-5.5 6.5-5.5s5.9 2.1 6.5 5.5"/><circle cx="17" cy="9" r="2.6"/><path d="M17.5 14.6c2.3.3 3.8 2 4.2 4.4"/></svg>',
+  noz: '<img class="cw-art" src="menu_brain.png" alt="" width="26" height="26">',
+  trophy: '<img class="cw-art" src="medalha_trofeu.png" alt="" width="26" height="26">',
+  users: '<img class="cw-art" src="menu_people.png" alt="" width="26" height="26">',
   crow: '<img src="mascot.png" alt="Crow">'
 };
 var TABS = [["home", "home", "Trilha"], ["app", "grid", "Aparências"], ["bib", "book", "Biblioteca"], ["noz", "noz", "Nozes"], ["amigos", "users", "Amigos"], ["notif", "bell", "Notificações"]];
