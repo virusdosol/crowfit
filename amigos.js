@@ -72,7 +72,7 @@ function html(d) {
   var findForm = d.handle
     ? '<form class="am-form am-add" data-form="find" novalidate><label>Encontrar jogador pelo ID<input name="handle" maxlength="21" autocomplete="off" autocapitalize="off" placeholder="@do_amigo"></label><button type="submit" class="am-btn am-pri">Buscar</button></form>' + foundCard()
     : '';
-  return '<div class="cw-head"><h2>Amigos</h2><span>' + (d.friends || []).length + '</span></div>' + '<button type="button" class="btn sec am-dg" data-act="desafios">Desafios entre amigos</button>' +
+  return '<div class="cw-head"><h2>Amigos</h2><span>' + (d.friends || []).length + '</span></div>' + tabsHtml('amigos') +
     idBlock + (d.handle ? '<button type="button" class="am-btn am-pri am-meu" data-act="meu">Ver meu perfil</button>' : '') + findForm + searchBox +
     (flash ? '<p class="am-flash" role="status">' + esc(flash) + '</p>' : '') +
     rankingHtml() + (d.incoming && d.incoming.length ? section("Pedidos recebidos", d.incoming, function (p) {
@@ -233,7 +233,8 @@ function onClick(ev) {
   if (a === "meu") { if (!lastData || !lastData.handle) return; view = { h: lastData.handle, me: true }; box.innerHTML = '<p class="cw-empty">Carregando…</p>'; return load(); }
   if (a === "editar") { var P = root.CrowfitProfile; if (P && P.open) P.open(); return; }
   if (a === "voltar") { view = null; return load(); }
-  if (a === "desafios") { var A = root.CrowfitAuth, c = A && A.getClient ? A.getClient() : null; if (!root.CrowDesafios || !c) return; view = null; return root.CrowDesafios.open(box, c, function () { load(); }); }
+  if (a === "tab-amigos") { view = null; return load(); }
+  if (a === "desafios") { var A = root.CrowfitAuth, c = A && A.getClient ? A.getClient() : null; if (!root.CrowDesafios || !c) return; view = null; var r = root.CrowDesafios.open(box, c, function () { load(); }); if (box && !box.querySelector(".cf-tabs")) box.insertAdjacentHTML("afterbegin", tabsHtml("desafios")); return r; }
   if (a === "rank") { var m = b.getAttribute("data-m"); rankMode = m === "streak" || m === "trophies" ? m : "xp"; box.innerHTML = html(lastData); return; }
   if (a === "copy") {
     var txt = "@" + (box.querySelector(".am-id b") || { textContent: "" }).textContent.replace(/^@/, "");
@@ -273,6 +274,11 @@ function onInput(ev) {
   if (inp) { inp.focus(); try { inp.setSelectionRange(pos, pos); } catch (e) {} }
 }
 
+function tabsHtml(on) {
+  return '<div class="cf-tabs" role="tablist" aria-label="Amigos e desafios">' +
+    '<button type="button" class="cf-tab' + (on === 'amigos' ? ' on' : '') + '" role="tab" aria-selected="' + (on === 'amigos') + '" data-act="tab-amigos">Amigos</button>' +
+    '<button type="button" class="cf-tab' + (on === 'desafios' ? ' on' : '') + '" role="tab" aria-selected="' + (on === 'desafios') + '" data-act="desafios">Desafios</button></div>';
+}
 function mount(el) {
   if (!el) return;
   box = el; flash = ""; found = null; view = null;
