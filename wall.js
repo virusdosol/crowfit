@@ -228,6 +228,11 @@ function since(iso) {
   if (d < 365) return "Cadastrado há " + plural(Math.floor(d / 30), "mês", "meses");
   return "Cadastrado há " + plural(Math.floor(d / 365), "ano", "anos");
 }
+if (typeof document !== "undefined" && !document.getElementById("cw-pf-css")) {
+  var __pf = document.createElement("style"); __pf.id = "cw-pf-css";
+  __pf.textContent = ".cw-pf-hero{position:relative;display:flex;justify-content:center;align-items:flex-end;height:230px;margin:6px 0 0}.cw-pf-circle{position:absolute;width:250px;height:250px;border-radius:50%;background:#EEEFF5;top:-10px;left:50%;transform:translateX(-50%)}.cw-pf-crow{position:relative;width:200px;height:auto}.cw-pf-idrow{display:flex;align-items:center;justify-content:center;gap:12px;margin:10px 0 14px;flex-wrap:wrap}.cw-pf-name{margin:0;font-size:30px}.cw-pf-div{width:2px;height:22px;background:#D6D6E0}.cw-pf-since{color:#5E5E73;font-size:15px}.cw-pf-strip{display:grid;grid-template-columns:repeat(4,1fr);background:#F7F7FA;border:1px solid #E4E4EE;border-radius:20px;padding:12px 4px;box-shadow:0 3px 0 #E4E4EE}.cw-pf-st{display:flex;flex-direction:column;align-items:center;gap:2px;position:relative}.cw-pf-st+.cw-pf-st:before{content:'';position:absolute;left:0;top:14%;height:72%;width:1px;background:#D6D6E0}.cw-pf-st b{font-size:20px}.cw-pf-st small{font-size:12px;color:#5E5E73}.cw-pf-cont{position:relative;overflow:hidden;background:#F7F7FA;border:1px solid #E4E4EE;border-left:6px solid #E3182D;border-radius:20px;padding:16px;margin:14px 0;min-height:150px}.cw-pf-cont h2{margin:0;font-size:22px}.cw-pf-cont p{margin:4px 0 12px;color:#5E5E73;font-size:15px}.cw-pf-go{border:0;background:#E3182D;color:#fff;border-radius:999px;padding:12px 22px;font:inherit;font-weight:700;box-shadow:0 4px 0 #A8101F;cursor:pointer}.cw-pf-mt{position:absolute;right:0;bottom:0;width:48%;opacity:.9;pointer-events:none}";
+  document.head.appendChild(__pf);
+}
 function profileHtml(p) {
   try { return profileHtmlUnsafe(p); } catch (e) { console.error('Crowfit: visão do perfil', e); return '<section class="cw-pf"><p class="cw-hint">Não consegui montar a visão geral agora. Seus dados estão salvos.</p></section>'; }
 }
@@ -241,15 +246,18 @@ function profileHtmlUnsafe(p) {
     return cell('<span class="cw-glyph on">' + I.medal + '</span>', a.name, '<b>' + esc(a.name) + '</b><span>' + esc(u.info.day || "") + '</span>');
   }).join("");
   return '<section class="cw-pf">' +
-    '<div class="cw-pf-avatar"><img src="mascot.png" alt="Crow"></div>' +
-    '<h1 class="cf-title cw-pf-name" tabindex="-1">' + esc(name) + '</h1>' +
-    (s2 ? '<p class="cw-pf-since">' + esc(s2) + '</p>' : '') +
-    '<div class="cw-ov-grid">' +
-      '<div class="cw-ov"><span class="cw-ov-ico">' + lvIco(li.l) + '</span><b>' + (s ? s.points : 0) + '</b><small>XP total</small></div>' +
-      '<div class="cw-ov"><span class="cw-ov-ico">' + I.trophy + '</span><b>' + trophyTotal() + '</b><small>Troféus</small></div>' +
-      '<div class="cw-ov"><span class="cw-ov-ico">' + I.noz + '</span><b>' + nozCount() + '</b><small>Nozes</small></div>' +
-      '<div class="cw-ov"><span class="cw-ov-ico">' + I.medal + '</span><b>' + unlockedAch().length + '</b><small>Conquistas</small></div>' +
+    '<div class="cw-pf-hero"><span class="cw-pf-circle" aria-hidden="true"></span><img class="cw-pf-crow" src="mascot.png" alt="Crow"></div>' +
+    '<div class="cw-pf-idrow"><h1 class="cf-title cw-pf-name" tabindex="-1">' + esc(name) + '</h1>' +
+      (s2 ? '<span class="cw-pf-div" aria-hidden="true"></span><span class="cw-pf-since">' + esc(s2.replace(/^Cadastrado há /, "desde ")) + '</span>' : '') + '</div>' +
+    '<div class="cw-pf-strip">' +
+      '<div class="cw-pf-st"><span class="cw-ov-ico">' + lvIco(li.l) + '</span><b>' + (s ? s.points : 0) + '</b><small>XP total</small></div>' +
+      '<div class="cw-pf-st"><span class="cw-ov-ico">' + I.trophy + '</span><b>' + trophyTotal() + '</b><small>Troféus</small></div>' +
+      '<div class="cw-pf-st"><span class="cw-ov-ico">' + I.noz + '</span><b>' + nozCount() + '</b><small>Nozes</small></div>' +
+      '<div class="cw-pf-st"><span class="cw-ov-ico">' + I.medal + '</span><b>' + unlockedAch().length + '</b><small>Conquistas</small></div>' +
     '</div>' +
+    '<div class="cw-pf-cont"><div class="cw-pf-cont-txt"><h2>Continue evoluindo!</h2><p>Desafios te esperam na sua jornada.</p>' +
+      '<button type="button" class="cw-pf-go" data-act="ver-desafios">Ver desafios <span aria-hidden="true">&rsaquo;</span></button></div>' +
+      '<img class="cw-pf-mt" src="deco_mountain.png" alt="" aria-hidden="true" onerror="this.remove()"></div>' +
     '<h2 class="cw-sec">Troféu equipado</h2><div class="cw-icons cw-four">' + troH + '</div>' +
     '<h2 class="cw-sec">Últimas conquistas</h2><div class="cw-icons cw-four">' + (achH || '<p class="cw-hint">Nenhuma conquista ainda.</p>') + '</div>' +
   '</section>';
@@ -265,6 +273,7 @@ function bubbleToggle(btn) {
 
 /* ---------- ações ---------- */
 function act(kind, el) {
+  if (kind === "ver-desafios") { openPage("amigos"); return; }
   if (kind === "bib-cat") { bibSt = { view: "cat", cat: el.getAttribute("data-cat") }; return renderPage(); }
   if (kind === "bib-ex") { bibSt = { view: "ex", cat: bibSt.cat, ex: el.getAttribute("data-ex") }; return renderPage(); }
   if (kind === "bib-story-next") { bibSt.story = bibSt.story + 1 >= root.CFBib.STORY.length ? null : bibSt.story + 1; if (bibSt.story === null) markBibIntro(); return renderPage(); }
