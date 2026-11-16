@@ -134,18 +134,37 @@ function nextCard(ctx, last) {
   var u = unitAt(ctx.S, last + 1), days = Math.max(1, between(ctx.today, u.date)), m = MESES[+u.date.slice(5, 7) - 1];
   return '<div class="t-next"><span class="t-next-tag">A seguir</span><b>' + LOCK + ' Mês de ' + m + '</b><p>Libera em ' + days + (days === 1 ? " dia" : " dias") + '</p></div>';
 }
+if (typeof document !== "undefined" && !document.getElementById("t-mes-css")) {
+  var __tm = document.createElement("style"); __tm.id = "t-mes-css";
+  __tm.textContent = ".t-mes{display:flex;align-items:center;gap:8px;justify-content:center;margin:18px 0 10px;color:#5E5E73;font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase}.t-mes .ico{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.4}";
+  document.head.appendChild(__tm);
+}
 function gate() {
   return '<button class="t-gate" type="button" aria-label="Meses seguintes bloqueados"><span class="tg-l"></span><span class="tg-i">' + LOCK + '</span><span class="tg-l"></span></button>';
 }
+/* Índice da última unidade até o nível máximo (64): soma do XP da curva / média de pontos por unidade (primeiras 4 semanas). */
+function endIdx(ctx, last) {
+  var total = 0;
+  for (var l = 1; l < 64; l++) total += Math.floor((350 + 18 * Math.pow(l - 1, 1.2)) / 5 + 0.5) * 5;
+  var sum = 0, n = 0;
+  for (var i = 0; i < MES; i++) { var c = content(ctx, unitAt(ctx.S, i)); var k = c && c.exercises ? c.exercises.length : 0; sum += k * 10 + 20; n++; }
+  var avg = n && sum > 0 ? sum / n : 60;
+  return Math.max(last + 1, Math.ceil(total / avg) - 1);
+}
+/* Marcador de mês bloqueado: cadeado e o nome do mês. */
+function monthMark(ctx, i) {
+  var u = unitAt(ctx.S, i);
+  return '<div class="t-mes" role="separator">' + LOCK + ' Mês de ' + MESES[+u.date.slice(5, 7) - 1] + '</div>';
+}
 function range(ctx, lo, hi, last) {
-  var h = "", zone = false;
+  var h = "";
   for (var i = lo; i <= hi; i++) {
-    if (i === last + 1) { h += nextCard(ctx, last) + '<div class="t-zone">'; zone = true; }
+    if (i > last && (i - last - 1) % MES === 0) h += monthMark(ctx, i);
     if (i <= last) h += weekHead(ctx, i);
     h += nodeHtml(ctx, i, i > last);
     if (i <= last && C.parseDate(unitAt(ctx.S, i).date).getDay() === 6) h += chestHtml(ctx, i, unitAt(ctx.S, i));
   }
-  return h + (zone ? "</div>" : "");
+  return h;
 }
 function flush(ctx) { if (dirty) { dirty = false; ctx.save(); } }
 
@@ -191,7 +210,7 @@ function trophyRecords(ctx) {
   return out;
 }
 function mount(el, ctx) {
-  var S = ctx.S, tr = ensure(S, ctx.today), ti = Math.max(0, idxOf(S, ctx.today)), last = lastOpen(S, ti), hi = last + PREVIA;
+  var S = ctx.S, tr = ensure(S, ctx.today), ti = Math.max(0, idxOf(S, ctx.today)), last = lastOpen(S, ti), hi = endIdx(ctx, last);
   if (!V || V.start !== tr.start) V = { start: tr.start, lo: Math.max(0, ti - 6), scroll: null };
   V.ctx = ctx;
   el.innerHTML = '<div class="t-ban" id="t-ban"><div class="tb-l"><small id="tb-s"></small><b id="tb-t"></b></div><button id="t-hoje" aria-label="Ir para o treino de hoje">Hoje</button></div><div class="t-ban-sp" id="t-ban-sp"></div>' +
@@ -319,7 +338,7 @@ function openUnit(ctx, i) {
     var on = pr.map[e.id] === true;
     return '<li class="ex' + (on ? " ok" : "") + '" data-id="' + e.id + '"><button class="ex-chk" data-id="' + e.id + '" aria-pressed="' + on + '" aria-label="Marcar ' + esc(e.name) + ' como concluído"' + (closed ? " disabled" : "") + '>' + (on ? "✓" : "") + '</button><div class="ex-b"><b>' + (k + 1) + '. ' + esc(e.name) + '</b><span>' + esc(e.label) + '</span><small>' + esc(e.tip) + '</small></div></li>';
   }).join("");
-  ctx.view('<div class="u-top"><button class="cw-back-ico" id="u-bk" aria-label="Voltar à trilha"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><span>SEMANA ' + W.w + ' — UNIDADE ' + W.d + '</span></div>' +
+  ctx.view('<div class="u-top"><button class="chip" id="u-bk" aria-label="Voltar à trilha">← Trilha</button><span>SEMANA ' + W.w + ' — UNIDADE ' + W.d + '</span></div>' +
     '<div class="u-hero"><span class="rb u-rb wk' + W.c + ' st-' + pr.st + '" id="u-rb">' + ring(pr.p) + '<span class="tn-btn">' + icon(ct.group) + '</span></span><p class="u-day">' + P.DIAS[u.dow].toUpperCase() + ' · ' + fmt(u.date) + '</p><h1>' + esc(ct.title.toUpperCase()) + '</h1></div>' +
     '<div class="card u-prog"><b id="u-pt"></b><div class="bar" style="margin-top:8px"><i id="u-pb"></i></div></div>' +
     (past ? '<p class="u-note">Este dia já passou (' + fmt(u.date) + '), então o treino não pode mais ser feito ou alterado. Você pode apenas consultar.</p>' : locked ? '<p class="u-note">Este treino será liberado em ' + fmt(u.date) + ' (a partir da meia-noite). Você pode consultar a programação.</p>' : '<button class="btn u-go" id="u-go"></button>') +
@@ -348,7 +367,6 @@ function openUnit(ctx, i) {
       ctx.save(); var p2 = refresh(); ctx.say(p2.p >= 1 ? "Treino completo" : p2.done + " de " + p2.total + " exercícios concluídos");
     };
   });
-  window.scrollTo(0, 0);
   $("u-bk").onclick = $("u-bk2").onclick = ctx.back;
 }
 
