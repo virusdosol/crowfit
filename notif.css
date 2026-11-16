@@ -55,3 +55,6 @@
 .nt-card .nt-x{background:rgba(255,255,255,.22);color:#fff;box-shadow:none}
 .nt-card .nt-pick span{border-color:#fff;background:rgba(255,255,255,.2)}
 .nt-card .nt-pick input:checked + span{background:#fff;border-color:#fff;box-shadow:inset 0 0 0 4px #E3182D}
+
+/* v81: cabeçalho fixo da central de notificações */
+#nt-box .nt-top{position:sticky;top:0;z-index:5;background:var(--bg,#fff);padding:12px 0 8px;margin:0}

@@ -8,11 +8,11 @@ var I = {
   bell: '<img class="cw-art" src="menu_bell.png" alt="" width="26" height="26">',
   book: '<img class="cw-art" src="menu_dumbbell.png" alt="" width="26" height="26">',
   home: '<img class="cw-art" src="menu_mountain.png" alt="" width="26" height="26">',
-  medal: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><circle cx="12" cy="9" r="6"/><path d="M8.5 14.2 7 21l5-2.5 5 2.5-1.5-6.8"/></svg>',
+  medal: '<img class="cw-art" src="medalha_trofeu.png" alt="" width="34" height="34">',
   grid: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>',
   // noz descascada: casca aberta com a semente à mostra
   noz: '<img class="cw-art" src="menu_brain.png" alt="" width="26" height="26">',
-  trophy: '<img class="cw-art" src="medalha_trofeu.png" alt="" width="26" height="26">',
+  trophy: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 3h12v5a6 6 0 0 1-12 0V3zM3.5 4.5H6v2.5a3 3 0 0 1-2.5-2.5zM18 4.5h2.5a3 3 0 0 1-2.5 2.5V4.5zM10.5 14.2h3v3.3h3.5V20h-10v-2.5h3.5z"/></svg>',
   users: '<img class="cw-art" src="menu_people.png" alt="" width="26" height="26">',
   crow: '<img src="mascot.png" alt="Crow">'
 };
@@ -24,6 +24,8 @@ var CROW = {
   vazio_noz: "Nenhuma noz ainda. Cumpra o combinado primeiro.",
   nivel: ["Nível subiu. Não se acostume.", "Mais um nível. Agora mantenha.", "Subiu. Ainda falta muito.", "Nível novo. Quero ver repetir."]
 };
+var PG_TITLE = { ach: "Conquistas", tro: "Troféus", noz: "Nozes", app: "Aparências", bib: "Biblioteca", amigos: "Amigos", nivel: "Nível" };
+function pageTitle(k) { return PG_TITLE[k] || ""; }
 var curPage = null, sel = null, queue = [], showing = false, shownAch = [];
 var lastLevel = null, lastS = null, seenPending = {}, lastTro = -1, cel = null;
 
@@ -70,7 +72,7 @@ function bar() {
   doc.body.appendChild(b);
 }
 function syncBar() {
-  var home = !!doc.getElementById("trail"); doc.body.classList.toggle("cw-home", home);
+  var home = !!doc.getElementById("trail"); doc.body.classList.toggle("cw-home", home || !!curPage || !!doc.getElementById("nt-box"));
   var cur = curPage || (home ? "home" : "");
   doc.querySelectorAll(".cw-bar [data-tab]").forEach(function (t) { t.setAttribute("aria-current", t.getAttribute("data-tab") === cur ? "page" : "false"); });
 }
@@ -84,7 +86,7 @@ function openPage(kind) {
   if (kind === "bib") bibSt = { view: "cats", story: localStorage.getItem("crowfit-bib-intro") === "1" ? null : 0 };
   if (kind === "tro") { trSt.last = null; trSt.focusQ = false; }
   var el = doc.createElement("div"); el.className = "cw-full"; el.setAttribute("role", "dialog");
-  el.innerHTML = '<div class="cf-bar cf-topbar"><button type="button" class="cw-back-ico" data-full-close aria-label="Voltar"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button></div><div class="cw-pagebody"></div>';
+  el.innerHTML = '<div class="cf-bar cf-topbar"><button type="button" class="cw-back-ico" data-full-close aria-label="Voltar"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><span class="cw-bar-title">' + pageTitle(kind) + '</span></div><div class="cw-pagebody"></div>';
   doc.body.appendChild(el);
   curPage = { kind: kind, el: el };
   el.querySelector("[data-full-close]").addEventListener("click", function () { if (typeof root.renderHome === "function") root.renderHome(); closePage(); });
@@ -100,8 +102,6 @@ function renderPage() {
   if (k === "tro" && body) { if (trSt.last !== null) trSt.sc[trSt.last] = body.scrollTop; }
   var html = k === "ach" ? pageAch() : k === "app" ? pageApp() : k === "tro" ? pageTro() : k === "noz" ? pageNoz() : k === "bib" ? pageBib() : pageLevel();
   body.innerHTML = html;
-  var topb = curPage.el.querySelector(".cf-topbar");
-  if (topb) topb.hidden = (k === "tro" && trSt.view === "cat" && !CFTrL.norm(trSt.q)) || (k === "bib" && bibSt.view !== "cats");
   if (k === "tro") {
     trSt.last = trKey(); body.scrollTop = trSt.sc[trKey()] || 0;
     if (trSt.focusQ) { var qi = body.querySelector("[data-tr-q]"); trSt.focusQ = false; if (qi) { qi.focus(); try { qi.setSelectionRange(qi.value.length, qi.value.length); } catch (e) {} } }
@@ -230,7 +230,7 @@ function since(iso) {
 }
 if (typeof document !== "undefined" && !document.getElementById("cw-pf-css")) {
   var __pf = document.createElement("style"); __pf.id = "cw-pf-css";
-  __pf.textContent = ".cw-pf-hero{position:relative;display:flex;justify-content:center;align-items:flex-end;height:230px;margin:6px 0 0}.cw-pf-circle{position:absolute;width:250px;height:250px;border-radius:50%;background:#EEEFF5;top:-10px;left:50%;transform:translateX(-50%)}.cw-pf-crow{position:relative;width:200px;height:auto}.cw-pf-idrow{display:flex;align-items:center;justify-content:center;gap:12px;margin:10px 0 14px;flex-wrap:wrap}.cw-pf-name{margin:0;font-size:30px}.cw-pf-div{width:2px;height:22px;background:#D6D6E0}.cw-pf-since{color:#5E5E73;font-size:15px}.cw-pf-strip{display:grid;grid-template-columns:repeat(4,1fr);background:#F7F7FA;border:1px solid #E4E4EE;border-radius:20px;padding:12px 4px;box-shadow:0 3px 0 #E4E4EE}.cw-pf-st{display:flex;flex-direction:column;align-items:center;gap:2px;position:relative}.cw-pf-st+.cw-pf-st:before{content:'';position:absolute;left:0;top:14%;height:72%;width:1px;background:#D6D6E0}.cw-pf-st b{font-size:20px}.cw-pf-st small{font-size:12px;color:#5E5E73}.cw-pf-cont{position:relative;overflow:hidden;background:#F7F7FA;border:1px solid #E4E4EE;border-left:6px solid #E3182D;border-radius:20px;padding:16px;margin:14px 0;min-height:150px}.cw-pf-cont h2{margin:0;font-size:22px}.cw-pf-cont p{margin:4px 0 12px;color:#5E5E73;font-size:15px}.cw-pf-go{border:0;background:#E3182D;color:#fff;border-radius:999px;padding:12px 22px;font:inherit;font-weight:700;box-shadow:0 4px 0 #A8101F;cursor:pointer}.cw-pf-mt{position:absolute;right:0;bottom:0;width:48%;opacity:.9;pointer-events:none}";
+  __pf.textContent = ".cw-pf-hero{position:relative;display:flex;justify-content:center;align-items:flex-end;height:230px;margin:6px 0 0}.cw-pf-circle{position:absolute;width:250px;height:250px;border-radius:50%;background:#EEEFF5;top:-10px;left:50%;transform:translateX(-50%)}.cw-pf-crow{position:relative;width:200px;height:auto}.cw-pf-idrow{display:flex;align-items:center;justify-content:center;gap:12px;margin:10px 0 14px;flex-wrap:wrap}.cw-pf-name{margin:0;font-size:30px}.cw-pf-div{width:2px;height:22px;background:#D6D6E0}.cw-pf-since{color:#5E5E73;font-size:15px}.cw-pf-strip{display:grid;grid-template-columns:repeat(4,1fr);background:#F7F7FA;border:1px solid #E4E4EE;border-radius:20px;padding:12px 4px;box-shadow:0 3px 0 #E4E4EE}.cw-pf-st{display:flex;flex-direction:column;align-items:center;gap:2px;position:relative}.cw-pf-st+.cw-pf-st:before{content:'';position:absolute;left:0;top:14%;height:72%;width:1px;background:#D6D6E0}.cw-pf-st b{font-size:20px}.cw-pf-st small{font-size:12px;color:#5E5E73}.cw-pf-cont{position:relative;overflow:hidden;background:#F7F7FA;border:1px solid #E4E4EE;border-left:6px solid #E3182D;border-radius:20px;padding:16px;margin:14px 0;min-height:150px}.cw-pf-cont h2{margin:0;font-size:22px}.cw-pf-cont p{margin:4px 0 12px;color:#5E5E73;font-size:15px}.cw-pf-go{border:0;background:#E3182D;color:#fff;border-radius:999px;padding:12px 22px;font:inherit;font-weight:700;box-shadow:0 4px 0 #A8101F;cursor:pointer}.cw-pf-mt{position:absolute;right:0;bottom:0;width:100%;height:100%;object-fit:cover;object-position:right bottom;mix-blend-mode:multiply;pointer-events:none;z-index:1;-webkit-mask-image:linear-gradient(to left,#000 50%,transparent);mask-image:linear-gradient(to left,#000 50%,transparent)}.cw-pf-cont{min-height:200px;margin:14px -12px;padding:18px 16px;display:flex;align-items:flex-end;border-radius:24px}.cw-pf-cont-txt{position:relative;z-index:2;max-width:62%}.cw-pf-go{position:relative;z-index:3}.cw-pf-strip{margin:0 -12px;padding:14px 6px}.cw-pf-st b{font-size:22px}.cw-pf-st .cw-ov-ico svg,.cw-pf-st .cw-ov-ico img{width:30px;height:30px;object-fit:contain;display:block}";
   document.head.appendChild(__pf);
 }
 function profileHtml(p) {
@@ -246,13 +246,13 @@ function profileHtmlUnsafe(p) {
     return cell('<span class="cw-glyph on">' + I.medal + '</span>', a.name, '<b>' + esc(a.name) + '</b><span>' + esc(u.info.day || "") + '</span>');
   }).join("");
   return '<section class="cw-pf">' +
-    '<div class="cw-pf-hero"><span class="cw-pf-circle" aria-hidden="true"></span><img class="cw-pf-crow" src="mascot.png" alt="Crow"></div>' +
+    '<div class="cw-pf-hero"><span class="cw-pf-circle" aria-hidden="true"></span><img class="cw-pf-crow" src="crow-1.png" alt="Crow"></div>' +
     '<div class="cw-pf-idrow"><h1 class="cf-title cw-pf-name" tabindex="-1">' + esc(name) + '</h1>' +
       (s2 ? '<span class="cw-pf-div" aria-hidden="true"></span><span class="cw-pf-since">' + esc(s2.replace(/^Cadastrado há /, "desde ")) + '</span>' : '') + '</div>' +
     '<div class="cw-pf-strip">' +
       '<div class="cw-pf-st"><span class="cw-ov-ico">' + lvIco(li.l) + '</span><b>' + (s ? s.points : 0) + '</b><small>XP total</small></div>' +
       '<div class="cw-pf-st"><span class="cw-ov-ico">' + I.trophy + '</span><b>' + trophyTotal() + '</b><small>Troféus</small></div>' +
-      '<div class="cw-pf-st"><span class="cw-ov-ico">' + I.noz + '</span><b>' + nozCount() + '</b><small>Nozes</small></div>' +
+      '<div class="cw-pf-st"><span class="cw-ov-ico"><img src="noz-logo.png" alt="" width="34" height="34"></span><b>' + nozCount() + '</b><small>Nozes</small></div>' +
       '<div class="cw-pf-st"><span class="cw-ov-ico">' + I.medal + '</span><b>' + unlockedAch().length + '</b><small>Conquistas</small></div>' +
     '</div>' +
     '<div class="cw-pf-cont"><div class="cw-pf-cont-txt"><h2>Continue evoluindo!</h2><p>Desafios te esperam na sua jornada.</p>' +

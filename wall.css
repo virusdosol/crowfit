@@ -291,3 +291,13 @@ body.cw-home .cw-bar{display:grid}
 .am-meu { width: 100%; margin: 10px 0; }
 
 .cw-tab svg{width:22px;height:22px}
+
+/* ---- v81: rodapé sempre visível, cabeçalho fixo com título, ícones uniformes ---- */
+.cw-bar{display:grid}
+.cw-art{width:32px;height:32px;object-fit:contain;display:block}
+.cw-ico svg{width:32px;height:32px;stroke-width:2.2}
+.cw-tab:not([aria-current="page"]) .cw-ico svg{color:#171717}
+.cw-glyph img{width:34px;height:34px;object-fit:contain}
+.cw-full .cf-topbar{position:sticky;top:0;z-index:5;display:flex;align-items:center;min-height:60px;margin:-14px -18px 18px;padding:max(14px,env(safe-area-inset-top,0px)) 18px 10px;background:var(--bg,#F8F8FB)}
+.cw-full .cw-bar-title{position:absolute;left:50%;transform:translateX(-50%);font:800 20px Fredoka,Nunito,system-ui,sans-serif;pointer-events:none;white-space:nowrap}
+.cw-full .cw-back-ico{position:relative;z-index:1}

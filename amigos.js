@@ -326,15 +326,15 @@ function mount(el) {
   /* deixa o navegador passar os gestos horizontais para o app (só a rolagem vertical fica com ele) */
   el.style.touchAction = "pan-y";
   var px = null, py = null, pid = null;
-  el.addEventListener("pointerdown", function (e) { if (e.pointerType !== "touch") return; px = e.clientX; py = e.clientY; pid = e.pointerId; });
-  el.addEventListener("pointerup", function (e) {
-    if (px == null || e.pointerId !== pid) return;
-    var dx = e.clientX - px, dy = e.clientY - py; px = null; pid = null;
+  el.addEventListener("touchstart", function (e) { var t = e.touches && e.touches[0]; if (!t) return; px = t.clientX; py = t.clientY; }, { passive: true });
+  el.addEventListener("touchend", function (e) {
+    var t = e.changedTouches && e.changedTouches[0]; if (px == null || !t) return;
+    var dx = t.clientX - px, dy = t.clientY - py; px = null;
     if (Math.abs(dx) < 50 || Math.abs(dy) > 60) return;
     var i = TAB_ORDER.indexOf(tab), j = dx < 0 ? Math.min(TAB_ORDER.length - 1, i + 1) : Math.max(0, i - 1);
     if (j !== i) switchTab(TAB_ORDER[j]);
-  });
-  el.addEventListener("pointercancel", function () { px = null; pid = null; });
+  }, { passive: true });
+  el.addEventListener("touchcancel", function () { px = null; }, { passive: true });
   el.addEventListener("click", onClick);
   el.addEventListener("submit", onSubmit);
   el.addEventListener("input", onInput);

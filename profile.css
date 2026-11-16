@@ -26,3 +26,6 @@
 .cf-prof .cf-icon:active { transform: translateY(2px); box-shadow: none; }
 
 .cf-stat-btn{border:0;background:none;font:inherit;color:inherit;cursor:pointer}
+
+/* v81: engrenagem sempre à direita, também na página Evolução */
+.cf-prof .cf-topbar .cf-icon{margin-left:auto}
