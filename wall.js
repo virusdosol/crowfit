@@ -9,7 +9,7 @@ var I = {
   book: '<img class="cw-img-ico" src="icon_library.png" alt="" width="26" height="26">',
   home: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
   medal: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><circle cx="12" cy="9" r="6"/><path d="M8.5 14.2 7 21l5-2.5 5 2.5-1.5-6.8"/></svg>',
-  grid: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>',
+  grid: '<img class="cw-art" src="icon_badge_crown.png" alt="" width="26" height="26">',
   // noz descascada: casca aberta com a semente à mostra
   noz: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M12 2.8c-4.6 0-7.6 3.6-7.6 8.2 0 3.9 2.3 6.9 4.7 8.4.8.5 1.6.5 2.3 0 .5-.3 1-.3 1.5 0 .7.5 1.5.5 2.3 0 2.4-1.5 4.8-4.5 4.8-8.4 0-4.6-3-8.2-7.9-8.2z"/><path d="M8.6 9.2c1.3 1.1 1.4 3.6.2 5.2M15.4 9.2c-1.3 1.1-1.4 3.6-.2 5.2"/></svg>',
   trophy: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/><path d="M12 14v4M8 20h8M9 18h6"/></svg>',
@@ -51,6 +51,18 @@ function trophyEqInfo() {
 }
 function trophyTotal() { try { return CF().trophyCount(trophyRecs()); } catch (e) { return 0; } }
 function nozCount() { return Object.keys((S() && S().nozes) || {}).length; }
+if (typeof document !== "undefined" && !document.getElementById("cw-deco-css")) {
+  var __dc = document.createElement("style"); __dc.id = "cw-deco-css";
+  __dc.textContent = ".cw-deco{position:absolute;top:6px;right:8px;width:72px;height:auto;pointer-events:none;z-index:0;opacity:.95}.cw-pagebody{position:relative}.cw-art{display:inline-block;vertical-align:middle;object-fit:contain}";
+  document.head.appendChild(__dc);
+}
+/* Arte nova (PNG na raiz do repositório). Conquistas e troféus usam estas imagens. */
+var ART = { trophy: ['trophy_bronze.png', 'trophy_silver.png', 'trophy_gold.png', 'trophy_diamond.png'],
+  ach: { primeiro_treino: 'ach_mushroom.png', primeira_noz: 'ach_acorn.png', nivel_3: 'ach_pinecone.png', nivel_5: 'ach_oak_leaf.png', consistencia_insana: 'ach_morel.png', dias_30: 'ach_scroll.png' },
+  badge: 'icon_badge_crown.png', gold: 'trophy_gold.png' };
+function artImg(src, w) { return '<img class="cw-art" src="' + src + '" alt="" width="' + (w || 34) + '" height="' + (w || 34) + '">'; }
+function achIco(id) { return ART.ach[id] ? artImg(ART.ach[id]) : I.medal; }
+function trophyIco(i) { return ART.trophy[i] ? artImg(ART.trophy[i]) : I.trophy; }
 function achList() { return (CF().ACH || []); }
 function unlockedAch() { var s = S(); return Object.keys((s && s.achievements) || {}).map(function (id) { return { id: id, info: s.achievements[id] }; }).sort(function (a, b) { return String(b.info.at).localeCompare(String(a.info.at)); }); }
 function lineFor(n) { return CROW.nivel[n % CROW.nivel.length]; }
@@ -99,7 +111,10 @@ function renderPage() {
   if (k === "amigos") return; /* página de amigos cuida do próprio conteúdo (busca no servidor) */
   if (k === "tro" && body) { if (trSt.last !== null) trSt.sc[trSt.last] = body.scrollTop; }
   var html = k === "ach" ? pageAch() : k === "app" ? pageApp() : k === "tro" ? pageTro() : k === "noz" ? pageNoz() : k === "bib" ? pageBib() : pageLevel();
-  body.innerHTML = html;
+  /* enfeite de canto: uma peça por página (arte da sheet) */
+  var DECO = { bib: "deco_lantern.png", noz: "deco_door.png", app: "deco_bush.png", ach: "deco_stone_crow.png", tro: "deco_stone_crow.png" };
+  var deco = DECO[k] ? "<img class=\"cw-deco\" src=\"" + DECO[k] + "\" alt=\"\" aria-hidden=\"true\">" : "";
+  body.innerHTML = deco + html;
   var topb = curPage.el.querySelector(".cf-topbar");
   if (topb) topb.hidden = (k === "tro" && trSt.view === "cat" && !CFTrL.norm(trSt.q)) || (k === "bib" && bibSt.view !== "cats");
   if (k === "tro") {
@@ -118,7 +133,7 @@ function pageAch() {
     (list.length ? '<div class="cw-icons">' + list.map(function (a) {
       var got = gotAch(a.id);
       var bub = got ? '<b>' + esc(a.name) + '</b><span>' + esc(a.how) + '.</span>' : '<b>Bloqueada</b><span>' + esc(a.how) + '.</span>';
-      return cell('<span class="cw-glyph' + (got ? " on" : " off") + '">' + I.medal + '</span>', (got ? a.name : "Conquista bloqueada"), bub);
+      return cell('<span class="cw-glyph' + (got ? " on" : " off") + '">' + achIco(a.id) + '</span>', (got ? a.name : "Conquista bloqueada"), bub);
     }).join("") + '</div>' : '<p class="cw-empty">' + esc(CROW.vazio_ach) + '</p>');
 }
 function pageNoz() {
@@ -146,7 +161,7 @@ function trCard(r, eq) {
   var lv = r.levels.map(function (l, i) {
     var key = r.id + ":" + l.id, sel = eq === key;
     return '<div class="tr-lvl' + (l.unlocked ? " on" : " off") + '">' +
-      '<span class="cw-glyph trophy s' + i + (l.unlocked ? " on" : " off") + '">' + I.trophy + '</span>' +
+      '<span class="cw-glyph trophy s' + i + (l.unlocked ? " on" : " off") + '">' + trophyIco(i) + '</span>' +
       '<div class="tr-lvl-t"><b>' + TR_NAMES[i] + '</b><small>' + (l.unlocked ? "Desbloqueado" : "Bloqueado") + ' · ' + esc(trLvlTxt(r, l)) + '</small></div>' +
       (l.unlocked ? '<button type="button" class="cw-btn ' + (sel ? "" : "cw-primary") + ' tr-eqbtn" data-act="tro-eq" data-key="' + esc(key) + '">' + (sel ? "Desequipar" : "Equipar") + '</button>' : "") +
       '</div>';
@@ -235,10 +250,10 @@ function profileHtmlUnsafe(p) {
   var s = S(), prof = (p && p.profile) || {}, name = prof.displayName || "", s2 = since(prof.createdAt);
   var li = s && root.lvlInfo ? root.lvlInfo() : { l: 0 };
   var te = trophyEqInfo();
-  var troH = te ? cell('<span class="cw-glyph trophy s' + te.idx + ' on">' + I.trophy + '</span>', te.row.name, '<b>' + esc(te.row.name) + '</b><span>' + esc(te.lv.name) + '</span>') : '<p class="cw-hint">Nenhum troféu equipado. Escolha um na página de troféus.</p>';
+  var troH = te ? cell('<span class="cw-glyph trophy s' + te.idx + ' on">' + trophyIco(te.idx) + '</span>', te.row.name, '<b>' + esc(te.row.name) + '</b><span>' + esc(te.lv.name) + '</span>') : '<p class="cw-hint">Nenhum troféu equipado. Escolha um na página de troféus.</p>';
   var achH = unlockedAch().slice(0, 4).map(function (u) {
     var a = achList().filter(function (x) { return x.id === u.id; })[0]; if (!a) return "";
-    return cell('<span class="cw-glyph on">' + I.medal + '</span>', a.name, '<b>' + esc(a.name) + '</b><span>' + esc(u.info.day || "") + '</span>');
+    return cell('<span class="cw-glyph on">' + achIco(a.id) + '</span>', a.name, '<b>' + esc(a.name) + '</b><span>' + esc(u.info.day || "") + '</span>');
   }).join("");
   return '<section class="cw-pf">' +
     '<div class="cw-pf-avatar"><img src="mascot.png" alt="Crow"></div>' +
@@ -246,9 +261,9 @@ function profileHtmlUnsafe(p) {
     (s2 ? '<p class="cw-pf-since">' + esc(s2) + '</p>' : '') +
     '<div class="cw-ov-grid">' +
       '<div class="cw-ov"><span class="cw-ov-ico">' + lvIco(li.l) + '</span><b>' + (s ? s.points : 0) + '</b><small>XP total</small></div>' +
-      '<div class="cw-ov"><span class="cw-ov-ico">' + I.trophy + '</span><b>' + trophyTotal() + '</b><small>Troféus</small></div>' +
+      '<div class="cw-ov"><span class="cw-ov-ico">' + artImg(ART.gold, 26) + '</span><b>' + trophyTotal() + '</b><small>Troféus</small></div>' +
       '<div class="cw-ov"><span class="cw-ov-ico">' + I.noz + '</span><b>' + nozCount() + '</b><small>Nozes</small></div>' +
-      '<div class="cw-ov"><span class="cw-ov-ico">' + I.medal + '</span><b>' + unlockedAch().length + '</b><small>Conquistas</small></div>' +
+      '<div class="cw-ov"><span class="cw-ov-ico">' + artImg(ART.badge, 26) + '</span><b>' + unlockedAch().length + '</b><small>Conquistas</small></div>' +
     '</div>' +
     '<h2 class="cw-sec">Troféu equipado</h2><div class="cw-icons cw-four">' + troH + '</div>' +
     '<h2 class="cw-sec">Últimas conquistas</h2><div class="cw-icons cw-four">' + (achH || '<p class="cw-hint">Nenhuma conquista ainda.</p>') + '</div>' +
