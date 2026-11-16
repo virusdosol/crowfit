@@ -5,6 +5,7 @@
 "use strict";
 var doc = root.document, RAR = { comum: "Comum", epica: "Épica", rara: "Rara", lendaria: "Lendária" };
 var I = {
+  bell: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>',
   book: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M4 5a2 2 0 0 1 2-2h13v15H6a2 2 0 0 0-2 2z"/><path d="M4 19a2 2 0 0 1 2-2h13v4H6a2 2 0 0 1-2-2z"/></svg>',
   home: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
   medal: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><circle cx="12" cy="9" r="6"/><path d="M8.5 14.2 7 21l5-2.5 5 2.5-1.5-6.8"/></svg>',
@@ -15,7 +16,7 @@ var I = {
   users: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.4 3.2-5.5 6.5-5.5s5.9 2.1 6.5 5.5"/><circle cx="17" cy="9" r="2.6"/><path d="M17.5 14.6c2.3.3 3.8 2 4.2 4.4"/></svg>',
   crow: '<img src="mascot.png" alt="Crow">'
 };
-var TABS = [["home", "home", "Trilha"], ["app", "grid", "Aparências"], ["bib", "book", "Biblioteca"], ["noz", "noz", "Nozes"], ["amigos", "users", "Amigos"]];
+var TABS = [["home", "home", "Trilha"], ["app", "grid", "Aparências"], ["bib", "book", "Biblioteca"], ["noz", "noz", "Nozes"], ["amigos", "users", "Amigos"], ["notif", "bell", "Notificações"]];
 var bibSt = { view: "cats" };
 var CROW = {
   vazio_ach: "Nenhuma conquista ainda. Não é pra olhar, é pra fazer.",
@@ -79,6 +80,7 @@ function closePage() { if (curPage && curPage.el) curPage.el.remove(); curPage =
 function openPage(kind) {
   if (kind === "home") { closePage(); if (typeof root.renderHome === "function") root.renderHome(); return; }
   closePage();
+  if (kind === "notif") { closePage(); if (typeof root.openNotifs === "function") root.openNotifs(); return; }
   if (kind === "bib") bibSt = { view: "cats", story: localStorage.getItem("crowfit-bib-intro") === "1" ? null : 0 };
   if (kind === "tro") { trSt.last = null; trSt.focusQ = false; }
   var el = doc.createElement("div"); el.className = "cw-full"; el.setAttribute("role", "dialog");
@@ -90,32 +92,7 @@ function openPage(kind) {
   else renderPage();
   syncBar();
 }
-function bibFavs() { try { var a = JSON.parse(localStorage.getItem("crowfit-bib-fav") || "[]"); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
-var bibPulled = false;
-function bibClient() { return root.CrowfitAuth && root.CrowfitAuth.getClient ? root.CrowfitAuth.getClient() : null; }
-/* Envia a lista local inteira para a conta. Erros não travam o app: a lista local continua valendo. */
-function bibDirty(v) { try { if (v === undefined) return localStorage.getItem("crowfit-bib-dirty") === "1"; localStorage.setItem("crowfit-bib-dirty", v ? "1" : "0"); } catch (e) {} return v; }
-function bibSync() {
-  var c = bibClient(); if (!c) return;
-  bibDirty(true);
-  c.rpc("replace_my_favorites", { p: { ids: bibFavs() } }).then(function (r) {
-    if (r.error) { console.warn("Crowfit: favoritos não sincronizados", r.error.message); return; }
-    bibDirty(false);
-  }).catch(function () {});
-}
-/* Puxa da conta. Se a conta está vazia e o aparelho tem favoritos (primeiro uso), envia os locais. */
-function bibPull() {
-  var c = bibClient(); if (!c) return;
-  c.rpc("get_my_favorites").then(function (r) {
-    if (r.error || !Array.isArray(r.data)) return;
-    if (bibDirty()) return bibSync();   /* alteração feita sem rede: envia antes de puxar, para não perder */
-    if (r.data.length === 0 && bibFavs().length > 0) return bibSync();
-    try { localStorage.setItem("crowfit-bib-fav", JSON.stringify(r.data)); } catch (e) {}
-    if (curPage && curPage.kind === "bib") renderPage();
-  }).catch(function () {});
-}
-function pageBib() {
-  if (!bibPulled) { bibPulled = true; bibPull(); } if (root.CFBib && bibSt.story != null) return root.CFBib.storyHtml(bibSt.story); return root.CFBib ? root.CFBib.html(root.CFP.LIB, root.BIB_TXT || {}, Object.assign({}, bibSt, { fav: bibFavs() })) : "<p class=\"cw-hint\">Biblioteca indisponível.</p>"; }
+function pageBib() { if (root.CFBib && bibSt.story != null) return root.CFBib.storyHtml(bibSt.story); return root.CFBib ? root.CFBib.html(root.CFP.LIB, root.BIB_TXT || {}, bibSt) : "<p class=\"cw-hint\">Biblioteca indisponível.</p>"; }
 function renderPage() {
   if (!curPage || !S()) return;
   var k = curPage.kind, body = curPage.el.querySelector(".cw-pagebody");
@@ -289,9 +266,6 @@ function bubbleToggle(btn) {
 /* ---------- ações ---------- */
 function act(kind, el) {
   if (kind === "bib-cat") { bibSt = { view: "cat", cat: el.getAttribute("data-cat") }; return renderPage(); }
-  if (kind === "bib-fav") { var fid = el.getAttribute("data-ex"), fl = bibFavs(), fi = fl.indexOf(fid); if (fi >= 0) fl.splice(fi, 1); else fl.push(fid); try { localStorage.setItem("crowfit-bib-fav", JSON.stringify(fl)); } catch (e) {} bibSync(); return renderPage(); }
-  if (kind === "bib-fav-open") { bibSt = { view: "fav" }; return renderPage(); }
-  if (kind === "bib-kind") { bibSt.kind = el.getAttribute("data-kind") || ""; return renderPage(); }
   if (kind === "bib-ex") { bibSt = { view: "ex", cat: bibSt.cat, ex: el.getAttribute("data-ex") }; return renderPage(); }
   if (kind === "bib-story-next") { bibSt.story = bibSt.story + 1 >= root.CFBib.STORY.length ? null : bibSt.story + 1; if (bibSt.story === null) markBibIntro(); return renderPage(); }
   if (kind === "bib-story-skip") { bibSt.story = null; markBibIntro(); return renderPage(); }
@@ -395,8 +369,6 @@ function hookSave() {
 function init() {
   bar();
   doc.addEventListener("input", function (e) {
-    var bq = e.target && e.target.matches && e.target.matches("[data-bib-q]");
-    if (bq) { bibSt.q = e.target.value; renderPage(); var qi = doc.querySelector("[data-bib-q]"); if (qi) { qi.focus(); try { qi.setSelectionRange(qi.value.length, qi.value.length); } catch (x) {} } return; }
     var q = e.target && e.target.matches && e.target.matches("[data-tr-q]"); if (!q) return;
     trSt.q = e.target.value; trSt.focusQ = true; renderPage();
   });

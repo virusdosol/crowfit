@@ -19,9 +19,9 @@ body.cw-home{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 .cw-sticky .top button:focus-visible{outline:3px solid var(--brand,#E3182D);outline-offset:2px;border-radius:12px}
 
 /* barra inferior: só ícones, levemente maiores, cantos arredondados */
-.cw-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:100;display:none;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;width:min(calc(100% - 28px),420px);padding:8px;background:var(--card,#fff);border:2px solid var(--line,#E4E4EE);border-radius:28px;box-shadow:0 6px 0 var(--line,#E4E4EE)}
+.cw-bar{position:fixed;left:0;right:0;bottom:0;top:auto;transform:none;z-index:100;display:none;grid-template-columns:repeat(6,minmax(0,1fr));gap:0;width:100%;max-width:none;margin:0;padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));background:var(--card,#fff);border:0;border-top:1px solid var(--line,#E4E4EE);border-radius:0;box-shadow:none}
 body.cw-home .cw-bar{display:grid}
-.cw-tab{display:flex;align-items:center;justify-content:center;min-height:60px;border:0;border-radius:22px;background:none;color:var(--mute,#5E5E73);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .15s,color .15s}
+.cw-tab{display:flex;align-items:center;justify-content:center;min-height:52px;border:0;border-radius:14px;background:none;color:var(--mute,#5E5E73);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .15s,color .15s}
 .cw-tab[aria-current="page"]{background:var(--brand,#E3182D);color:#fff}
 .cw-tab:focus-visible{outline:3px solid var(--brand,#E3182D);outline-offset:2px}
 .cw-tab:active{transform:translateY(1px)}
@@ -289,3 +289,5 @@ body.cw-home .cw-bar{display:grid}
 .am-tag { display: inline-block; vertical-align: middle; margin-left: 6px; padding: 3px 9px; border-radius: 99px; background: #E3182D; color: #fff; font: 800 11px Nunito, sans-serif; }
 .am-perfil-acts { margin-top: 16px; }
 .am-meu { width: 100%; margin: 10px 0; }
+
+.cw-tab svg{width:22px;height:22px}

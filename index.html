@@ -414,7 +414,7 @@ function openNozScreen(k){var t=today();
  var xp=S.nozes[k];
  view('<div class="of-wrap"><div class="of-top"><button type="button" class="of-x" id="nz-bk" aria-label="Voltar para as ofensivas"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><img class="of-logo" src="logo-dark.png" alt="Crowfit"><span class="of-sp"></span></div>'+
  '<div class="nz-scr"><img class="nz-img" src="noz-aberta.png" alt="Noz aberta"><div class="nz-xp">+'+xp+' XP</div><p class="nz-msg">Sua noz da semana rendeu '+xp+' pontos de experiência.</p><button type="button" class="btn" id="nz-ok">Continuar</button></div></div>');
- $("nz-bk").onclick=renderOfensivas;$("nz-ok").onclick=renderOfensivas}
+ window.scrollTo(0,0);$("nz-bk").onclick=renderOfensivas;$("nz-ok").onclick=renderHome}
 function ofClick(e){var b=e.target.closest&&e.target.closest("[data-nav],[data-ds]");if(!b)return;
  if(b.hasAttribute("data-nav")){var mm=OF.m+(+b.getAttribute("data-nav"));OF.y+=Math.floor(mm/12);OF.m=((mm%12)+12)%12;}
  else OF.sel=b.getAttribute("data-ds");

@@ -319,7 +319,7 @@ function openUnit(ctx, i) {
     var on = pr.map[e.id] === true;
     return '<li class="ex' + (on ? " ok" : "") + '" data-id="' + e.id + '"><button class="ex-chk" data-id="' + e.id + '" aria-pressed="' + on + '" aria-label="Marcar ' + esc(e.name) + ' como concluído"' + (closed ? " disabled" : "") + '>' + (on ? "✓" : "") + '</button><div class="ex-b"><b>' + (k + 1) + '. ' + esc(e.name) + '</b><span>' + esc(e.label) + '</span><small>' + esc(e.tip) + '</small></div></li>';
   }).join("");
-  ctx.view('<div class="u-top"><button class="chip" id="u-bk" aria-label="Voltar à trilha">← Trilha</button><span>SEMANA ' + W.w + ' — UNIDADE ' + W.d + '</span></div>' +
+  ctx.view('<div class="u-top"><button class="cw-back-ico" id="u-bk" aria-label="Voltar à trilha"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><span>SEMANA ' + W.w + ' — UNIDADE ' + W.d + '</span></div>' +
     '<div class="u-hero"><span class="rb u-rb wk' + W.c + ' st-' + pr.st + '" id="u-rb">' + ring(pr.p) + '<span class="tn-btn">' + icon(ct.group) + '</span></span><p class="u-day">' + P.DIAS[u.dow].toUpperCase() + ' · ' + fmt(u.date) + '</p><h1>' + esc(ct.title.toUpperCase()) + '</h1></div>' +
     '<div class="card u-prog"><b id="u-pt"></b><div class="bar" style="margin-top:8px"><i id="u-pb"></i></div></div>' +
     (past ? '<p class="u-note">Este dia já passou (' + fmt(u.date) + '), então o treino não pode mais ser feito ou alterado. Você pode apenas consultar.</p>' : locked ? '<p class="u-note">Este treino será liberado em ' + fmt(u.date) + ' (a partir da meia-noite). Você pode consultar a programação.</p>' : '<button class="btn u-go" id="u-go"></button>') +
@@ -348,6 +348,7 @@ function openUnit(ctx, i) {
       ctx.save(); var p2 = refresh(); ctx.say(p2.p >= 1 ? "Treino completo" : p2.done + " de " + p2.total + " exercícios concluídos");
     };
   });
+  window.scrollTo(0, 0);
   $("u-bk").onclick = $("u-bk2").onclick = ctx.back;
 }
 
