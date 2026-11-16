@@ -172,7 +172,7 @@ describe("apresentação", () => {
     assert.match(h, /nt-unread/);
     assert.match(h, /nt-sel/);
     assert.match(h, /Excluir/);
-    assert.match(h, /Marcar como lida/);
+    assert.doesNotMatch(h, /Marcar como lida/);
     assert.doesNotMatch(h, /Preferências/);
     assert.doesNotMatch(h, /undefined|NaN/);
   });

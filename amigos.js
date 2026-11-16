@@ -261,6 +261,7 @@ function onClick(ev) {
   if (a === "voltar") { view = null; return load(); }
   if (a === "tab-amigos") { tab = "amigos"; view = null; return render(); }
   if (a === "tab-buscar") { tab = "buscar"; view = null; return render(); }
+  if (a === "tab-desafios") { return openDesafios(); }
   if (a === "desafios") { tab = "desafios"; return openDesafios(); }
   if (a === "desafios-old") { var A = root.CrowfitAuth, c = A && A.getClient ? A.getClient() : null; if (!root.CrowDesafios || !c) return; view = null; var r = root.CrowDesafios.open(box, c, function () { load(); }); if (box && !box.querySelector(".cf-tabs")) box.insertAdjacentHTML("afterbegin", tabsHtml("desafios")); return r; }
   if (a === "rank") { var m = b.getAttribute("data-m"); rankMode = m === "streak" || m === "trophies" ? m : "xp"; box.innerHTML = html(lastData); return; }

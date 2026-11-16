@@ -212,8 +212,7 @@ function html(inbox, CF, today, perm, opts) {
   if (opts.pending) h += '<p class="nt-note">Sem conexão: notificações sociais aparecem quando você voltar a ter sinal.</p>';
   h += '<div class="nt-bar" role="toolbar" aria-label="Ações">' +
        '<button type="button" class="nt-chip" id="nt-selall">Selecionar tudo</button>' +
-       '<button type="button" class="nt-chip" id="nt-readsel">Marcar como lida</button>' +
-       '<button type="button" class="nt-chip nt-trash" id="nt-delsel" aria-label="Excluir selecionados"><svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13\"/></svg> Excluir</button></div>';
+              '<button type="button" class="nt-chip nt-trash" id="nt-delsel" aria-label="Excluir selecionados"><svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13\"/></svg> Excluir</button></div>';
 
   if (!inbox.items.length) h += '<div class="nt-empty"><p>Nada por aqui. Quando algo acontecer na sua trilha ou com seus amigos, aparece aqui.</p></div>';
   groupByDay(inbox.items, CF, today).forEach(function (g) {

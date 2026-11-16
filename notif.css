@@ -46,3 +46,12 @@
 .nt-body small{font-size:12px;color:#7A7A88}
 .nt-x{border:0;background:#fff;border-radius:12px;width:36px;height:36px;display:grid;place-items:center;color:#5E5E73;cursor:pointer;box-shadow:0 2px 0 #E4E4EE}
 .nt-x:focus-visible{outline:2px solid #E3182D;outline-offset:2px}
+
+/* cartões vermelhos sobre o fundo branco */
+.nt-card{background:#E3182D;border-color:#E3182D;box-shadow:0 4px 0 #A8101F}
+.nt-card.nt-unread{border-color:#E3182D}
+.nt-card .nt-tag,.nt-card .nt-body b,.nt-card .nt-body p,.nt-card .nt-body small{color:#fff}
+.nt-card .nt-ico{background:#fff;color:#E3182D}
+.nt-card .nt-x{background:rgba(255,255,255,.22);color:#fff;box-shadow:none}
+.nt-card .nt-pick span{border-color:#fff;background:rgba(255,255,255,.2)}
+.nt-card .nt-pick input:checked + span{background:#fff;border-color:#fff;box-shadow:inset 0 0 0 4px #E3182D}

@@ -483,7 +483,6 @@ function openNotifs(){var inbox=ntLoad(),c=ntClock();view('<div id="nt-box"></di
  function bind(){
   box.querySelector("#nt-bk").onclick=renderHome;
   box.querySelector("#nt-selall").onclick=function(){var b=Array.prototype.slice.call(box.querySelectorAll("[data-nt-sel]"));var all=b.length&&b.every(function(x){return x.checked});b.forEach(function(x){x.checked=!all})};
-box.querySelector("#nt-readsel").onclick=function(){selIds().forEach(function(id){NOTIF.markRead(inbox,id)});save();draw()};
 box.querySelector("#nt-delsel").onclick=function(){var ids=selIds();if(!ids.length)return;NOTIF.removeItems(inbox,ids);save();draw()};
   
   Array.prototype.forEach.call(box.querySelectorAll("[data-nt-x]"),function(b){b.onclick=function(){NOTIF.removeItems(inbox,[b.getAttribute("data-nt-x")]);save();draw()}});
