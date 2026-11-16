@@ -157,10 +157,16 @@ function trCard(r, eq) {
     trBar(w, 4) + '<span class="tr-dots">' + trDots(r) + '</span></button>' +
     '<div class="tr-body"><div class="tr-inner">' + lv + '</div></div></article>';
 }
+if (typeof document !== "undefined" && !document.getElementById("tr-hero-css")) {
+  var __th = document.createElement("style"); __th.id = "tr-hero-css";
+  __th.textContent = ".tr-art{width:150px;height:auto;flex:none;pointer-events:none}.tr-hero{margin-top:10px}";
+  document.head.appendChild(__th);
+}
 function pageTro() {
   var rows = trophyRows(), eq = S().trophyEq || null, cats = (root.CFBib && root.CFBib.CATS) || [];
   var hasAny = rows.some(function (r) { return r.exercises > 0; });
-  var head = '<div class="cw-head"><h2>Troféus</h2><span>' + trophyTotal() + ' no total</span></div>';
+  var head = '<div class="of-hero tr-hero"><div class="of-l"><div class="of-num">' + trophyTotal() + '</div>' +
+    '<div class="of-txt">troféus conquistados</div></div><img class="tr-art" src="trofeu_hero.png" alt="" aria-hidden="true"></div>';
   var search = '<input class="tr-q" data-tr-q type="search" maxlength="40" autocomplete="off" placeholder="Buscar exercício" value="' + esc(trSt.q) + '" aria-label="Buscar exercício">';
   var chips = '<div class="tr-chips" role="group" aria-label="Filtrar">' + TR_FILTERS.map(function (f) {
     return '<button type="button" class="tr-chip' + (trSt.f === f[0] ? " on" : "") + '" data-act="tr-f" data-f="' + f[0] + '" aria-pressed="' + (trSt.f === f[0]) + '">' + f[1] + '</button>';
