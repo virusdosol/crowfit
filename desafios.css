@@ -30,3 +30,7 @@
 
 /* abas da tela de desafios: quebram linha, sem barra de rolagem */
 .dg-tabs{display:flex;flex-wrap:wrap;overflow:visible;gap:6px}
+
+/* abas de desafios: quatro colunas iguais, uma linha */
+.dg-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.dg-tab{padding:8px 4px;font-size:12px;white-space:nowrap;text-align:center}
