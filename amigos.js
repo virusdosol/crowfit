@@ -323,15 +323,18 @@ function tabsHtml(on) {
 function mount(el) {
   if (!el) return;
   box = el; flash = ""; found = null; view = null;
-  var sx = null, sy = null;
-  el.addEventListener("touchstart", function (e) { var t = e.changedTouches && e.changedTouches[0]; sx = t ? t.clientX : null; sy = t ? t.clientY : null; }, { passive: true });
-  el.addEventListener("touchend", function (e) {
-    var t = e.changedTouches && e.changedTouches[0]; if (sx == null || !t) return;
-    var dx = t.clientX - sx, dy = t.clientY - sy; sx = null;
-    if (Math.abs(dx) < 60 || Math.abs(dy) > 50) return;
+  /* deixa o navegador passar os gestos horizontais para o app (só a rolagem vertical fica com ele) */
+  el.style.touchAction = "pan-y";
+  var px = null, py = null, pid = null;
+  el.addEventListener("pointerdown", function (e) { if (e.pointerType !== "touch") return; px = e.clientX; py = e.clientY; pid = e.pointerId; });
+  el.addEventListener("pointerup", function (e) {
+    if (px == null || e.pointerId !== pid) return;
+    var dx = e.clientX - px, dy = e.clientY - py; px = null; pid = null;
+    if (Math.abs(dx) < 50 || Math.abs(dy) > 60) return;
     var i = TAB_ORDER.indexOf(tab), j = dx < 0 ? Math.min(TAB_ORDER.length - 1, i + 1) : Math.max(0, i - 1);
     if (j !== i) switchTab(TAB_ORDER[j]);
-  }, { passive: true });
+  });
+  el.addEventListener("pointercancel", function () { px = null; pid = null; });
   el.addEventListener("click", onClick);
   el.addEventListener("submit", onSubmit);
   el.addEventListener("input", onInput);
