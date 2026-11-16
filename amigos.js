@@ -113,7 +113,7 @@ function amigosNeighbour(d) {
   var i = TAB_ORDER.indexOf(tab), j = i + d;
   if (i < 0 || j < 0 || j >= TAB_ORDER.length) return null;
   var target = TAB_ORDER[j];
-  if (target === "desafios") return tabsHtml("desafios") + '<p class="am-hint">Solte para abrir os desafios.</p>';
+  if (target === "desafios") return tabsHtml("desafios");
   if (!lastData) return null;
   var prev = tab; tab = target;
   try { return html(lastData); } catch (e) { return null; } finally { tab = prev; }

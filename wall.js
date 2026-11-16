@@ -24,7 +24,7 @@ var CROW = {
   vazio_noz: "Nenhuma noz ainda. Cumpra o combinado primeiro.",
   nivel: ["Nível subiu. Não se acostume.", "Mais um nível. Agora mantenha.", "Subiu. Ainda falta muito.", "Nível novo. Quero ver repetir."]
 };
-var PG_TITLE = { ach: "Conquistas", tro: "Troféus", noz: "Nozes", app: "Aparências", bib: "Biblioteca", amigos: "Amigos", nivel: "Nível" };
+var PG_TITLE = { ach: "Conquistas", tro: "Troféus", noz: "Ofensivas", app: "Aparências", bib: "Biblioteca", amigos: "Amigos", nivel: "Nível" };
 function pageTitle(k) { return PG_TITLE[k] || ""; }
 var curPage = null, sel = null, queue = [], showing = false, shownAch = [];
 var lastLevel = null, lastS = null, seenPending = {}, lastTro = -1, cel = null;
@@ -167,10 +167,16 @@ if (typeof document !== "undefined" && !document.getElementById("tr-hero-css2"))
   __th2.textContent = ".tr-hero{flex-direction:column;align-items:center;text-align:center;margin-top:8px}.tr-hero .of-l{display:flex;flex-direction:column;align-items:center}.tr-hero .of-num{font-size:64px}.tr-hero .of-txt{font-size:15px}.tr-art{order:-1;width:112px;height:auto;margin:0 auto}.cw-pf-cont{margin-left:-22px;margin-right:-22px}";
   document.head.appendChild(__th2);
 }
+if (typeof document !== "undefined" && !document.getElementById("tr-hero-css3")) {
+  var __th3 = document.createElement("style"); __th3.id = "tr-hero-css3";
+  __th3.textContent = ".tr-hero{display:flex !important;flex-direction:row !important;align-items:center !important;justify-content:space-between !important;text-align:left !important;margin-top:16px !important}.tr-hero .of-num{font-size:clamp(96px,30vw,128px) !important;text-align:left !important}.tr-art{order:0 !important;width:130px !important;height:auto !important;flex:none !important;margin:0 !important}.cw-pf-cont{width:calc(100% + 44px) !important;max-width:none !important;margin-left:-22px !important;margin-right:-22px !important;box-sizing:border-box !important}";
+  document.head.appendChild(__th3);
+}
 function pageTro() {
   var rows = trophyRows(), eq = S().trophyEq || null, cats = (root.CFBib && root.CFBib.CATS) || [];
   var hasAny = rows.some(function (r) { return r.exercises > 0; });
-  var head = '<div class="of-hero tr-hero"><div class="of-l"><div class="of-num">' + trophyTotal() + '</div>' +
+    var head = '<div class="of-hero tr-hero"><img class="tr-art" src="trofeu_hero.png" alt="" aria-hidden="true">' +
+    '<div class="of-l"><div class="of-num">' + trophyTotal() + '</div><div class="of-txt">seus troféus</div></div></div>';
     '<div class="of-txt">troféus conquistados</div></div><img class="tr-art" src="trofeu_hero.png" alt="" aria-hidden="true"></div>';
   var search = '<input class="tr-q" data-tr-q type="search" maxlength="40" autocomplete="off" placeholder="Buscar exercício" value="' + esc(trSt.q) + '" aria-label="Buscar exercício">';
   var chips = '<div class="tr-chips" role="group" aria-label="Filtrar">' + TR_FILTERS.map(function (f) {
