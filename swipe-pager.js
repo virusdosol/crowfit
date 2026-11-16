@@ -1,12 +1,14 @@
 /* Crowfit: deslize lateral tipo "stories" entre páginas vizinhas.
-   Arrasta com o dedo mostrando a página vizinha; solta e completa se passou de 25% da largura.
-   Não é infinito: nas pontas da lista não arrasta. Usado pelo perfil (Perfil/Evolução) e por Amigos. */
+   Os elementos da página atual são MOVIDOS (não regravados), então nada é duplicado.
+   Arrasta mostrando a vizinha; solta e completa se passou de 25% da largura; senão volta.
+   Não é infinito: nas pontas não arrasta. Usado pelo perfil (Perfil/Evolução) e por Amigos. */
 (function (root) {
   "use strict";
   var ANIM = 240;
 
   function attach(vp, cfg) {
-    var sx = null, sy = null, mode = null, dir = 0, dx = 0, saved = null, tr = null, base = 0, busy = false;
+    var sx = null, sy = null, mode = null, dir = 0, dx = 0;
+    var wrap = null, tr = null, pa = null, base = 0, busy = false;
 
     function setX(px, animate) {
       tr.style.transition = animate ? "transform " + ANIM + "ms cubic-bezier(.2,.7,.2,1)" : "none";
@@ -14,31 +16,39 @@
     }
 
     function begin(nextHtml, d) {
-      saved = vp.innerHTML; dir = d;
-      var first = d > 0 ? saved : nextHtml, second = d > 0 ? nextHtml : saved;
-      vp.innerHTML = '<div class="cw-sl-vp"><div class="cw-sl-tr"><div class="cw-sl-pg">' + first +
-        '</div><div class="cw-sl-pg">' + second + '</div></div></div>';
-      tr = vp.querySelector(".cw-sl-tr");
+      dir = d;
+      wrap = document.createElement("div"); wrap.className = "cw-sl-vp";
+      tr = document.createElement("div"); tr.className = "cw-sl-tr";
+      pa = document.createElement("div"); pa.className = "cw-sl-pg";
+      var pb = document.createElement("div"); pb.className = "cw-sl-pg"; pb.innerHTML = nextHtml;
+      while (vp.firstChild) pa.appendChild(vp.firstChild);
+      if (d > 0) { tr.appendChild(pa); tr.appendChild(pb); } else { tr.appendChild(pb); tr.appendChild(pa); }
+      wrap.appendChild(tr); vp.appendChild(wrap);
       base = d > 0 ? 0 : -50;
       setX(0, false);
     }
 
+    function restore() {
+      if (wrap && wrap.parentNode === vp) vp.removeChild(wrap);
+      if (pa) while (pa.firstChild) vp.appendChild(pa.firstChild);
+      wrap = tr = pa = null; busy = false;
+    }
+
     function finish(ok) {
       if (!tr) return;
-      var w = vp.clientWidth || 1;
       busy = true;
       if (ok) {
         tr.style.transition = "transform " + ANIM + "ms cubic-bezier(.2,.7,.2,1)";
         tr.style.transform = "translateX(" + (dir > 0 ? "-50%" : "0px") + ")";
-        setTimeout(function () { tr = null; busy = false; cfg.commit(dir); }, ANIM + 30);
+        setTimeout(function () { wrap = tr = pa = null; busy = false; cfg.commit(dir); }, ANIM + 30);
       } else {
-        base = base; setX(0, true);
-        setTimeout(function () { vp.innerHTML = saved; tr = null; saved = null; busy = false; }, ANIM + 30);
+        setX(0, true);
+        setTimeout(restore, ANIM + 30);
       }
     }
 
     vp.addEventListener("touchstart", function (e) {
-      if (busy || (cfg.busy && cfg.busy()) || !e.touches || e.touches.length !== 1) { sx = null; return; }
+      if (busy || tr || (cfg.busy && cfg.busy()) || !e.touches || e.touches.length !== 1) { sx = null; return; }
       sx = e.touches[0].clientX; sy = e.touches[0].clientY; mode = null; dx = 0;
     }, { passive: true });
 

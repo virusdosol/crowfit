@@ -58,3 +58,6 @@
 
 /* v81: cabeçalho fixo da central de notificações */
 #nt-box .nt-top{position:sticky;top:0;z-index:5;background:var(--bg,#fff);padding:12px 0 8px;margin:0}
+
+/* v83: cabeçalho das notificações fica no mesmo lugar dos demais (regras no wall.css) */
+#nt-box .nt-top{margin:0;padding:calc(env(safe-area-inset-top,0px) + 10px) 56px 10px}

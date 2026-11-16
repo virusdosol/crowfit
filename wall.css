@@ -307,3 +307,15 @@ body.cw-home .cw-bar{display:grid}
 .cw-sl-tr{display:flex;width:200%;will-change:transform}
 .cw-sl-pg{width:50%;flex:0 0 50%;min-width:0;box-sizing:border-box}
 .am-crow{display:block;width:96px;height:auto;margin:4px auto 0;pointer-events:none}
+
+/* v83: cabeçalho padrão fixo no topo (todas as telas, menos a trilha) */
+.cw-ov-ico.cw-gold{color:#F5B301}
+.cw-full .cf-topbar,.of-top,.nt-top{position:fixed;top:0;left:0;right:0;z-index:90;margin:0;box-sizing:border-box;min-height:64px;padding:calc(env(safe-area-inset-top,0px) + 10px) 56px 10px;background:#fff;display:flex;align-items:center;justify-content:center}
+.cw-full{background:#fff}
+.cw-full .cw-pagebody{padding-top:calc(74px + env(safe-area-inset-top,0px))}
+.cw-full .cw-head h2{display:none}
+.cw-full .cw-head{justify-content:flex-end}
+.cw-full .cf-topbar .cw-back-ico,.of-top .cw-back-ico,.of-top .of-x,.nt-top .cw-back-ico{position:absolute;left:12px;top:50%;transform:translateY(-50%)}
+.cw-full .cw-bar-title,.of-title,.nt-top h2{position:absolute;left:50%;transform:translateX(-50%);margin:0;white-space:nowrap;font:800 20px Fredoka,Nunito,system-ui,sans-serif;color:#17171C}
+.of-wrap{padding-top:calc(74px + env(safe-area-inset-top,0px))}
+#nt-box .nt-wrap{padding-top:calc(74px + env(safe-area-inset-top,0px))}

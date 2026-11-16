@@ -251,7 +251,7 @@ function profileHtmlUnsafe(p) {
       (s2 ? '<span class="cw-pf-div" aria-hidden="true"></span><span class="cw-pf-since">' + esc(s2.replace(/^Cadastrado há /, "desde ")) + '</span>' : '') + '</div>' +
     '<div class="cw-pf-strip">' +
       '<div class="cw-pf-st"><span class="cw-ov-ico">' + lvIco(li.l) + '</span><b>' + (s ? s.points : 0) + '</b><small>XP total</small></div>' +
-      '<div class="cw-pf-st"><span class="cw-ov-ico">' + I.trophy + '</span><b>' + trophyTotal() + '</b><small>Troféus</small></div>' +
+      '<div class="cw-pf-st"><span class="cw-ov-ico cw-gold">' + I.trophy + '</span><b>' + trophyTotal() + '</b><small>Troféus</small></div>' +
       '<div class="cw-pf-st"><span class="cw-ov-ico"><img src="noz-logo.png" alt="" width="34" height="34"></span><b>' + nozCount() + '</b><small>Nozes</small></div>' +
       '<div class="cw-pf-st"><span class="cw-ov-ico">' + I.medal + '</span><b>' + unlockedAch().length + '</b><small>Conquistas</small></div>' +
     '</div>' +
