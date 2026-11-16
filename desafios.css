@@ -27,3 +27,6 @@
 .dg-opt[aria-pressed="true"]{background:#D92332;border-color:#D92332;color:#fff}
 .dg-chk{display:flex;align-items:center;gap:8px;padding:8px 0;font-size:14px}
 @media (prefers-reduced-motion:reduce){.dg-track i{transition:none}}
+
+/* abas da tela de desafios: quebram linha, sem barra de rolagem */
+.dg-tabs{display:flex;flex-wrap:wrap;overflow:visible;gap:6px}

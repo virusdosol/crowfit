@@ -24,7 +24,7 @@ var CROW = {
   vazio_noz: "Nenhuma noz ainda. Cumpra o combinado primeiro.",
   nivel: ["Nível subiu. Não se acostume.", "Mais um nível. Agora mantenha.", "Subiu. Ainda falta muito.", "Nível novo. Quero ver repetir."]
 };
-var PG_TITLE = { ach: "Conquistas", tro: "Troféus", noz: "Nozes", app: "Aparências", bib: "Biblioteca", amigos: "Amigos", nivel: "Nível" };
+var PG_TITLE = { ach: "Conquistas", tro: "Troféus", noz: "Ofensivas", app: "Aparências", bib: "Biblioteca", amigos: "Amigos", nivel: "Nível" };
 function pageTitle(k) { return PG_TITLE[k] || ""; }
 var curPage = null, sel = null, queue = [], showing = false, shownAch = [];
 var lastLevel = null, lastS = null, seenPending = {}, lastTro = -1, cel = null;
@@ -124,8 +124,8 @@ function pageAch() {
 function pageNoz() {
   var hist = [];
   try { hist = CF().boxHistory(S(), today()); } catch (e) { hist = []; }
-  if (!hist.length) return '<div class="cw-head"><h2>Nozes</h2></div><p class="cw-empty">' + esc(CROW.vazio_noz) + '</p>';
-  return '<div class="cw-head"><h2>Nozes</h2><span>' + nozCount() + ' abertas</span></div><div class="cw-icons">' + hist.map(function (h) {
+  if (!hist.length) return '<div class="cw-head"><h2>Ofensivas</h2></div><p class="cw-empty">' + esc(CROW.vazio_noz) + '</p>';
+  return '<div class="cw-head"><h2>Ofensivas</h2><span>' + nozCount() + ' abertas</span></div><div class="cw-icons">' + hist.map(function (h) {
     var aberta = h.status === "aberta", semanal = h.tipo === "semanal";
     var nome = semanal ? "Noz da semana de " + h.data : "Avelã de " + h.data.slice(0, 7);
     var st = aberta ? "Aberta" : "Pronta para abrir";
@@ -222,16 +222,17 @@ function openLevel() { if (S() && typeof root.lvlInfo === "function") { openPage
 /* ---------- perfil: visão geral (preenche a página de perfil, abaixo do avatar) ---------- */
 function since(iso) {
   var t = Date.parse(iso); if (!isFinite(t)) return "";
-  var d = Math.floor((Date.now() - t) / 86400000);
-  if (d < 1) return "Cadastrado hoje";
-  if (d < 30) return "Cadastrado há " + plural(d, "dia", "dias");
-  if (d < 365) return "Cadastrado há " + plural(Math.floor(d / 30), "mês", "meses");
-  return "Cadastrado há " + plural(Math.floor(d / 365), "ano", "anos");
+  return "desde " + new Date(t).getFullYear();
 }
 if (typeof document !== "undefined" && !document.getElementById("cw-pf-css")) {
   var __pf = document.createElement("style"); __pf.id = "cw-pf-css";
   __pf.textContent = ".cw-pf-hero{position:relative;display:flex;justify-content:center;align-items:flex-end;height:230px;margin:6px 0 0}.cw-pf-circle{position:absolute;width:250px;height:250px;border-radius:50%;background:#EEEFF5;top:-10px;left:50%;transform:translateX(-50%)}.cw-pf-crow{position:relative;width:200px;height:auto}.cw-pf-idrow{display:flex;align-items:center;justify-content:center;gap:12px;margin:10px 0 14px;flex-wrap:wrap}.cw-pf-name{margin:0;font-size:30px}.cw-pf-div{width:2px;height:22px;background:#D6D6E0}.cw-pf-since{color:#5E5E73;font-size:15px}.cw-pf-strip{display:grid;grid-template-columns:repeat(4,1fr);background:#F7F7FA;border:1px solid #E4E4EE;border-radius:20px;padding:12px 4px;box-shadow:0 3px 0 #E4E4EE}.cw-pf-st{display:flex;flex-direction:column;align-items:center;gap:2px;position:relative}.cw-pf-st+.cw-pf-st:before{content:'';position:absolute;left:0;top:14%;height:72%;width:1px;background:#D6D6E0}.cw-pf-st b{font-size:20px}.cw-pf-st small{font-size:12px;color:#5E5E73}.cw-pf-cont{position:relative;overflow:hidden;background:#F7F7FA;border:1px solid #E4E4EE;border-left:6px solid #E3182D;border-radius:20px;padding:16px;margin:14px 0;min-height:150px}.cw-pf-cont h2{margin:0;font-size:22px}.cw-pf-cont p{margin:4px 0 12px;color:#5E5E73;font-size:15px}.cw-pf-go{border:0;background:#E3182D;color:#fff;border-radius:999px;padding:12px 22px;font:inherit;font-weight:700;box-shadow:0 4px 0 #A8101F;cursor:pointer}.cw-pf-mt{position:absolute;right:0;bottom:0;width:100%;height:100%;object-fit:cover;object-position:right bottom;mix-blend-mode:multiply;pointer-events:none;z-index:1;-webkit-mask-image:linear-gradient(to left,#000 50%,transparent);mask-image:linear-gradient(to left,#000 50%,transparent)}.cw-pf-cont{min-height:200px;margin:14px -12px;padding:18px 16px;display:flex;align-items:flex-end;border-radius:24px}.cw-pf-cont-txt{position:relative;z-index:2;max-width:62%}.cw-pf-go{position:relative;z-index:3}.cw-pf-strip{margin:0 -12px;padding:14px 6px}.cw-pf-st b{font-size:22px}.cw-pf-st .cw-ov-ico svg,.cw-pf-st .cw-ov-ico img{width:30px;height:30px;object-fit:contain;display:block}";
   document.head.appendChild(__pf);
+}
+if (typeof document !== "undefined" && !document.getElementById("cw-pf-css2")) {
+  var __pf2 = document.createElement("style"); __pf2.id = "cw-pf-css2";
+  __pf2.textContent = ".cw-pf-name,.cw-pf-since{font-family:Fredoka,Nunito,sans-serif;font-size:30px;font-weight:700;letter-spacing:.5px;color:#17171C;line-height:1.1}.cw-pf-name{text-transform:uppercase}.cw-pf-since{text-transform:none;color:#17171C}.cw-pf-cont{padding:18px 16px 18px 22px}.cw-pf-cont-txt{position:relative;z-index:1;max-width:62%;text-align:left}.cw-pf-cont-txt h2,.cw-pf-cont-txt p{text-align:left}.cw-pf-mt{right:-4%;width:58%;bottom:0}";
+  document.head.appendChild(__pf2);
 }
 function profileHtml(p) {
   try { return profileHtmlUnsafe(p); } catch (e) { console.error('Crowfit: visão do perfil', e); return '<section class="cw-pf"><p class="cw-hint">Não consegui montar a visão geral agora. Seus dados estão salvos.</p></section>'; }

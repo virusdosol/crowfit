@@ -61,3 +61,6 @@
 
 /* v83: cabeçalho das notificações fica no mesmo lugar dos demais (regras no wall.css) */
 #nt-box .nt-top{margin:0;padding:calc(env(safe-area-inset-top,0px) + 10px) 56px 10px}
+
+/* cabeçalho das notificações fixo no topo */
+.nt-top{position:sticky;top:0;z-index:20;background:var(--bg,#fff);padding-top:calc(env(safe-area-inset-top,0px) + 10px);padding-bottom:8px}
