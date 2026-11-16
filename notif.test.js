@@ -165,13 +165,15 @@ describe("central: leitura, limpeza e limite do aparelho", () => {
 });
 
 describe("apresentação", () => {
-  test("central mostra não lidas, preferências e nunca undefined/NaN", () => {
+  test("central mostra não lidas, caixinhas de seleção e ações, sem preferências, e nunca undefined/NaN", () => {
     const inbox = N.emptyInbox(), c = clockFor(TODAY);
     N.addItem(inbox, "level", "a", "Novo nível", "Você chegou ao nível 2.", c);
     const h = N.html(inbox, CF, TODAY, "default", {});
     assert.match(h, /nt-unread/);
-    assert.match(h, /Preferências/);
-    assert.match(h, /Ativar avisos no aparelho/);
+    assert.match(h, /nt-sel/);
+    assert.match(h, /Excluir/);
+    assert.match(h, /Marcar como lida/);
+    assert.doesNotMatch(h, /Preferências/);
     assert.doesNotMatch(h, /undefined|NaN/);
   });
   test("sem notificações mostra o estado vazio", () => {
@@ -180,6 +182,5 @@ describe("apresentação", () => {
   test("navegador sem suporte não oferece botão de permissão", () => {
     const h = N.html(N.emptyInbox(), CF, TODAY, "unsupported", {});
     assert.doesNotMatch(h, /nt-perm/);
-    assert.match(h, /não disponível neste navegador/);
   });
 });

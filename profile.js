@@ -306,6 +306,9 @@
   if (typeof document !== 'undefined' && !document.getElementById('cf-dot-css')) {
     var __d = document.createElement('style'); __d.id = 'cf-dot-css'; __d.textContent = '.cf-tab{position:relative}.cf-dot{position:absolute;top:6px;right:10px;width:8px;height:8px;border-radius:50%;background:#E3182D}'; document.head.appendChild(__d);
   }
+  if (typeof document !== 'undefined' && !document.getElementById('cf-topbar-css')) {
+    var __tb = document.createElement('style'); __tb.id = 'cf-topbar-css'; __tb.textContent = '.cf-topbar{position:relative;display:flex;align-items:center;justify-content:space-between;min-height:56px;padding:8px 6px 0}.cf-bar-title{position:absolute;left:50%;transform:translateX(-50%);font-family:Fredoka,Nunito,sans-serif;font-size:18px;font-weight:700;color:#17171C;white-space:nowrap;pointer-events:none}'; document.head.appendChild(__tb);
+  }
   var GEAR = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
   var BAR = '<div class="cf-bar"><button class="cf-icon" type="button" data-prof-settings aria-label="Configurações">' + GEAR + '</button></div>';
   var CLOSE = '<button class="cf-btn cf-btn-ghost" type="button" data-prof-close>Fechar</button>';
@@ -457,8 +460,8 @@
     h = h.split(CLOSE).join('').split(BACK_MENU).join('').split(BAR).join('');
     var PROG = '<svg viewBox="0 0 22 22" width="22" height="22" aria-hidden="true"><path d="M3 18V11M9 18V6M15 18V9M21 18V3" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg>';
     var tbGear = mode === 'profile' ? '<button type="button" class="cf-icon" data-prof-settings aria-label="Configurações">' + GEAR + '</button>' : '';
-    var tb = mode === 'evo' ? '<div class="cf-bar cf-topbar"></div>' : '<div class="cf-bar cf-topbar"><button class="cw-back-ico" type="button" aria-label="Voltar" ' + tbBack + '>' +
-      '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>' + tbGear + '</div>';
+    var tb = mode === 'evo' ? '<div class="cf-bar cf-topbar"><span class="cf-bar-title">Evolução</span><button type="button" class="cf-icon" data-prof-settings aria-label="Configurações">' + GEAR + '</button></div>' : '<div class="cf-bar cf-topbar"><button class="cw-back-ico" type="button" aria-label="Voltar" ' + tbBack + '>' +
+      '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>' + '<span class="cf-bar-title">Perfil</span>' + tbGear + '</div>';
     var att = (window.crowAttention ? window.crowAttention() : { perfil: false, evo: false });
     var dot = function (on) { return on ? '<i class="cf-dot" aria-hidden="true"></i>' : ''; };
     var TABS = (mode === 'profile' || mode === 'evo') ? '<div class="cf-tabs" role="tablist" aria-label="Perfil e evolução">' +

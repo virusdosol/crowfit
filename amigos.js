@@ -73,7 +73,7 @@ function html(d) {
   var findForm = d.handle
     ? '<form class="am-form am-add" data-form="find" novalidate><label>Encontrar jogador pelo ID<input name="handle" maxlength="21" autocomplete="off" autocapitalize="off" placeholder="@do_amigo"></label><button type="submit" class="am-btn am-pri">Buscar</button></form>' + foundCard()
     : '';
-  var head = '<div class="cw-head"><h2>Amigos</h2><span>' + friendsAll.length + '</span></div>' + tabsHtml(tab);
+  var head = tabsHtml(tab);
   var flashHtml = flash ? '<p class="am-flash" role="status">' + esc(flash) + '</p>' : '';
   if (tab === "buscar") {
     return head + '<h3 class="am-sec">Seu ID</h3>' + idBlock +
@@ -99,6 +99,20 @@ function html(d) {
 }
 
 /* ---------- fluxo ---------- */
+function openDesafios() {
+  var A = root.CrowfitAuth, c = A && A.getClient ? A.getClient() : null;
+  if (!root.CrowDesafios || !c || !box) return;
+  view = null;
+  box.innerHTML = tabsHtml("desafios") + '<div id="am-sub"></div>';
+  var sub = box.querySelector("#am-sub");
+  var r = root.CrowDesafios.open(sub, c, function () { load(); });
+  setTimeout(function () { var bk = sub && sub.querySelector("#dg-bk"); if (bk) bk.remove(); }, 0);
+  return r;
+}
+function switchTab(k) {
+  if (k === "desafios") return openDesafios();
+  tab = k; view = null; return render();
+}
 function render() { if (lastData && box) box.innerHTML = html(lastData); else return load(); }
 async function load() {
   if (!box) return;
@@ -247,7 +261,8 @@ function onClick(ev) {
   if (a === "voltar") { view = null; return load(); }
   if (a === "tab-amigos") { tab = "amigos"; view = null; return render(); }
   if (a === "tab-buscar") { tab = "buscar"; view = null; return render(); }
-  if (a === "desafios") { var A = root.CrowfitAuth, c = A && A.getClient ? A.getClient() : null; if (!root.CrowDesafios || !c) return; view = null; var r = root.CrowDesafios.open(box, c, function () { load(); }); if (box && !box.querySelector(".cf-tabs")) box.insertAdjacentHTML("afterbegin", tabsHtml("desafios")); return r; }
+  if (a === "desafios") { tab = "desafios"; return openDesafios(); }
+  if (a === "desafios-old") { var A = root.CrowfitAuth, c = A && A.getClient ? A.getClient() : null; if (!root.CrowDesafios || !c) return; view = null; var r = root.CrowDesafios.open(box, c, function () { load(); }); if (box && !box.querySelector(".cf-tabs")) box.insertAdjacentHTML("afterbegin", tabsHtml("desafios")); return r; }
   if (a === "rank") { var m = b.getAttribute("data-m"); rankMode = m === "streak" || m === "trophies" ? m : "xp"; box.innerHTML = html(lastData); return; }
   if (a === "copy") {
     var txt = "@" + (box.querySelector(".am-id b") || { textContent: "" }).textContent.replace(/^@/, "");
@@ -292,16 +307,25 @@ if (typeof document !== "undefined" && !document.getElementById("am-tabs-css")) 
   __am.textContent = ".am-sec{font-size:15px;margin:16px 0 8px}.am-best-row{display:flex;gap:12px;overflow-x:auto;padding-bottom:4px}.am-av{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:84px;border:0;background:none;cursor:pointer;color:inherit}.am-av-c{width:56px;height:56px;border-radius:50%;background:#E3182D;color:#fff;display:grid;place-items:center;font-family:Fredoka,sans-serif;font-size:22px;font-weight:700}.am-av b{font-size:13px}.am-av small{font-size:11px;color:#5E5E73}";
   document.head.appendChild(__am);
 }
+var TAB_ORDER = ["amigos", "desafios", "buscar"], TAB_NAME = { amigos: "Amigos", desafios: "Desafios", buscar: "Buscar" };
 function tabsHtml(on) {
-  var btn = function (k, label, act) {
-    return '<button type="button" class="cf-tab' + (on === k ? ' on' : '') + '" role="tab" aria-selected="' + (on === k) + '" data-act="' + act + '">' + label + '</button>';
-  };
-  return '<div class="cf-tabs" role="tablist" aria-label="Amigos, desafios e buscar">' +
-    btn('amigos', 'Amigos', 'tab-amigos') + btn('desafios', 'Desafios', 'desafios') + btn('buscar', 'Buscar', 'tab-buscar') + '</div>';
+  var dots = TAB_ORDER.map(function (k) {
+    return '<button type="button" class="am-dot' + (on === k ? ' on' : '') + '" data-act="tab-' + k + '" aria-label="' + TAB_NAME[k] + '" aria-current="' + (on === k) + '"></button>';
+  }).join("");
+  return '<div class="am-pager"><h2 class="am-ptitle">' + TAB_NAME[on] + '</h2><div class="am-dots" role="tablist" aria-label="Seções">' + dots + '</div></div>';
 }
 function mount(el) {
   if (!el) return;
   box = el; flash = ""; found = null; view = null;
+  var sx = null, sy = null;
+  el.addEventListener("touchstart", function (e) { var t = e.changedTouches && e.changedTouches[0]; sx = t ? t.clientX : null; sy = t ? t.clientY : null; }, { passive: true });
+  el.addEventListener("touchend", function (e) {
+    var t = e.changedTouches && e.changedTouches[0]; if (sx == null || !t) return;
+    var dx = t.clientX - sx, dy = t.clientY - sy; sx = null;
+    if (Math.abs(dx) < 60 || Math.abs(dy) > 50) return;
+    var i = TAB_ORDER.indexOf(tab), j = dx < 0 ? Math.min(TAB_ORDER.length - 1, i + 1) : Math.max(0, i - 1);
+    if (j !== i) switchTab(TAB_ORDER[j]);
+  }, { passive: true });
   el.addEventListener("click", onClick);
   el.addEventListener("submit", onSubmit);
   el.addEventListener("input", onInput);

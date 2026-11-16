@@ -202,15 +202,16 @@ function html(inbox, CF, today, perm, opts) {
   opts = opts || {};
   var h = '<div class="nt-wrap"><div class="nt-top"><button type="button" class="cw-back-ico" id="nt-bk" aria-label="Voltar"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Notificações</h2></div>';
   if (opts.pending) h += '<p class="nt-note">Sem conexão: notificações sociais aparecem quando você voltar a ter sinal.</p>';
-  h += '<div class="nt-actions"><button type="button" class="link" id="nt-readall">Marcar tudo como lido</button>' +
-       '<button type="button" class="link" id="nt-clear">Limpar antigas</button></div>';
+  h += '<div class="nt-actions"><button type="button" class="link" id="nt-selall">Selecionar tudo</button>' +
+       '<button type="button" class="link" id="nt-readsel">Marcar como lida</button>' +
+       '<button type="button" class="link" id="nt-delsel">Excluir</button></div>';
 
   if (!inbox.items.length) h += '<div class="nt-empty"><p>Nada por aqui. Quando algo acontecer na sua trilha ou com seus amigos, aparece aqui.</p></div>';
   groupByDay(inbox.items, CF, today).forEach(function (g) {
     h += '<h3 class="nt-day">' + esc(g.label) + '</h3>';
     g.items.forEach(function (it) {
       var time = (it.at || "").slice(11, 16);
-      h += '<article class="nt-item' + (it.read ? '' : ' nt-unread') + '" data-nt="' + esc(it.id) + '">' +
+      h += '<article class="nt-item' + (it.read ? '' : ' nt-unread') + '" data-nt="' + esc(it.id) + '"><input type="checkbox" class="nt-sel" data-nt-sel="' + esc(it.id) + '" aria-label="Selecionar">' +
         '<span class="nt-tag">' + esc(TYPE_LABEL[it.type] || "Aviso") + '</span>' +
         '<div class="nt-body"><b>' + esc(it.title) + '</b><p>' + esc(it.body) + '</p>' +
         '<small>' + esc(time) + (it.read ? '' : ' · não lida') + '</small></div>' +
@@ -219,26 +220,12 @@ function html(inbox, CF, today, perm, opts) {
   });
 
   var p = inbox.prefs;
-  h += '<section class="nt-prefs"><h3>Preferências</h3>';
-  Object.keys(CAT_LABEL).forEach(function (c) {
-    h += '<label class="nt-chk"><input type="checkbox" data-nt-cat="' + c + '"' + (p.cats[c] ? ' checked' : '') + '> ' + CAT_LABEL[c] + '</label>';
-  });
-  h += '<label class="nt-chk"><input type="checkbox" id="nt-rem"' + (p.reminder.on ? ' checked' : '') + '> Lembrete de treino</label>';
-  h += '<div class="nt-rem"' + (p.reminder.on ? '' : ' hidden') + '><label class="nt-lbl">Horário <input type="time" id="nt-time" value="' + esc(p.reminder.time) + '"></label>' +
-    '<p class="nt-lbl">Dias</p><div class="nt-days">' + DAYS_LBL.map(function (l, i) {
-      return '<button type="button" class="nt-day-b" data-nt-day="' + i + '" aria-pressed="' + (p.reminder.days.indexOf(i) >= 0) + '">' + l + '</button>';
-    }).join("") + '</div></div>';
-  var permTxt = perm === "unsupported" ? "não disponível neste navegador"
-    : perm === "granted" ? "permitido"
-    : perm === "denied" ? "bloqueado nas configurações do navegador"
-    : "não ativado";
-  h += '<p class="nt-lbl">Aviso no aparelho: ' + permTxt + '</p>';
-  if (perm === "default") h += '<button type="button" class="btn sec" id="nt-perm">Ativar avisos no aparelho</button>';
-  h += '<p class="nt-sub">Os avisos do aparelho aparecem só com o app aberto, no máximo ' + MAX_DEVICE_PER_DAY + ' por dia.</p></section>';
+  
   return h + '</div>';
 }
 
-return { defaultPrefs: defaultPrefs, emptyInbox: emptyInbox, addItem: addItem, scanLocal: scanLocal, scanSocial: scanSocial,
+function removeItems(inbox, ids) { var set = {}; (ids || []).forEach(function (x) { set[x] = 1; }); inbox.items = inbox.items.filter(function (it) { return !set[it.id]; }); return inbox; }
+return { removeItems: removeItems, defaultPrefs: defaultPrefs, emptyInbox: emptyInbox, addItem: addItem, scanLocal: scanLocal, scanSocial: scanSocial,
   reminderDue: reminderDue, addReminder: addReminder, clearOld: clearOld, markRead: markRead, markAllRead: markAllRead,
   unread: unread, shouldDeliver: shouldDeliver, markDelivered: markDelivered, groupByDay: groupByDay, html: html,
   CAT_LABEL: CAT_LABEL, TYPE_LABEL: TYPE_LABEL, MAX_DEVICE_PER_DAY: MAX_DEVICE_PER_DAY, KEEP_DAYS: KEEP_DAYS };
