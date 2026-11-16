@@ -402,7 +402,7 @@ function ofCal(t){
  return h+'</div>'}
 function ofDm(k){return (+k.slice(8,10))+"/"+(+k.slice(5,7))}
 function nozHTML(t){var w=CF.nozWeeks(S,t).slice(-12).reverse();
- var h='<div class="of-tt of-tt2"><h2>Nozes da semana</h2></div>';
+ var h='<div class="of-tt of-tt2"><h2>Ofensivas</h2></div>';
  if(!w.length)return h+'<p class="of-info">A primeira noz aparece quando a primeira semana da trilha terminar.</p>';
  h+='<div class="of-nz">';
  w.forEach(function(k){var op=CF.nozOpened(S,k),st=new Date(+k.slice(0,4),+k.slice(5,7)-1,+k.slice(8,10)-6);
