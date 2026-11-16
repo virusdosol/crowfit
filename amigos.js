@@ -17,6 +17,7 @@ var MSG = {
   profile_missing: "Seu perfil ainda não está pronto. Tente de novo em instantes."
 };
 var ESC = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+var tab = "amigos";
 var box = null, busy = false, flash = "", lastData = null, filterText = "", found = null, lastLb = null, rankMode = "xp", view = null;
 
 function validHandle(h) { return typeof h === "string" && HANDLE_RE.test(h); }
@@ -72,22 +73,33 @@ function html(d) {
   var findForm = d.handle
     ? '<form class="am-form am-add" data-form="find" novalidate><label>Encontrar jogador pelo ID<input name="handle" maxlength="21" autocomplete="off" autocapitalize="off" placeholder="@do_amigo"></label><button type="submit" class="am-btn am-pri">Buscar</button></form>' + foundCard()
     : '';
-  return '<div class="cw-head"><h2>Amigos</h2><span>' + (d.friends || []).length + '</span></div>' + tabsHtml('amigos') +
-    idBlock + (d.handle ? '<button type="button" class="am-btn am-pri am-meu" data-act="meu">Ver meu perfil</button>' : '') + findForm + searchBox +
-    (flash ? '<p class="am-flash" role="status">' + esc(flash) + '</p>' : '') +
-    rankingHtml() + (d.incoming && d.incoming.length ? section("Pedidos recebidos", d.incoming, function (p) {
+  var head = '<div class="cw-head"><h2>Amigos</h2><span>' + friendsAll.length + '</span></div>' + tabsHtml(tab);
+  var flashHtml = flash ? '<p class="am-flash" role="status">' + esc(flash) + '</p>' : '';
+  if (tab === "buscar") {
+    return head + '<h3 class="am-sec">Seu ID</h3>' + idBlock +
+      (d.handle ? '<button type="button" class="am-btn am-pri am-meu" data-act="meu">Ver meu perfil</button>' : '') +
+      '<h3 class="am-sec">Encontrar jogador</h3>' + findForm + flashHtml;
+  }
+  var byXp = friendsAll.slice().sort(function (a, b) { return (b.xp || 0) - (a.xp || 0); }).slice(0, 3);
+  var best = byXp.length ? '<div class="am-best"><h3 class="am-sec">Melhores amigos</h3><div class="am-best-row">' + byXp.map(function (p) {
+    var ini = esc(String(p.name || p.handle || "?").trim().charAt(0).toUpperCase());
+    return '<button type="button" class="am-av" data-act="perfil" data-h="' + esc(p.handle) + '"><span class="am-av-c" aria-hidden="true">' + ini + '</span><b>' + esc(p.name || "Atleta") + '</b><small>' + (p.xp || 0) + ' XP</small></button>';
+  }).join("") + '</div></div>' : '';
+  return head + best + searchBox + flashHtml +
+    (d.incoming && d.incoming.length ? section("Pedidos recebidos", d.incoming, function (p) {
       return row(p, '<button type="button" class="am-btn am-pri" data-act="accept" data-h="' + esc(p.handle) + '">Aceitar</button>' +
         '<button type="button" class="am-btn" data-act="decline" data-h="' + esc(p.handle) + '">Recusar</button>');
     }, "") : '') +
     (d.outgoing && d.outgoing.length ? section("Pedidos enviados", d.outgoing, function (p) {
       return row(p, '<button type="button" class="am-btn" data-act="remove" data-h="' + esc(p.handle) + '">Cancelar</button>');
     }, "") : '') +
-    section("Seus amigos", friends, function (p) {
+    section("Todos os amigos", friends, function (p) {
       return row(p, '<button type="button" class="am-btn" data-act="perfil" data-h="' + esc(p.handle) + '">Ver perfil</button>' + '<button type="button" class="am-btn" data-act="remove" data-h="' + esc(p.handle) + '">Remover</button>');
-    }, q ? "Nenhum amigo encontrado para essa busca." : "Ainda sem amigos. Compartilhe seu ID para alguém te adicionar.");
+    }, q ? "Nenhum amigo encontrado para essa busca." : "Ainda sem amigos. Compartilhe seu ID para alguém te adicionar.") + rankingHtml();
 }
 
 /* ---------- fluxo ---------- */
+function render() { if (lastData && box) box.innerHTML = html(lastData); else return load(); }
 async function load() {
   if (!box) return;
   if (view) return loadPerfil();
@@ -233,7 +245,8 @@ function onClick(ev) {
   if (a === "meu") { if (!lastData || !lastData.handle) return; view = { h: lastData.handle, me: true }; box.innerHTML = '<p class="cw-empty">Carregando…</p>'; return load(); }
   if (a === "editar") { var P = root.CrowfitProfile; if (P && P.open) P.open(); return; }
   if (a === "voltar") { view = null; return load(); }
-  if (a === "tab-amigos") { view = null; return load(); }
+  if (a === "tab-amigos") { tab = "amigos"; view = null; return render(); }
+  if (a === "tab-buscar") { tab = "buscar"; view = null; return render(); }
   if (a === "desafios") { var A = root.CrowfitAuth, c = A && A.getClient ? A.getClient() : null; if (!root.CrowDesafios || !c) return; view = null; var r = root.CrowDesafios.open(box, c, function () { load(); }); if (box && !box.querySelector(".cf-tabs")) box.insertAdjacentHTML("afterbegin", tabsHtml("desafios")); return r; }
   if (a === "rank") { var m = b.getAttribute("data-m"); rankMode = m === "streak" || m === "trophies" ? m : "xp"; box.innerHTML = html(lastData); return; }
   if (a === "copy") {
@@ -274,10 +287,17 @@ function onInput(ev) {
   if (inp) { inp.focus(); try { inp.setSelectionRange(pos, pos); } catch (e) {} }
 }
 
+if (typeof document !== "undefined" && !document.getElementById("am-tabs-css")) {
+  var __am = document.createElement("style"); __am.id = "am-tabs-css";
+  __am.textContent = ".am-sec{font-size:15px;margin:16px 0 8px}.am-best-row{display:flex;gap:12px;overflow-x:auto;padding-bottom:4px}.am-av{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:84px;border:0;background:none;cursor:pointer;color:inherit}.am-av-c{width:56px;height:56px;border-radius:50%;background:#E3182D;color:#fff;display:grid;place-items:center;font-family:Fredoka,sans-serif;font-size:22px;font-weight:700}.am-av b{font-size:13px}.am-av small{font-size:11px;color:#5E5E73}";
+  document.head.appendChild(__am);
+}
 function tabsHtml(on) {
-  return '<div class="cf-tabs" role="tablist" aria-label="Amigos e desafios">' +
-    '<button type="button" class="cf-tab' + (on === 'amigos' ? ' on' : '') + '" role="tab" aria-selected="' + (on === 'amigos') + '" data-act="tab-amigos">Amigos</button>' +
-    '<button type="button" class="cf-tab' + (on === 'desafios' ? ' on' : '') + '" role="tab" aria-selected="' + (on === 'desafios') + '" data-act="desafios">Desafios</button></div>';
+  var btn = function (k, label, act) {
+    return '<button type="button" class="cf-tab' + (on === k ? ' on' : '') + '" role="tab" aria-selected="' + (on === k) + '" data-act="' + act + '">' + label + '</button>';
+  };
+  return '<div class="cf-tabs" role="tablist" aria-label="Amigos, desafios e buscar">' +
+    btn('amigos', 'Amigos', 'tab-amigos') + btn('desafios', 'Desafios', 'desafios') + btn('buscar', 'Buscar', 'tab-buscar') + '</div>';
 }
 function mount(el) {
   if (!el) return;
