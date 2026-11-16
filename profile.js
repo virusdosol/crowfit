@@ -254,7 +254,8 @@
   function setAppInert(on) { var a = doc.getElementById('app'); if (a) { if (on) a.setAttribute('inert', ''); else a.removeAttribute('inert'); } }
   function reapplyInert() { doc.documentElement.classList.add('cf-auth-open'); setAppInert(true); }
 
-  function go(s) { screen = s; draft = null; uiMsg = null; renderPanel(true); }
+  var slideDir = 0;
+  function go(s) { var from = screen; screen = s; draft = null; uiMsg = null; slideDir = (from === 'profile' && s === 'evo') ? 1 : (from === 'evo' && s === 'profile') ? -1 : 0; renderPanel(true); }
 
   function openPanel(from) {
     if (!Auth.getState().user) return; /* sem sessão não há perfil para mostrar */
@@ -310,7 +311,7 @@
     var __tb = document.createElement('style'); __tb.id = 'cf-topbar-css'; __tb.textContent = '.cf-topbar{position:relative;display:flex;align-items:center;justify-content:space-between;min-height:56px;padding:8px 6px 0}.cf-bar-title{position:absolute;left:50%;transform:translateX(-50%);font-family:Fredoka,Nunito,sans-serif;font-size:18px;font-weight:700;color:#17171C;white-space:nowrap;pointer-events:none}'; document.head.appendChild(__tb);
   }
   if (typeof document !== 'undefined' && !document.getElementById('cf-pager-css')) {
-    var __pg = document.createElement('style'); __pg.id = 'cf-pager-css'; __pg.textContent = '.cf-pager{display:flex;justify-content:center;align-items:center;gap:8px;margin:2px 0 14px}.cf-pdot{width:8px;height:8px;border-radius:50%;border:0;padding:0;background:#D9D9E0;cursor:pointer;transition:width .2s,background .2s}.cf-pdot.on{width:22px;border-radius:6px;background:#E3182D}.cf-pdot:focus-visible{outline:2px solid #E3182D;outline-offset:3px}';
+    var __pg = document.createElement('style'); __pg.id = 'cf-pager-css'; __pg.textContent = '@keyframes cf-in-r{from{transform:translateX(34px);opacity:0}to{transform:none;opacity:1}}@keyframes cf-in-l{from{transform:translateX(-34px);opacity:0}to{transform:none;opacity:1}}.cf-in-r{animation:cf-in-r .26s cubic-bezier(.2,.7,.2,1) both}.cf-in-l{animation:cf-in-l .26s cubic-bezier(.2,.7,.2,1) both}.cf-pager{display:flex;justify-content:center;align-items:center;gap:8px;margin:2px 0 14px}.cf-pdot{width:8px;height:8px;border-radius:50%;border:0;padding:0;background:#D9D9E0;cursor:pointer;transition:width .2s,background .2s}.cf-pdot.on{width:22px;border-radius:6px;background:#E3182D}.cf-pdot:focus-visible{outline:2px solid #E3182D;outline-offset:3px}';
     document.head.appendChild(__pg);
   }
   var GEAR = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
@@ -473,6 +474,7 @@
       '<button type="button" class="cf-pdot' + (mode === 'evo' ? ' on' : '') + '" role="tab" aria-selected="' + (mode === 'evo') + '" aria-label="Evolução" data-prof-evo></button></div>' : '';
     h = h.replace(/^<div class="cf-wrap[^"]*">/, function (m) { return m + tb + TABS; });
     panel.innerHTML = h;
+    if (slideDir) { var fe = panel.querySelector('.cf-wrap'); if (fe) fe.classList.add(slideDir > 0 ? 'cf-in-r' : 'cf-in-l'); slideDir = 0; }
     if (mode === 'evo') { var evBox = panel.querySelector('[data-evo]'); if (evBox) { try { evBox.innerHTML = window.crowEvoBody ? window.crowEvoBody(evoPeriod) : '<p class="cf-msg">Evolução indisponível.</p>'; } catch (e) { evBox.textContent = 'Não foi possível carregar a evolução.'; reportErr(e); } } }
 
     var ac = panel.querySelector('[data-acct]');

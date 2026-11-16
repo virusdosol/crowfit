@@ -308,11 +308,16 @@ if (typeof document !== "undefined" && !document.getElementById("am-tabs-css")) 
   document.head.appendChild(__am);
 }
 var TAB_ORDER = ["amigos", "desafios", "buscar"], TAB_NAME = { amigos: "Amigos", desafios: "Desafios", buscar: "Buscar" };
+if (typeof document !== "undefined" && !document.getElementById("cf-pager-css")) {
+  var __pg = document.createElement("style"); __pg.id = "cf-pager-css";
+  __pg.textContent = ".cf-pager{display:flex;justify-content:center;align-items:center;gap:8px;margin:6px 0 14px}.cf-pdot{width:8px;height:8px;border-radius:50%;border:0;padding:0;background:#D9D9E0;cursor:pointer;transition:width .2s,background .2s}.cf-pdot.on{width:22px;border-radius:6px;background:#E3182D}.am-pager{text-align:center}.am-ptitle{font-family:Fredoka,Nunito,sans-serif;font-size:22px;margin:4px 0 0}";
+  document.head.appendChild(__pg);
+}
 function tabsHtml(on) {
   var dots = TAB_ORDER.map(function (k) {
-    return '<button type="button" class="am-dot' + (on === k ? ' on' : '') + '" data-act="tab-' + k + '" aria-label="' + TAB_NAME[k] + '" aria-current="' + (on === k) + '"></button>';
+    return '<button type="button" class="cf-pdot' + (on === k ? ' on' : '') + '" role="tab" aria-selected="' + (on === k) + '" aria-label="' + TAB_NAME[k] + '" data-act="tab-' + k + '"></button>';
   }).join("");
-  return '<div class="am-pager"><h2 class="am-ptitle">' + TAB_NAME[on] + '</h2><div class="am-dots" role="tablist" aria-label="Seções">' + dots + '</div></div>';
+  return '<div class="am-pager"><h2 class="am-ptitle">' + TAB_NAME[on] + '</h2><div class="cf-pager" role="tablist" aria-label="Seções">' + dots + '</div></div>';
 }
 function mount(el) {
   if (!el) return;
