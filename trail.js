@@ -136,7 +136,7 @@ function nextCard(ctx, last) {
 }
 if (typeof document !== "undefined" && !document.getElementById("t-mes-css")) {
   var __tm = document.createElement("style"); __tm.id = "t-mes-css";
-  __tm.textContent = ".tn.st-lock{opacity:.4;filter:grayscale(1)}.t-lock-big{display:inline-grid;place-items:center;width:72px;height:72px;border-radius:50%;background:#D9D9E0}.t-lock-big .ico{width:34px;height:34px;color:#5E5E73;stroke:currentColor;fill:none;stroke-width:2.4}.t-mes{flex-direction:column;display:flex;align-items:center;gap:8px;justify-content:center;margin:18px 0 10px;color:#5E5E73;font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase}.t-mes .ico{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.4}";
+  __tm.textContent = ".t-deco{display:flex;justify-content:center;pointer-events:none;margin:4px 0}.t-deco img{width:64px;height:auto;opacity:.95}.tn.st-lock{opacity:.4;filter:grayscale(1)}.t-lock-big{display:inline-grid;place-items:center;width:72px;height:72px;border-radius:50%;background:#D9D9E0}.t-lock-big .ico{width:34px;height:34px;color:#5E5E73;stroke:currentColor;fill:none;stroke-width:2.4}.t-mes{flex-direction:column;display:flex;align-items:center;gap:8px;justify-content:center;margin:18px 0 10px;color:#5E5E73;font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase}.t-mes .ico{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.4}";
   document.head.appendChild(__tm);
 }
 function gate() {
@@ -156,9 +156,14 @@ function monthMark(ctx, i) {
   var u = unitAt(ctx.S, i), dia = +u.date.slice(8, 10);
   return '<div class="t-mes" role="separator"><span class="t-lock-big">' + LOCK + '</span><span>Libera dia ' + dia + ' de ' + MESES[+u.date.slice(5, 7) - 1] + '</span></div>';
 }
+function decoHtml(i) {
+  var art = (i / 7) % 2 === 1 ? 'deco_bush.png' : 'deco_stone_crow.png';
+  return '<div class="t-deco" aria-hidden="true"><img src="' + art + '" alt=""></div>';
+}
 function range(ctx, lo, hi, last) {
   var h = "";
   for (var i = lo; i <= hi; i++) {
+    if (i > 0 && i % 7 === 0) h += decoHtml(i);
     if (i > last && (i - last - 1) % MES === 0) h += monthMark(ctx, i);
     if (i <= last) h += weekHead(ctx, i);
     h += nodeHtml(ctx, i, i > last);
