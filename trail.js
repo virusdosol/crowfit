@@ -136,7 +136,7 @@ function nextCard(ctx, last) {
 }
 if (typeof document !== "undefined" && !document.getElementById("t-mes-css")) {
   var __tm = document.createElement("style"); __tm.id = "t-mes-css";
-  __tm.textContent = ".t-mes{display:flex;align-items:center;gap:8px;justify-content:center;margin:18px 0 10px;color:#5E5E73;font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase}.t-mes .ico{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.4}";
+  __tm.textContent = ".tn.st-lock{opacity:.4;filter:grayscale(1)}.t-lock-big{display:inline-grid;place-items:center;width:72px;height:72px;border-radius:50%;background:#D9D9E0}.t-lock-big .ico{width:34px;height:34px;color:#5E5E73;stroke:currentColor;fill:none;stroke-width:2.4}.t-mes{flex-direction:column;display:flex;align-items:center;gap:8px;justify-content:center;margin:18px 0 10px;color:#5E5E73;font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase}.t-mes .ico{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.4}";
   document.head.appendChild(__tm);
 }
 function gate() {
@@ -151,10 +151,10 @@ function endIdx(ctx, last) {
   var avg = n && sum > 0 ? sum / n : 60;
   return Math.max(last + 1, Math.ceil(total / avg) - 1);
 }
-/* Marcador de mês bloqueado: cadeado e o nome do mês. */
+/* Divisão de mês bloqueada: cadeado grande (do tamanho de uma bolinha) com a data de liberação. */
 function monthMark(ctx, i) {
-  var u = unitAt(ctx.S, i);
-  return '<div class="t-mes" role="separator">' + LOCK + ' Mês de ' + MESES[+u.date.slice(5, 7) - 1] + '</div>';
+  var u = unitAt(ctx.S, i), dia = +u.date.slice(8, 10);
+  return '<div class="t-mes" role="separator"><span class="t-lock-big">' + LOCK + '</span><span>Libera dia ' + dia + ' de ' + MESES[+u.date.slice(5, 7) - 1] + '</span></div>';
 }
 function range(ctx, lo, hi, last) {
   var h = "";
@@ -210,7 +210,7 @@ function trophyRecords(ctx) {
   return out;
 }
 function mount(el, ctx) {
-  var S = ctx.S, tr = ensure(S, ctx.today), ti = Math.max(0, idxOf(S, ctx.today)), last = lastOpen(S, ti), hi = endIdx(ctx, last);
+  var S = ctx.S, tr = ensure(S, ctx.today), ti = Math.max(0, idxOf(S, ctx.today)), last = ti, hi = endIdx(ctx, last);
   if (!V || V.start !== tr.start) V = { start: tr.start, lo: Math.max(0, ti - 6), scroll: null };
   V.ctx = ctx;
   el.innerHTML = '<div class="t-ban" id="t-ban"><div class="tb-l"><small id="tb-s"></small><b id="tb-t"></b></div><button id="t-hoje" aria-label="Ir para o treino de hoje">Hoje</button></div><div class="t-ban-sp" id="t-ban-sp"></div>' +
