@@ -1,0 +1,21 @@
+{
+ "S04": "ach_pinecone",
+ "S08": "ach_acorn",
+ "S09": "ach_mushroom",
+ "S10": "ach_morel",
+ "S13": "ach_skull",
+ "S14": "ach_bone",
+ "S16": "ach_branch",
+ "S24": "ach_oak_leaf",
+ "S17": "trophy_gold",
+ "S18": "trophy_silver",
+ "S19": "trophy_bronze",
+ "S20": "trophy_diamond",
+ "S21": "icon_badge_crown",
+ "S47": "deco_bush",
+ "S48": "deco_stone_crow",
+ "S49": "icon_library",
+ "S50": "ach_scroll",
+ "S52": "deco_lantern",
+ "S53": "deco_door"
+}
