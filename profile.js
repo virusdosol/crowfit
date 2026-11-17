@@ -233,7 +233,8 @@
       else if (t.hasAttribute('data-prof-retry')) { uiMsg = null; refresh(); }
     });
     panel.addEventListener('submit', onExtraSubmit);
-    if (global.CrowSwipe) global.CrowSwipe.attach(panel, { busy: function () { return saving; }, neighbour: profileNeighbour, commit: profileCommit });
+    if (global.CrowSwipe) global.CrowSwipe.attach(panel, { busy: function () { return saving; }, neighbour: profileNeighbour, commit: profileCommit,
+      keep: function (no) { return no.nodeType === 1 && no.classList && no.classList.contains('cf-fixed'); } });
     panel.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape' || saving) return;
       if (screen === 'settings') go('profile');
@@ -481,11 +482,13 @@
     var tbBack = mode === 'settings' ? 'data-prof-back' : (mode === 'host' || mode === 'account' || mode === 'account-off') ? 'data-prof-menu' : 'data-prof-close';
     h = h.split(CLOSE).join('').split(BACK_MENU).join('').split(BAR).join('');
     var PROG = '<svg viewBox="0 0 22 22" width="22" height="22" aria-hidden="true"><path d="M3 18V11M9 18V6M15 18V9M21 18V3" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg>';
-    var tbGear = mode === 'profile' ? '<button type="button" class="cf-icon" data-prof-settings aria-label="Configurações">' + GEAR + '</button>' : '';
-    var tb = mode === 'evo' ? '<div class="cf-bar cf-topbar"><span class="cf-bar-title">Evolução</span><button type="button" class="cf-icon" data-prof-settings aria-label="Configurações">' + GEAR + '</button></div>' : '<div class="cf-bar cf-topbar"><button class="cw-back-ico" type="button" aria-label="Voltar" ' + tbBack + '>' +
+    /* Cabeçalho ÚNICO e fixo para Perfil e Evolução: mesmo título, mesmo voltar, mesma engrenagem. */
+    var tbGear = (mode === 'profile' || mode === 'evo') ? '<button type="button" class="cf-icon" data-prof-settings aria-label="Configurações">' + GEAR + '</button>' : '';
+    var tb = '<div class="cf-bar cf-topbar"><button class="cw-back-ico" type="button" aria-label="Voltar" ' + tbBack + '>' +
       '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>' + '<span class="cf-bar-title">Perfil</span>' + tbGear + '</div>';
     var att = (window.crowAttention ? window.crowAttention() : { perfil: false, evo: false });
     var dot = function (on) { return on ? '<i class="cf-dot" aria-hidden="true"></i>' : ''; };
+    /* Bolinhas indicadoras de página: ficam dentro do cabeçalho fixo, no lugar de sempre. */
     var TABS = (mode === 'profile' || mode === 'evo') ? '<div class="cf-pager" role="tablist" aria-label="Páginas">' +
       '<button type="button" class="cf-pdot' + (mode === 'profile' ? ' on' : '') + '" role="tab" aria-selected="' + (mode === 'profile') + '" aria-label="Perfil" data-prof-perfil></button>' +
       '<button type="button" class="cf-pdot' + (mode === 'evo' ? ' on' : '') + '" role="tab" aria-selected="' + (mode === 'evo') + '" aria-label="Evolução" data-prof-evo></button></div>' : '';

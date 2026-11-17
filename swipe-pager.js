@@ -15,13 +15,16 @@
       tr.style.transform = "translateX(calc(" + base + "% + " + px + "px))";
     }
 
+    /* cfg.keep(no) -> true para elementos que ficam FIXOS fora do slide (ex.: cabeçalho). */
+    function movable(no) { return !(cfg.keep && cfg.keep(no)); }
+
     function begin(nextHtml, d) {
       dir = d;
       wrap = document.createElement("div"); wrap.className = "cw-sl-vp";
       tr = document.createElement("div"); tr.className = "cw-sl-tr";
       pa = document.createElement("div"); pa.className = "cw-sl-pg";
       var pb = document.createElement("div"); pb.className = "cw-sl-pg"; pb.innerHTML = nextHtml;
-      while (vp.firstChild) pa.appendChild(vp.firstChild);
+      Array.prototype.slice.call(vp.childNodes).filter(movable).forEach(function (n) { pa.appendChild(n); });
       if (d > 0) { tr.appendChild(pa); tr.appendChild(pb); } else { tr.appendChild(pb); tr.appendChild(pa); }
       wrap.appendChild(tr); vp.appendChild(wrap);
       base = d > 0 ? 0 : -50;

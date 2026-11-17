@@ -17,8 +17,14 @@ function fnBody(name) {
 }
 
 describe("catálogo de exercícios", () => {
-  test("o servidor tem exatamente os exercícios do app (program.js)", () => {
-    const seed = [...SQL.matchAll(/^\s*\('([a-z0-9_]+)'\)/gm)].map((m) => m[1]);
+  test("o catálogo final do servidor (v8 + correções da v12) tem exatamente os exercícios do app", () => {
+    let seed = [...SQL.matchAll(/^\s*\('([a-z0-9_]+)'\)/gm)].map((m) => m[1]);
+    /* A v12 corrige o catálogo: remove os exercícios removidos e inclui os novos. */
+    const v12 = fs.existsSync(__dirname + "/supabase-catalogo-v12.sql") ? fs.readFileSync(__dirname + "/supabase-catalogo-v12.sql", "utf8") : "";
+    const del = v12.match(/delete from public\.exercise_catalog\s+where id in \(([^)]*)\)/);
+    if (del) { const rm = [...del[1].matchAll(/'([a-z0-9_]+)'/g)].map((m) => m[1]); seed = seed.filter((id) => !rm.includes(id)); }
+    const add = v12.match(/insert into public\.exercise_catalog \(id\) values([\s\S]*?)on conflict/);
+    if (add) seed = seed.concat([...add[1].matchAll(/'([a-z0-9_]+)'/g)].map((m) => m[1]));
     assert.equal(new Set(seed).size, seed.length, "sem ids repetidos");
     assert.deepEqual(seed.slice().sort(), Object.keys(LIB).slice().sort());
   });

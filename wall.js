@@ -71,9 +71,16 @@ function bar() {
   }).join("");
   doc.body.appendChild(b);
 }
+/* Aba ativa: a página aberta pela barra (curPage.kind), notificações (#nt-box) ou a trilha. */
+function currentTab() {
+  if (curPage && curPage.kind) return curPage.kind;
+  if (doc.getElementById("nt-box")) return "notif";
+  if (doc.getElementById("trail")) return "home";
+  return "";
+}
 function syncBar() {
   var home = !!doc.getElementById("trail"); doc.body.classList.toggle("cw-home", home || !!curPage || !!doc.getElementById("nt-box"));
-  var cur = curPage || (home ? "home" : "");
+  var cur = currentTab();
   doc.querySelectorAll(".cw-bar [data-tab]").forEach(function (t) { t.setAttribute("aria-current", t.getAttribute("data-tab") === cur ? "page" : "false"); });
 }
 
