@@ -152,6 +152,24 @@ function endIdx(ctx, last) {
   return Math.max(last + 1, Math.ceil(total / avg) - 1);
 }
 /* Divisão de mês bloqueada: cadeado grande (do tamanho de uma bolinha) com a data de liberação. */
+/* Desafios individuais (etapa 1). Os marcos ficam na LATERAL da Trilha, ligados ao ponto (unidade) pelo key estável
+   "sNuM" e nunca dentro de um círculo de dia. O estado (open/locked/done) deve vir do backend; enquanto ele não existe,
+   CH_MOCK é só de desenvolvimento e não é fonte de produção. "off" = posição da unidade a partir do início da trilha. */
+var CH_MOCK = [
+  { id: "flexoes", nome: "Flexões", off: 3, icon: "desafio-caveira.png", mock: "open" },
+  { id: "abdominais", nome: "Abdominais", off: 10, icon: "desafio-espantalho.png", mock: "locked" },
+  { id: "prancha", nome: "Prancha", off: 17, icon: "desafio-bandeira.png", mock: "done" }
+];
+function challengeAt(S, i) {
+  var key = unitAt(S, i).key;
+  for (var k = 0; k < CH_MOCK.length; k++) if (unitAt(S, CH_MOCK[k].off).key === key) return CH_MOCK[k];
+  return null;
+}
+function challengeHtml(S, i, x) {
+  var c = challengeAt(S, i); if (!c) return "";
+  var side = x >= 0 ? "l" : "r", lab = "Desafio " + c.nome + (c.mock === "done" ? ", concluído" : c.mock === "locked" ? ", bloqueado" : "");
+  return '<button type="button" class="t-ch ' + side + ' st-' + c.mock + '" data-ch="' + c.id + '" aria-label="' + lab + '"><img src="' + c.icon + '" alt=""></button>';
+}
 function monthMark(ctx, i) {
   var u = unitAt(ctx.S, i), dia = +u.date.slice(8, 10);
   return '<div class="t-mes" role="separator"><img class="t-lock-img" src="cadeado_mes.png" alt=""><span>Libera dia ' + dia + ' de ' + MESES[+u.date.slice(5, 7) - 1] + '</span></div>';
@@ -161,7 +179,8 @@ function range(ctx, lo, hi, last) {
   for (var i = lo; i <= hi; i++) {
     if (i > last && (i - last - 1) % MES === 0) h += monthMark(ctx, i);
     if (i <= last) h += weekHead(ctx, i);
-    h += nodeHtml(ctx, i, i > last);
+    var cx = Math.round(Math.sin(i * 0.85) * 62), chh = challengeHtml(ctx.S, i, cx);
+    h += chh ? '<div class="t-row">' + nodeHtml(ctx, i, i > last) + chh + '</div>' : nodeHtml(ctx, i, i > last);
     if (i <= last && C.parseDate(unitAt(ctx.S, i).date).getDay() === 6) h += chestHtml(ctx, i, unitAt(ctx.S, i));
   }
   return h;
@@ -219,6 +238,8 @@ function mount(el, ctx) {
   flush(ctx);
   var path = $("t-path");
   el.onclick = function (e) {
+    var ch = e.target.closest && e.target.closest(".t-ch");
+    if (ch) { if (ch.classList.contains("st-done")) say(ch, "Desafio concluído"); else if (ch.classList.contains("st-locked") || ch.classList.contains("st-lock")) toast("Desafio bloqueado"); else toast("Página do desafio em construção"); return; }
     var t = e.target.closest && e.target.closest(".tn, .t-gate"); if (!t) return;
     if (t.classList.contains("t-chest")) { if (t.classList.contains("st-wait")) { toast("A noz abre no fim da semana."); return; } ctx.noz(t.getAttribute("data-sat")); return; }
     var iu = +t.getAttribute("data-i"), uu = unitAt(V.ctx.S, iu);
@@ -370,6 +391,6 @@ function openUnit(ctx, i) {
   $("u-bk").onclick = $("u-bk2").onclick = ctx.back;
 }
 
-T.mount = mount; T.openUnit = openUnit; T.award = award; T.prog = prog; T.trophyRecords = trophyRecords; T.pickIndex = pickIndex; T.unitAt = unitAt; T.secStart = secStart; T.week = wk; T.idxOf = idxOf;
+T.challengeAt = challengeAt; T.challengeHtml = challengeHtml; T.mount = mount; T.openUnit = openUnit; T.award = award; T.prog = prog; T.trophyRecords = trophyRecords; T.pickIndex = pickIndex; T.unitAt = unitAt; T.secStart = secStart; T.week = wk; T.idxOf = idxOf;
 root.CFT = T;
 })(typeof self !== "undefined" ? self : this);
