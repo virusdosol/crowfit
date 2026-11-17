@@ -68,3 +68,7 @@
 /* cabeçalho das notificações sempre no topo da tela */
 .nt-top{position:fixed;top:0;left:0;right:0;z-index:50;background:#fff;padding:calc(env(safe-area-inset-top,0px) + 10px) 16px 8px;margin:0}
 .nt-wrap{padding-top:calc(env(safe-area-inset-top,0px) + 74px)}
+
+/* cabeçalho das notificações fixo no topo, igual às outras telas (vence a regra sticky anterior) */
+#nt-box .nt-top,.nt-top{position:fixed !important;top:0 !important;left:0 !important;right:0 !important;z-index:50 !important;margin:0 !important;background:#fff !important;padding:calc(env(safe-area-inset-top,0px) + 12px) 16px 10px !important}
+#nt-box .nt-wrap,.nt-wrap{padding-top:calc(env(safe-area-inset-top,0px) + 78px) !important}
