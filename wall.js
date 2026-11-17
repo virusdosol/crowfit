@@ -121,7 +121,9 @@ function cell(inner, label, bubble, extraCls) {
 }
 function pageAch() {
   var list = achList(), n = list.filter(function (a) { return gotAch(a.id); }).length;
-  return '<div class="cw-head"><h2>Conquistas</h2><span>' + n + ' de ' + list.length + '</span></div>' +
+  var hero = '<div class="of-hero tr-hero"><img class="tr-art" src="alvo.png" alt="" aria-hidden="true">' +
+    '<div class="of-l"><div class="of-num">' + n + '</div><div class="of-txt">suas conquistas!</div><svg class="of-u" viewBox="0 0 300 16" preserveAspectRatio="none" aria-hidden="true"><path d="M6 10Q150 2 294 8"/></svg></div></div>';
+  return hero + '<div class="cw-head"><h2>Conquistas</h2><span>' + n + ' de ' + list.length + '</span></div>' +
     (list.length ? '<div class="cw-icons">' + list.map(function (a) {
       var got = gotAch(a.id);
       var bub = got ? '<b>' + esc(a.name) + '</b><span>' + esc(a.how) + '.</span>' : '<b>Bloqueada</b><span>' + esc(a.how) + '.</span>';
@@ -176,14 +178,14 @@ if (typeof document !== "undefined" && !document.getElementById("tr-hero-css2"))
 }
 if (typeof document !== "undefined" && !document.getElementById("tr-hero-css3")) {
   var __th3 = document.createElement("style"); __th3.id = "tr-hero-css3";
-  __th3.textContent = ".tr-hero{display:flex !important;flex-direction:row !important;align-items:center !important;justify-content:space-between !important;text-align:left !important;margin-top:16px !important}.tr-hero .of-num{font-size:clamp(96px,30vw,128px) !important;text-align:left !important}.tr-art{order:0 !important;width:120px !important;height:auto !important;flex:none !important;margin:0 !important}.cw-pf-cont{width:auto !important;max-width:none !important;margin-left:-37px !important;margin-right:-37px !important;box-sizing:border-box !important}";
+  __th3.textContent = ".tr-hero{display:flex !important;flex-direction:row !important;align-items:center !important;justify-content:space-between !important;text-align:left !important;margin-top:16px !important}.tr-hero .of-num{font-size:clamp(96px,30vw,128px) !important;text-align:left !important}.tr-art{order:0 !important;width:168px !important;height:auto !important;flex:none !important;margin:0 !important}.cw-pf-cont{width:auto !important;max-width:none !important;margin-left:0 !important;margin-right:0 !important;box-sizing:border-box !important}";
   document.head.appendChild(__th3);
 }
 function pageTro() {
   var rows = trophyRows(), eq = S().trophyEq || null, cats = (root.CFBib && root.CFBib.CATS) || [];
   var hasAny = rows.some(function (r) { return r.exercises > 0; });
     var head = '<div class="of-hero tr-hero"><img class="tr-art" src="trofeu_hero.png" alt="" aria-hidden="true">' +
-    '<div class="of-l"><div class="of-num">' + trophyTotal() + '</div><div class="of-txt">seus troféus</div></div></div>';
+    '<div class="of-l"><div class="of-num">' + trophyTotal() + '</div><div class="of-txt">seus troféus!</div><svg class=\"of-u\" viewBox=\"0 0 300 16\" preserveAspectRatio=\"none\" aria-hidden=\"true\"><path d=\"M6 10Q150 2 294 8\"/></svg></div></div>';
     '<div class="of-txt">troféus conquistados</div></div><img class="tr-art" src="trofeu_hero.png" alt="" aria-hidden="true"></div>';
   var search = '<input class="tr-q" data-tr-q type="search" maxlength="40" autocomplete="off" placeholder="Buscar exercício" value="' + esc(trSt.q) + '" aria-label="Buscar exercício">';
   var chips = '<div class="tr-chips" role="group" aria-label="Filtrar">' + TR_FILTERS.map(function (f) {
