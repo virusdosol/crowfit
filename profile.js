@@ -233,8 +233,6 @@
       else if (t.hasAttribute('data-prof-retry')) { uiMsg = null; refresh(); }
     });
     panel.addEventListener('submit', onExtraSubmit);
-    var __body = panel.querySelector('.cf-body');
-    if (global.CrowSwipe && __body) global.CrowSwipe.attach(__body, { busy: function () { return saving; }, neighbour: profileNeighbour, commit: profileCommit });
     panel.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape' || saving) return;
       if (screen === 'settings') go('profile');
@@ -499,6 +497,8 @@
     h = h.replace(/^<div class="cf-wrap[^"]*">/, function (m) { return m + '<div class="cf-fixed">' + tb + TABS + '</div><div class="cf-body">'; });
     h = h.replace(/<\/div>$/, '</div></div>');
     panel.innerHTML = h;
+    /* O .cf-body é recriado a cada render: o deslize precisa ser ligado ao corpo novo (não ao da primeira montagem). */
+    if (panel.id === 'cf-prof' && global.CrowSwipe) { var __bd = panel.querySelector('.cf-body'); if (__bd) global.CrowSwipe.attach(__bd, { busy: function () { return saving; }, neighbour: profileNeighbour, commit: profileCommit }); }
     if (slideDir) { var fe = panel.querySelector('.cf-body'); if (fe) fe.classList.add(slideDir > 0 ? 'cf-in-r' : 'cf-in-l'); slideDir = 0; }
     if (mode === 'evo') { var evBox = panel.querySelector('[data-evo]'); if (evBox) { try { evBox.innerHTML = window.crowEvoBody ? window.crowEvoBody(evoPeriod) : '<p class="cf-msg">Evolução indisponível.</p>'; } catch (e) { evBox.textContent = 'Não foi possível carregar a evolução.'; reportErr(e); } } }
 

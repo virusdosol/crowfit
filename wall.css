@@ -319,3 +319,6 @@ body.cw-home .cw-bar{display:grid}
 .cw-full .cw-bar-title,.of-title,.nt-top h2{position:absolute;left:50%;transform:translateX(-50%);margin:0;white-space:nowrap;font:800 20px Fredoka,Nunito,system-ui,sans-serif;color:#17171C}
 .of-wrap{padding-top:calc(74px + env(safe-area-inset-top,0px))}
 #nt-box .nt-wrap{padding-top:calc(74px + env(safe-area-inset-top,0px))}
+
+/* Cartão 'Continue evoluindo!': mesma largura e margens do texto das seções abaixo (sem recuo lateral). */
+.cw-pf .cw-pf-cont{width:100% !important;max-width:none !important;align-self:stretch !important;box-sizing:border-box !important;margin-left:0 !important;margin-right:0 !important}
