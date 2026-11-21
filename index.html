@@ -562,7 +562,7 @@ function secData(host,a){
 /* ---------- Treino ---------- */
 function buildSession(type,lv){return SES[type].ex.map(function(k){var parts=k.split("|"),id=parts.length>1&&lv>=1?parts[1]:parts[0],e=EX[id],opt=(id==="po"||id==="al");
  return{id:id,n:e.n,t:e.t,val:e.v[lv],optional:opt,sets:opt?1:(lv===0?2:3),rest:lv===0?30:45}})}
-function startSession(type){var lv=CF.levelFor(S.profile,S.adjust),t=today();S.active=CF.newSession(type,buildSession(type,lv),t,Date.now(),S.profile.dias,!!S.done[t]);save();renderEx()}
+function startSession(type){alert('Os treinos são feitos pelo dia da trilha.');return;var lv=CF.levelFor(S.profile,S.adjust),t=today();S.active=CF.newSession(type,buildSession(type,lv),t,Date.now(),S.profile.dias,!!S.done[t]);save();renderEx()}
 function cur(){var a=S.active;return a&&a.exercises[a.exIdx]}
 function renderEx(){var a=S.active,ex=cur();if(!ex){finish();return}CF.syncStatus(ex);
  var pct=Math.round(a.exIdx/a.exercises.length*100),tip=EX[ex.exerciseId]?EX[ex.exerciseId].tip:"",T=ex.timer,n=ex.setIdx+1;

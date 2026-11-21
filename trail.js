@@ -302,13 +302,33 @@ function award(ctx, u, ct, pr) {
     return 0;
   }
   if (u.date <= ctx.today) { if (S.done[u.date] !== true) C.logDay(S, "done", u.date, new Date().toISOString()); S.done[u.date] = true; if (!S.last || u.date > S.last) S.last = u.date; }
-  var k = "tr:" + u.key; if (S.rewards[k] !== true) { S.rewards[k] = true; got = 10 * ct.exercises.length + 20; S.points += got; }
+  /* XP não é somado aqui: o servidor concede por série, grupo e dia (set_my_trail_series). */
   C.refreshStreak(S, ctx.today); return got;
+}
+/* Séries da trilha: cada série concluída vai para o servidor (XP por série). Falha de rede fica na fila e é reenviada. */
+function persistSeries(ctx, u, e, idx) {
+  var S = ctx.S; S.trail.pend = S.trail.pend || [];
+  S.trail.pend.push({ u: u.key, e: e.id, i: idx });
+  ctx.save(); flushSeries(ctx);
+}
+function flushSeries(ctx) {
+  var S = ctx.S, A = root.CrowfitAuth, c = A && A.getClient ? A.getClient() : null;
+  if (!c || !S.trail.pend || !S.trail.pend.length) return;
+  var it = S.trail.pend[0];
+  c.rpc("set_my_trail_series", { p: { unit_key: it.u, exercise_id: it.e, set_index: it.i, done: true } }).then(function (r) {
+    if (r.error) {
+      /* erro definitivo do servidor (dia passou, exercício ou série inválidos): descarta; rede/sessão: mantém */
+      if (/unit_not_today|unit_unavailable|exercise_not_in_unit|invalid_/.test(String(r.error.message || ""))) { S.trail.pend.shift(); ctx.save(); }
+      return;
+    }
+    S.trail.pend.shift(); ctx.save(); flushSeries(ctx);
+  }, function () { /* sem rede: fica na fila */ });
 }
 function clock(s) { return s >= 120 ? Math.floor(s / 60) + ":" + ("0" + (s % 60)).slice(-2) : s + "s"; }
 
 /* Executor guiado: um exercício por vez, série a série, com cronômetro e descanso. Só o "concluído" de cada exercício é persistido. */
 function runner(ctx, u, ct) {
+  flushSeries(ctx);
   var S = ctx.S, esc = ctx.esc, R = { q: ct.exercises.filter(function (e) { return !(S.trail.ex[u.key] || {})[e.id]; }).map(function (e) { return e.id; }), si: 0, rest: false, t: null, tm: 0, pts: 0 };
   function cur() { return ct.exercises.filter(function (e) { return e.id === R.q[0]; })[0]; }
   function stop() { clearInterval(R.tm); R.tm = 0; }
@@ -366,6 +386,7 @@ function runner(ctx, u, ct) {
     B("r-sk", function () { R.q.push(R.q.shift()); reset(); draw(); });
     B("r-ok", function () {
       if (e.kind === "s" && !(R.t && R.t.state === "time_completed")) return;
+      persistSeries(ctx, u, e, R.si + 1);
       if (R.si + 1 >= e.sets) finishEx(e); else { R.rest = true; R.t = null; ctx.say("Série concluída"); draw(); }
     });
     if (R.t && R.t.state === "running") loop();
