@@ -152,23 +152,42 @@ function endIdx(ctx, last) {
   return Math.max(last + 1, Math.ceil(total / avg) - 1);
 }
 /* Divisão de mês bloqueada: cadeado grande (do tamanho de uma bolinha) com a data de liberação. */
-/* Desafios individuais (etapa 1). Os marcos ficam na LATERAL da Trilha, ligados ao ponto (unidade) pelo key estável
-   "sNuM" e nunca dentro de um círculo de dia. O estado (open/locked/done) deve vir do backend; enquanto ele não existe,
-   CH_MOCK é só de desenvolvimento e não é fonte de produção. "off" = posição da unidade a partir do início da trilha. */
-var CH_MOCK = [
-  { id: "flexoes", nome: "Flexões", off: 3, icon: "desafio-caveira.png", mock: "open" },
-  { id: "abdominais", nome: "Abdominais", off: 10, icon: "desafio-espantalho.png", mock: "locked" },
-  { id: "prancha", nome: "Prancha", off: 17, icon: "desafio-bandeira.png", mock: "done" }
-];
+/* Desafios individuais (etapa 1). Marcos na LATERAL da Trilha, ligados à unidade pela chave estável "sNuM"
+   (a mesma chave de unitAt, que é derivada da data inicial persistida). Nunca dentro de um círculo de dia.
+   O estado vem SOMENTE da lista do servidor (individual_challenges_list), entregue por setChallenges.
+   A trilha não calcula desbloqueio, não lê scroll e não contém dados de exemplo: sem dados, nenhum marco aparece. */
+var CH_ANCHOR = /^s\d{1,3}u\d{1,3}$/;
+var CH_STATE = { disponivel: "open", em_progresso: "open", bloqueado: "locked", concluido: "done" };
+var CH_LIST = [];
+var MOUNTED = null;
+/* Recebe a lista validada pelo servidor. Descarta entradas malformadas, ids repetidos e estados desconhecidos (falha fechada).
+   "inativo" não gera marco. */
+function setChallenges(list) {
+  var out = [], seen = {};
+  (Array.isArray(list) ? list : []).forEach(function (c) {
+    if (!c || typeof c.id !== "string" || !c.id || seen[c.id]) return;
+    if (typeof c.nome !== "string" || !c.nome) return;
+    if (typeof c.ancora !== "string" || !CH_ANCHOR.test(c.ancora)) return;
+    if (!Object.prototype.hasOwnProperty.call(CH_STATE, c.estado)) return;
+    seen[c.id] = true;
+    out.push({ id: c.id, nome: c.nome, ancora: c.ancora, state: CH_STATE[c.estado] });
+  });
+  var same = JSON.stringify(out) === JSON.stringify(CH_LIST);
+  CH_LIST = out;
+  /* Dados novos com a trilha na tela: redesenha mantendo a rolagem. Sem tela (testes), só guarda. */
+  if (!same && MOUNTED && typeof document !== "undefined" && document.body.contains(MOUNTED.el)) {
+    var y = window.scrollY; mount(MOUNTED.el, MOUNTED.ctx); window.scrollTo(0, y);
+  }
+}
 function challengeAt(S, i) {
   var key = unitAt(S, i).key;
-  for (var k = 0; k < CH_MOCK.length; k++) if (unitAt(S, CH_MOCK[k].off).key === key) return CH_MOCK[k];
+  for (var k = 0; k < CH_LIST.length; k++) if (CH_LIST[k].ancora === key) return CH_LIST[k];
   return null;
 }
 function challengeHtml(S, i, x) {
   var c = challengeAt(S, i); if (!c) return "";
-  var side = x >= 0 ? "l" : "r", lab = "Desafio " + c.nome + (c.mock === "done" ? ", concluído" : c.mock === "locked" ? ", bloqueado" : "");
-  return '<button type="button" class="t-ch ' + side + ' st-' + c.mock + '" data-ch="' + c.id + '" aria-label="' + lab + '"><img src="' + c.icon + '" alt=""></button>';
+  var side = x >= 0 ? "l" : "r", lab = "Desafio " + c.nome + (c.state === "done" ? ", concluído" : c.state === "locked" ? ", bloqueado" : "");
+  return '<button type="button" class="t-ch ' + side + ' st-' + c.state + '" data-ch="' + C.escText(c.id) + '" aria-label="' + C.escText(lab) + '"><span class="t-ch-f" aria-hidden="true">' + C.escText(c.nome.charAt(0).toUpperCase()) + '</span></button>';
 }
 function monthMark(ctx, i) {
   var u = unitAt(ctx.S, i), dia = +u.date.slice(8, 10);
@@ -229,6 +248,7 @@ function trophyRecords(ctx) {
   return out;
 }
 function mount(el, ctx) {
+  MOUNTED = { el: el, ctx: ctx };
   var S = ctx.S, tr = ensure(S, ctx.today), ti = Math.max(0, idxOf(S, ctx.today)), last = ti, hi = endIdx(ctx, last);
   if (!V || V.start !== tr.start) V = { start: tr.start, lo: Math.max(0, ti - 6), scroll: null };
   V.ctx = ctx;
@@ -391,6 +411,6 @@ function openUnit(ctx, i) {
   $("u-bk").onclick = $("u-bk2").onclick = ctx.back;
 }
 
-T.challengeAt = challengeAt; T.challengeHtml = challengeHtml; T.mount = mount; T.openUnit = openUnit; T.award = award; T.prog = prog; T.trophyRecords = trophyRecords; T.pickIndex = pickIndex; T.unitAt = unitAt; T.secStart = secStart; T.week = wk; T.idxOf = idxOf;
+T.setChallenges = setChallenges; T.unlocked = unlocked; T.challengeAt = challengeAt; T.challengeHtml = challengeHtml; T.mount = mount; T.openUnit = openUnit; T.award = award; T.prog = prog; T.trophyRecords = trophyRecords; T.pickIndex = pickIndex; T.unitAt = unitAt; T.secStart = secStart; T.week = wk; T.idxOf = idxOf;
 root.CFT = T;
 })(typeof self !== "undefined" ? self : this);

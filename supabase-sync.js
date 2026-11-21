@@ -366,6 +366,8 @@ function create(envIn) {
     if (!client || !sameUser()) { meta.pending = true; info.pending = true; saveMeta(uid, meta); emit("offline", ""); return; }
     if (E.nav && E.nav.onLine === false) { meta.pending = true; info.pending = true; saveMeta(uid, meta); emit("offline", ""); return; }
     emit("syncing", "");
+    /* Fuso do aparelho antes de qualquer operação que use cf_user_today. Nunca rejeita; falha não bloqueia a sincronização. */
+    if (root.CFZ && root.CFZ.ensure) await root.CFZ.ensure();
     try {
       var remote = null, first = full || !meta.seeded, b, ps;
       function plan() { b = buildProgress(E, S0, meta.amounts, today); ps = pendingSessions(E, S0, meta, today); info.skippedSessions = ps.skipped;

@@ -112,3 +112,8 @@
 .t-ch.st-locked img{filter:grayscale(1);opacity:.35}
 .t-ch.st-done img{opacity:.55}
 .t-ch:focus-visible{outline:3px solid var(--focus,#17171C);outline-offset:2px;border-radius:12px}
+
+/* Marco de desafio sem ícone próprio: inicial do nome, dentro de um círculo neutro (etapa 1). */
+.t-ch-f{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:#EDEDF3;color:#17171C;font:900 24px Nunito,sans-serif;box-shadow:0 4px 0 #C9C9D6}
+.t-ch.st-locked .t-ch-f{opacity:.4;filter:grayscale(1)}
+.t-ch.st-done .t-ch-f{background:#17171C;color:#FFFFFF;box-shadow:0 4px 0 #000}

@@ -197,6 +197,8 @@ setTimeout(rm,1000);var i=s.querySelector("img");if(i)i.addEventListener("error"
 <script src="store.js"></script>
 <script src="program.js"></script>
 <script src="trail.js"></script>
+<script src="fuso-dispositivo.js"></script>
+<script src="desafios-individuais.js"></script>
 <script src="painel.js"></script>
 <script src="desafios.js"></script>
 <script src="notif.js"></script>
@@ -381,7 +383,7 @@ function renderHome(){var li=lvlInfo(),t=today(),a=S.active,b4=S.streak+"/"+S.be
  if($("of"))$("of").onclick=openOfensivas;
 var pbBtn=$("of");var ntA=null;
 try{ntScan()}catch(e){}
- CFT.mount($("trail"),trailCtx());if(window.CrowAmigos&&CrowAmigos.pushStats)CrowAmigos.pushStats()}
+ CFT.mount($("trail"),trailCtx());if(window.CFI)CFI.load();if(window.CrowAmigos&&CrowAmigos.pushStats)CrowAmigos.pushStats()}
 
 /* ---------- Ofensivas (tela própria; calendário e detalhes entram nas próximas etapas) ---------- */
 var OF=null, OF_MES=["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"], OF_LBL={active:"Treinou neste dia",rest:"Dia de descanso",pending:"Hoje ainda não treinou",missed:"Sem treino registrado",none:"Sem registro"};
