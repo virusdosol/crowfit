@@ -1,0 +1,17 @@
+/* Página do desafio individual (etapa 2 da interface). */
+.cd-top{display:flex;align-items:center;margin:0 0 12px}
+.cd-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
+.cd-kicker{margin:0;font:800 12px Nunito,sans-serif;letter-spacing:.6px;text-transform:uppercase;color:var(--mute,#5E5E73)}
+.cd-wrap h1{margin:0}
+.cd-stars{display:flex;gap:6px;font-size:30px;color:#C9C9D6}
+.cd-star.on{color:#E3182D}
+.cd-total{margin:4px 0;font-size:18px}
+.cd-bar{width:100%;max-width:320px;height:10px;border-radius:6px;background:#EDEDF3;overflow:hidden}
+.cd-bar i{display:block;height:100%;background:#E3182D}
+.cd-next,.cd-locked,.cd-loading,.cd-msg{margin:4px 0;color:var(--mute,#5E5E73)}
+.cd-metas{list-style:none;padding:0;margin:6px 0;font:700 14px Nunito,sans-serif}
+.cd-metas li{color:#5E5E73}
+.cd-metas li.ok{color:#17171C}
+.cd-done{margin:8px 0;font:900 18px Nunito,sans-serif;color:#17171C}
+.cd-label{font:800 13px Nunito,sans-serif;color:var(--mute,#5E5E73)}
+.cd-input{width:120px;padding:10px;font:800 20px Nunito,sans-serif;text-align:center;border:2px solid #E6E6EE;border-radius:12px}

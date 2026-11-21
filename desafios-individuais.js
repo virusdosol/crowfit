@@ -55,7 +55,18 @@
     }, REFRESH_MS);
   }
 
-  var api = { load: load, toMarcos: toMarcos, attachRefresh: attachRefresh };
+  /* Lista atual do servidor para a página do desafio. Não usa o intervalo de load(). null = falha. */
+  function fetchRows() {
+    var c = client();
+    if (!c) return Promise.resolve(null);
+    var zona = root.CFZ && root.CFZ.ensure ? root.CFZ.ensure() : Promise.resolve(false);
+    return zona.then(function () { return c.rpc("individual_challenges_list"); }).then(function (r) {
+      if (r.error) return null;
+      return Array.isArray(r.data) ? r.data : [];
+    }).catch(function () { return null; });
+  }
+
+  var api = { load: load, toMarcos: toMarcos, attachRefresh: attachRefresh, fetchRows: fetchRows };
   if (typeof module === "object" && module.exports) module.exports = api; else root.CFI = api;
   attachRefresh();
 })(typeof self !== "undefined" ? self : this);
