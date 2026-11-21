@@ -259,7 +259,7 @@ function mount(el, ctx) {
   var path = $("t-path");
   el.onclick = function (e) {
     var ch = e.target.closest && e.target.closest(".t-ch");
-    if (ch) { if (ch.classList.contains("st-done")) say(ch, "Desafio concluído"); else if (ch.classList.contains("st-locked") || ch.classList.contains("st-lock")) toast("Desafio bloqueado"); else if (root.CFDI && root.CFDI.open) root.CFDI.open(ctx, ch.getAttribute("data-ch")); else toast("Página do desafio indisponível"); return; }
+    if (ch) { if (ch.classList.contains("st-done")) say(ch, "Desafio concluído"); else if (ch.classList.contains("st-locked") || ch.classList.contains("st-lock")) say(ch, "Desafio bloqueado"); else if (root.CFDI && root.CFDI.open) root.CFDI.open(ctx, ch.getAttribute("data-ch")); else toast("Página do desafio indisponível"); return; }
     var t = e.target.closest && e.target.closest(".tn, .t-gate"); if (!t) return;
     if (t.classList.contains("t-chest")) { if (t.classList.contains("st-wait")) { toast("A noz abre no fim da semana."); return; } ctx.noz(t.getAttribute("data-sat")); return; }
     var iu = +t.getAttribute("data-i"), uu = unitAt(V.ctx.S, iu);
