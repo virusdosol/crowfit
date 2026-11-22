@@ -106,7 +106,7 @@
 
 /* Desafios individuais (etapa 1): marco lateral, fora do eixo dos dias. Ver trail.js (challengeHtml). */
 .t-row{position:relative;display:flex;flex-direction:column;align-items:center;align-self:stretch}
-.t-ch{position:absolute;top:50%;transform:translateY(-50%);width:64px;height:64px;padding:0;margin:0;border:0;background:none;cursor:pointer;z-index:1;-webkit-tap-highlight-color:transparent}
+.t-ch{position:absolute;top:50%;transform:translateY(-50%);width:112px;height:112px;padding:0;margin:0;border:0;background:none;cursor:pointer;z-index:1;-webkit-tap-highlight-color:transparent}
 .t-ch.l{left:0}.t-ch.r{right:0}
 .t-ch img{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none}
 .t-ch.st-locked img{filter:grayscale(1);opacity:.35}
