@@ -174,7 +174,7 @@ function setChallenges(list) {
     if (typeof c.ancora !== "string" || !CH_ANCHOR.test(c.ancora)) return;
     if (!Object.prototype.hasOwnProperty.call(CH_STATE, c.estado)) return;
     seen[c.id] = true;
-    out.push({ id: c.id, nome: c.nome, ancora: c.ancora, state: CH_STATE[c.estado] });
+    out.push({ id: c.id, nome: c.nome, ancora: c.ancora, state: CH_STATE[c.estado], estrelas: Math.min(3, Math.max(0, Math.floor(Number(c.estrelas) || 0))) });
   });
   var same = JSON.stringify(out) === JSON.stringify(CH_LIST);
   CH_LIST = out;
@@ -191,7 +191,7 @@ function challengeAt(S, i) {
 function challengeHtml(S, i, x) {
   var c = challengeAt(S, i); if (!c) return "";
   var side = x >= 0 ? "l" : "r", lab = "Desafio " + c.nome + (c.state === "done" ? ", concluído" : c.state === "locked" ? ", bloqueado" : "");
-  return '<button type="button" class="t-ch ' + side + ' st-' + c.state + '" data-ch="' + C.escText(c.id) + '" aria-label="' + C.escText(lab) + '">' + (CH_ICON[c.nome] ? '<img src="' + CH_ICON[c.nome] + '" alt="">' : '<span class="t-ch-f" aria-hidden="true">' + C.escText(c.nome.charAt(0).toUpperCase()) + '</span>') + '</button>';
+  return '<button type="button" class="t-ch ' + side + ' st-' + c.state + '" data-ch="' + C.escText(c.id) + '" aria-label="' + C.escText(lab + ", " + c.estrelas + " de 3 estrelas") + '">' + (CH_ICON[c.nome] ? '<img src="' + CH_ICON[c.nome] + '" alt="">' : '<span class="t-ch-f" aria-hidden="true">' + C.escText(c.nome.charAt(0).toUpperCase()) + '</span>') + '<span class="t-ch-st" aria-hidden="true">' + [1, 2, 3].map(function (i) { return '<i' + (i <= c.estrelas ? ' class="on"' : '') + '>★</i>'; }).join('') + '</span></button>';
 }
 function monthMark(ctx, i) {
   var u = unitAt(ctx.S, i), dia = +u.date.slice(8, 10);

@@ -11,7 +11,7 @@
     if (!Array.isArray(rows)) return [];
     return rows
       .filter(function (r) { return r && typeof r.id === "string" && typeof r.ancora === "string"; })
-      .map(function (r) { return { id: r.id, nome: r.nome, ancora: r.ancora, estado: r.estado }; });
+      .map(function (r) { return { id: r.id, nome: r.nome, ancora: r.ancora, estado: r.estado, estrelas: r.estrelas }; });
   }
 
   function client() {
