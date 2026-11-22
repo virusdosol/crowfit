@@ -127,6 +127,9 @@ function say(node, msg) {
   var el = document.createElement("div"); el.className = "t-say c" + cls; el.setAttribute("role", "status"); el.textContent = msg;
   el.style.left = (r.left + r.width / 2) + "px"; el.style.top = (r.top - 12) + "px";
   document.body.appendChild(el);
+  var w = el.offsetWidth, vw = document.documentElement.clientWidth, cx = r.left + r.width / 2;
+  var lo = w / 2 + 8, hi = Math.max(lo, vw - w / 2 - 8), x = Math.min(Math.max(cx, lo), hi);
+  el.style.left = x + "px"; el.style.setProperty("--ax", (cx - x) + "px");
   clearTimeout(say.t); say.t = setTimeout(function () { el.remove(); }, 2200);
 }
 /* Cartão no fim da prévia: o próximo mês fica travado e a rolagem para aqui. */
@@ -159,6 +162,7 @@ function endIdx(ctx, last) {
 var CH_ANCHOR = /^s\d{1,3}u\d{1,3}$/;
 var CH_STATE = { disponivel: "open", em_progresso: "open", bloqueado: "locked", concluido: "done" };
 var CH_LIST = [];
+var CH_ICON = { "Flexões": "desafio-caveira.png", "Abdominais": "desafio-espantalho.png", "Prancha": "desafio-bandeira.png" };
 var MOUNTED = null;
 /* Recebe a lista validada pelo servidor. Descarta entradas malformadas, ids repetidos e estados desconhecidos (falha fechada).
    "inativo" não gera marco. */
@@ -187,7 +191,7 @@ function challengeAt(S, i) {
 function challengeHtml(S, i, x) {
   var c = challengeAt(S, i); if (!c) return "";
   var side = x >= 0 ? "l" : "r", lab = "Desafio " + c.nome + (c.state === "done" ? ", concluído" : c.state === "locked" ? ", bloqueado" : "");
-  return '<button type="button" class="t-ch ' + side + ' st-' + c.state + '" data-ch="' + C.escText(c.id) + '" aria-label="' + C.escText(lab) + '"><span class="t-ch-f" aria-hidden="true">' + C.escText(c.nome.charAt(0).toUpperCase()) + '</span></button>';
+  return '<button type="button" class="t-ch ' + side + ' st-' + c.state + '" data-ch="' + C.escText(c.id) + '" aria-label="' + C.escText(lab) + '">' + (CH_ICON[c.nome] ? '<img src="' + CH_ICON[c.nome] + '" alt="">' : '<span class="t-ch-f" aria-hidden="true">' + C.escText(c.nome.charAt(0).toUpperCase()) + '</span>') + '</button>';
 }
 function monthMark(ctx, i) {
   var u = unitAt(ctx.S, i), dia = +u.date.slice(8, 10);
@@ -250,10 +254,9 @@ function trophyRecords(ctx) {
 function mount(el, ctx) {
   MOUNTED = { el: el, ctx: ctx };
   var S = ctx.S, tr = ensure(S, ctx.today), ti = Math.max(0, idxOf(S, ctx.today)), last = ti, hi = endIdx(ctx, last);
-  if (!V || V.start !== tr.start) V = { start: tr.start, lo: Math.max(0, ti - 6), scroll: null };
+  if (!V || V.start !== tr.start) V = { start: tr.start, lo: 0, scroll: null };
   V.ctx = ctx;
   el.innerHTML = '<div class="t-ban" id="t-ban"><div class="tb-l"><small id="tb-s"></small><b id="tb-t"></b></div><button id="t-hoje" aria-label="Ir para o treino de hoje">Hoje</button></div><div class="t-ban-sp" id="t-ban-sp"></div>' +
-    (V.lo > 0 ? '<button class="btn sec t-more" id="t-prev">Ver dias anteriores</button>' : "") +
     '<div class="t-path" id="t-path">' + range(ctx, V.lo, hi, last) + '</div>';
   flush(ctx);
   var path = $("t-path");

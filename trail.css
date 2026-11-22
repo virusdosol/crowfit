@@ -88,7 +88,7 @@
 
 /* Balão de status (sai do círculo, cor da semana) */
 .t-say{position:fixed;z-index:50;transform:translate(-50%,-100%);max-width:70vw;padding:10px 16px;border-radius:16px;font:800 15px Nunito,sans-serif;white-space:nowrap;box-shadow:0 6px 0 rgba(0,0,0,.18);animation:t-pop .18s ease-out;pointer-events:none}
-.t-say::after{content:"";position:absolute;left:50%;bottom:-8px;margin-left:-8px;border:8px solid transparent;border-bottom:0}
+.t-say::after{content:"";position:absolute;left:calc(50% + var(--ax,0px));bottom:-8px;margin-left:-8px;border:8px solid transparent;border-bottom:0}
 .t-say.c0{background:#303036;color:#fff}.t-say.c0::after{border-top-color:#303036}
 .t-say.c1{background:#E3182D;color:#fff}.t-say.c1::after{border-top-color:#E3182D}
 .t-say.c2{background:#fff;color:#17171C;box-shadow:0 6px 0 #C9C9D6,inset 0 0 0 2px #E6E6EE}.t-say.c2::after{border-top-color:#fff}
